@@ -1,0 +1,24 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
+import { en } from './en';
+import { ru } from './ru';
+import { tk } from './tk';
+import { uz } from './uz';
+
+i18n.use(initReactI18next).init({
+  compatibilityJSON: 'v3',
+  lng: 'ru',
+  fallbackLng: 'ru',
+  resources: {
+    ru: { translation: ru },
+    en: { translation: en },
+    tk: { translation: tk },
+    uz: { translation: uz },
+  },
+  interpolation: {
+    escapeValue: false,
+  },
+});
+
+export default i18n;

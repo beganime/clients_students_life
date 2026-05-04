@@ -1,0 +1,224 @@
+export type PaginatedResponse<T> = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+};
+
+export type Service = {
+  id: number;
+  title: string;
+  slug: string;
+  short_description: string;
+  description_markdown?: string;
+  icon?: string | null;
+  cover_image?: string | null;
+  required_documents?: string;
+  estimated_time?: string;
+  button_text?: string;
+};
+
+export type Country = {
+  id: number;
+  name: string;
+  slug: string;
+  flag?: string | null;
+  cover_image?: string | null;
+  short_description?: string;
+  description_markdown?: string;
+  visa_info?: string;
+  work_info?: string;
+  average_tuition?: string;
+  average_living_cost?: string;
+};
+
+export type City = {
+  id: number;
+  country: number;
+  country_name: string;
+  country_slug: string;
+  name: string;
+  slug: string;
+  image?: string | null;
+};
+
+export type Program = {
+  id: number;
+  university: number;
+  university_name?: string;
+  country_name?: string;
+  city_name?: string;
+  title: string;
+  level: string;
+  faculty?: string;
+  specialty?: string;
+  language?: string;
+  duration?: string;
+  tuition_fee?: string | null;
+  currency?: string;
+  application_deadline?: string;
+  start_date?: string;
+  required_documents?: string;
+  requirements?: string;
+};
+
+export type University = {
+  id: number;
+  name: string;
+  slug: string;
+  country?: number | null;
+  country_name?: string;
+  country_slug?: string;
+  city?: number | null;
+  city_name?: string;
+  city_slug?: string;
+  logo?: string | null;
+  cover_image?: string | null;
+  description_markdown?: string;
+  university_type?: string;
+  partner_status?: boolean;
+  recognized_status?: boolean;
+  official_website?: string;
+  languages?: string;
+  education_levels?: string;
+  has_dormitory?: boolean;
+  dormitory_cost?: string;
+  scholarship_available?: boolean;
+  tuition_from?: string;
+  application_deadline?: string;
+  required_documents?: string;
+  programs?: Program[];
+  is_favorite?: boolean;
+};
+
+export type NewsPost = {
+  id: number;
+  title: string;
+  slug: string;
+  short_description: string;
+  content_markdown?: string;
+  cover_image?: string | null;
+  category_title?: string;
+  author_name?: string;
+  author_avatar?: string | null;
+  is_important?: boolean;
+  published_at?: string;
+};
+
+export type KnowledgeArticle = {
+  id: number;
+  title: string;
+  slug: string;
+  short_description: string;
+  content_markdown?: string;
+  cover_image?: string | null;
+  category_title?: string;
+  author_name?: string;
+  author_avatar?: string | null;
+  tags?: string;
+  published_at?: string;
+};
+
+export type StaffProfile = {
+  id: number;
+  full_name: string;
+  position?: string;
+  avatar?: string | null;
+  bio?: string;
+  languages?: string;
+  specialization?: string;
+  phone?: string;
+  whatsapp?: string;
+  telegram?: string;
+  show_contacts?: boolean;
+};
+
+export type Application = {
+  id: number;
+  application_number: string;
+  service?: number | null;
+  service_title?: string;
+  status: string;
+  assigned_manager_name?: string;
+  full_name: string;
+  phone?: string;
+  whatsapp?: string;
+  telegram?: string;
+  email?: string;
+  target_country?: number | null;
+  target_country_name?: string;
+  target_university?: number | null;
+  target_university_name?: string;
+  created_at: string;
+  updated_at?: string;
+};
+
+export type ApplicationFile = {
+  id: number;
+  application: number;
+  file: string;
+  file_type: string;
+  original_name: string;
+  created_at: string;
+};
+
+export type ChatRoom = {
+  id: number;
+  application?: number | null;
+  status: string;
+  assigned_manager?: StaffProfile | null;
+  last_message?: ChatMessage | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ChatMessage = {
+  id: number;
+  room: number;
+  sender_user?: number | null;
+  sender_user_name?: string;
+  sender_staff?: StaffProfile | null;
+  message_type: 'text' | 'image' | 'file';
+  text?: string;
+  file?: string | null;
+  is_read: boolean;
+  created_at: string;
+};
+
+export type UserProfile = {
+  phone?: string;
+  whatsapp?: string;
+  telegram?: string;
+  country?: string;
+  city?: string;
+  citizenship?: string;
+  avatar?: string | null;
+  language?: string;
+};
+
+export type UserMe = {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  profile?: UserProfile;
+};
+
+export type FavoriteUniversity = {
+  id: number;
+  university: number;
+  university_detail: University;
+  created_at: string;
+};
+
+export type UserNotification = {
+  id: number;
+  title: string;
+  body: string;
+  notification_type?: string;
+  related_object_type?: string;
+  related_object_id?: number | null;
+  is_read: boolean;
+  created_at: string;
+};
