@@ -10,6 +10,13 @@ function getWebSocketBaseUrl() {
 
 export async function createChatSocket(roomId: number) {
   const token = await tokenStorage.getAccessToken();
+
+  if (!token) {
+    throw new Error('Access token is missing. User must be authenticated before opening chat socket.');
+  }
+
   const baseUrl = getWebSocketBaseUrl();
-  return new WebSocket(`${baseUrl}/ws/chats/${roomId}/?token=${token}`);
+  const encodedToken = encodeURIComponent(token);
+
+  return new WebSocket(`${baseUrl}/ws/chats/${roomId}/?token=${encodedToken}`);
 }

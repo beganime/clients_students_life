@@ -1,12 +1,19 @@
 from pathlib import Path
 from datetime import timedelta
-from decouple import config, Csv
+
+from decouple import Csv, config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='dev-secret-key')
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+USE_SQLITE = config('USE_SQLITE', default=DEBUG, cast=bool)
+
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1,0.0.0.0',
+    cast=Csv(),
+)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -35,7 +42,6 @@ INSTALLED_APPS = [
     'apps.chat',
     'apps.notifications',
     'apps.common',
-    'whitenoise'
 ]
 
 MIDDLEWARE = [
@@ -71,7 +77,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-if DEBUG == True:
+if USE_SQLITE:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -79,15 +85,15 @@ if DEBUG == True:
         },
     }
 else:
-    DATABASES = {    
+    DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME', default='postgres'),
-            'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default='0000'),
+            'NAME': config('DB_NAME', default='students_life'),
+            'USER': config('DB_USER', default='students_life_user'),
+            'PASSWORD': config('DB_PASSWORD', default='students_life_password'),
             'HOST': config('DB_HOST', default='localhost'),
             'PORT': config('DB_PORT', default='5432'),
-        }
+        },
     }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -110,10 +116,18 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=DEBUG, cast=bool)
+
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:8081',
-    cast=Csv()
+    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8081',
+    cast=Csv(),
+)
+
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8081',
+    cast=Csv(),
 )
 
 REST_FRAMEWORK = {

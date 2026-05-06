@@ -8,12 +8,26 @@ import { useAuthStore } from '../store/authStore';
 
 const USE_NATIVE_DEVICE_TOKEN = true;
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
 export function usePushNotifications() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function register() {
       try {
+        if (!isAuthenticated) return;
+        if (Platform.OS === 'web') return;
         if (!Device.isDevice) return;
 
         const existing = await Notifications.getPermissionsAsync();
@@ -25,12 +39,15 @@ export function usePushNotifications() {
         }
 
         if (finalStatus !== 'granted') return;
+        if (cancelled) return;
 
         const tokenData = USE_NATIVE_DEVICE_TOKEN
           ? await Notifications.getDevicePushTokenAsync()
           : await Notifications.getExpoPushTokenAsync();
 
         const token = String(tokenData.data);
+
+        if (!token || cancelled) return;
 
         await notificationsApi.saveDeviceToken({
           token,
@@ -43,5 +60,9 @@ export function usePushNotifications() {
     }
 
     register();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated]);
 }

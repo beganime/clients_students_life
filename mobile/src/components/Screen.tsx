@@ -1,5 +1,12 @@
 import React from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, ViewStyle } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/colors';
@@ -12,11 +19,17 @@ type Props = {
 
 export function Screen({ children, scroll = false, style }: Props) {
   const content = scroll ? (
-    <ScrollView contentContainerStyle={[styles.scrollContent, style]} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={[styles.scrollContent, style]}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
       {children}
     </ScrollView>
   ) : (
-    children
+    <View style={[styles.content, style]}>
+      {children}
+    </View>
   );
 
   return (
@@ -37,6 +50,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   keyboardView: {
+    flex: 1,
+  },
+  content: {
     flex: 1,
   },
   scrollContent: {
