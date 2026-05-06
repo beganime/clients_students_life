@@ -1,12 +1,8 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
-
-import { Alert, Pressable } from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getApiErrorMessage } from '../../utils/apiError';
 
 import { contentApi } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
@@ -14,12 +10,23 @@ import { Loading } from '../../components/Loading';
 import { Screen } from '../../components/Screen';
 import { colors } from '../../constants/colors';
 import { RootStackParamList } from '../../navigation/types';
+import { useAuthStore } from '../../store/authStore';
+import { getApiErrorMessage } from '../../utils/apiError';
 import { getMediaUrl } from '../../utils/media';
 
 type R = RouteProp<RootStackParamList, 'UniversityDetail'>;
 
 export function UniversityDetailScreen() {
+  const route = useRoute<R>();
+  const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['university', route.params.slug],
+    queryFn: () => contentApi.getUniversity(route.params.slug),
+  });
+
   const favoriteMutation = useMutation({
     mutationFn: () => contentApi.toggleFavoriteUniversity(route.params.slug),
     onSuccess: async () => {
@@ -31,13 +38,36 @@ export function UniversityDetailScreen() {
       Alert.alert('Ошибка', getApiErrorMessage(error, 'Не удалось изменить избранное'));
     },
   });
-  const route = useRoute<R>();
-  const navigation = useNavigation<any>();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['university', route.params.slug],
-    queryFn: () => contentApi.getUniversity(route.params.slug),
-  });
+  const handleFavoritePress = () => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        'Нужен вход',
+        'Чтобы добавлять университеты в избранное, войдите или зарегистрируйтесь.',
+        [
+          { text: 'Отмена', style: 'cancel' },
+          {
+            text: 'Войти',
+            onPress: () => navigation.navigate('Auth', { screen: 'Login' }),
+          },
+        ],
+      );
+      return;
+    }
+
+    favoriteMutation.mutate();
+  };
+
+  const handleApplyPress = () => {
+    if (!isAuthenticated) {
+      navigation.navigate('Auth', { screen: 'Login' });
+      return;
+    }
+
+    navigation.navigate('ApplicationCreate', {
+      universityId: data?.id,
+    });
+  };
 
   if (isLoading) return <Loading />;
   if (!data) return null;
@@ -64,14 +94,18 @@ export function UniversityDetailScreen() {
         <Text style={styles.info}>Сроки подачи: {data.application_deadline || 'уточняется'}</Text>
       </View>
 
-      <AppButton title="Подать заявку в этот вуз" onPress={() => navigation.navigate('ApplicationCreate')} />
-        <Pressable style={styles.favoriteButton} onPress={() => favoriteMutation.mutate()}>
-          <Text style={styles.favoriteButtonText}>{data.is_favorite ? '★ В избранном' : '☆ В избранное'}</Text>
-        </Pressable>
+      <AppButton title="Подать заявку в этот вуз" onPress={handleApplyPress} />
+
+      <Pressable style={styles.favoriteButton} onPress={handleFavoritePress}>
+        <Text style={styles.favoriteButtonText}>
+          {data.is_favorite ? '★ В избранном' : '☆ В избранное'}
+        </Text>
+      </Pressable>
 
       {data.programs?.length ? (
         <View style={styles.programsBox}>
           <Text style={styles.sectionTitle}>Программы</Text>
+
           {data.programs.map(program => (
             <View key={program.id} style={styles.programCard}>
               <Text style={styles.programTitle}>{program.title}</Text>
@@ -155,6 +189,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 8,
   },
+  favoriteButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  favoriteButtonText: {
+    color: colors.primary,
+    fontWeight: '900',
+  },
   programsBox: {
     marginTop: 24,
   },
@@ -184,19 +232,4 @@ const styles = StyleSheet.create({
   markdownBox: {
     marginTop: 22,
   },
-
-  favoriteButton: {
-  marginTop: 12,
-  alignSelf: 'flex-start',
-  backgroundColor: colors.white,
-  borderWidth: 1,
-  borderColor: colors.primary,
-  borderRadius: 999,
-  paddingHorizontal: 14,
-  paddingVertical: 8,
-},
-favoriteButtonText: {
-  color: colors.primary,
-  fontWeight: '900',
-},
 });

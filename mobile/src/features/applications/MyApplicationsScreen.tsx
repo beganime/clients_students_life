@@ -5,8 +5,10 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { applicationsApi } from '../../api/endpoints';
 import { EmptyState } from '../../components/EmptyState';
 import { Loading } from '../../components/Loading';
+import { LoginRequired } from '../../components/LoginRequired';
 import { Screen } from '../../components/Screen';
 import { colors } from '../../constants/colors';
+import { useAuthStore } from '../../store/authStore';
 
 const statusLabels: Record<string, string> = {
   new: 'Новая',
@@ -25,6 +27,21 @@ const statusLabels: Record<string, string> = {
 };
 
 export function MyApplicationsScreen() {
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return (
+      <LoginRequired
+        title="Мои заявки доступны после входа"
+        description="Чтобы видеть историю заявок и статусы, войдите или зарегистрируйтесь."
+      />
+    );
+  }
+
+  return <MyApplicationsContent />;
+}
+
+function MyApplicationsContent() {
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['my-applications'],
     queryFn: applicationsApi.getMyApplications,

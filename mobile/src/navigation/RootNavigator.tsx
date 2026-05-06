@@ -26,7 +26,7 @@ import { RootStackParamList } from './types';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
-  const { bootstrap, isLoading, isAuthenticated } = useAuthStore();
+  const { bootstrap, isLoading } = useAuthStore();
 
   useEffect(() => {
     bootstrap();
@@ -38,65 +38,24 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        {!isAuthenticated ? (
-          <>
-            <Stack.Screen
-              name="Onboarding"
-              component={OnboardingScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="Auth"
-              component={AuthNavigator}
-              options={{ headerShown: false }}
-            />
-          </>
-        ) : (
-          <>
-            <Stack.Screen
-              name="App"
-              component={AppNavigator}
-              options={{ headerShown: false }}
-            />
+      <Stack.Navigator initialRouteName="App">
+        <Stack.Screen
+          name="App"
+          component={AppNavigator}
+          options={{ headerShown: false }}
+        />
 
-            <Stack.Screen
-              name="ApplicationCreate"
-              component={ApplicationCreateScreen}
-              options={{ title: 'Подать заявку' }}
-            />
+        <Stack.Screen
+          name="Auth"
+          component={AuthNavigator}
+          options={{ headerShown: false }}
+        />
 
-            <Stack.Screen
-              name="MyApplications"
-              component={MyApplicationsScreen}
-              options={{ title: 'Мои заявки' }}
-            />
-
-            <Stack.Screen
-              name="FavoriteUniversities"
-              component={FavoriteUniversitiesScreen}
-              options={{ title: 'Избранные вузы' }}
-            />
-
-            <Stack.Screen
-              name="Notifications"
-              component={NotificationsScreen}
-              options={{ title: 'Уведомления' }}
-            />
-
-            <Stack.Screen
-              name="EditProfile"
-              component={EditProfileScreen}
-              options={{ title: 'Редактировать профиль' }}
-            />
-
-            <Stack.Screen
-              name="ChatRoom"
-              component={ChatRoomScreen}
-              options={{ title: 'Чат' }}
-            />
-          </>
-        )}
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{ headerShown: false }}
+        />
 
         <Stack.Screen
           name="ServiceDetail"
@@ -132,6 +91,42 @@ export function RootNavigator() {
           name="Staff"
           component={StaffScreen}
           options={{ title: 'Команда' }}
+        />
+
+        <Stack.Screen
+          name="ApplicationCreate"
+          component={ApplicationCreateScreen}
+          options={{ title: 'Подать заявку' }}
+        />
+
+        <Stack.Screen
+          name="MyApplications"
+          component={MyApplicationsScreen}
+          options={{ title: 'Мои заявки' }}
+        />
+
+        <Stack.Screen
+          name="FavoriteUniversities"
+          component={FavoriteUniversitiesScreen}
+          options={{ title: 'Избранные вузы' }}
+        />
+
+        <Stack.Screen
+          name="Notifications"
+          component={NotificationsScreen}
+          options={{ title: 'Уведомления' }}
+        />
+
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          options={{ title: 'Редактировать профиль' }}
+        />
+
+        <Stack.Screen
+          name="ChatRoom"
+          component={ChatRoomScreen}
+          options={{ title: 'Чат' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -7,11 +7,28 @@ import { chatApi } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
 import { EmptyState } from '../../components/EmptyState';
 import { Loading } from '../../components/Loading';
+import { LoginRequired } from '../../components/LoginRequired';
 import { Screen } from '../../components/Screen';
 import { colors } from '../../constants/colors';
+import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/apiError';
 
 export function ChatListScreen() {
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return (
+      <LoginRequired
+        title="Чат доступен после входа"
+        description="Вы можете смотреть информацию в приложении без аккаунта, но для переписки с менеджером нужно войти или зарегистрироваться."
+      />
+    );
+  }
+
+  return <ChatListContent />;
+}
+
+function ChatListContent() {
   const navigation = useNavigation<any>();
   const [creating, setCreating] = useState(false);
 
@@ -54,7 +71,9 @@ export function ChatListScreen() {
         renderItem={({ item }) => (
           <Pressable style={styles.card} onPress={() => navigation.navigate('ChatRoom', { id: item.id })}>
             <Text style={styles.cardTitle}>Чат #{item.id}</Text>
-            <Text style={styles.cardText} numberOfLines={1}>{item.last_message?.text || 'Нет сообщений'}</Text>
+            <Text style={styles.cardText} numberOfLines={1}>
+              {item.last_message?.text || 'Нет сообщений'}
+            </Text>
             <Text style={styles.status}>Статус: {item.status}</Text>
           </Pressable>
         )}

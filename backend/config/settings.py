@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import timedelta
 
+from corsheaders.defaults import default_headers
 from decouple import Csv, config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -11,7 +12,7 @@ USE_SQLITE = config('USE_SQLITE', default=DEBUG, cast=bool)
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1,0.0.0.0',
+    default='localhost,127.0.0.1,0.0.0.0,*',
     cast=Csv(),
 )
 
@@ -120,15 +121,19 @@ CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=DEBUG, cast=bo
 
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8081',
+    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8081,http://127.0.0.1:3000',
     cast=Csv(),
 )
 
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8081',
+    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8081,http://127.0.0.1:3000',
     cast=Csv(),
 )
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-device-platform',
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

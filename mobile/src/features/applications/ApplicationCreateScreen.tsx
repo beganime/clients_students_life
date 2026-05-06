@@ -7,8 +7,10 @@ import { applicationsApi, contentApi } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
 import { AppInput } from '../../components/AppInput';
 import { Loading } from '../../components/Loading';
+import { LoginRequired } from '../../components/LoginRequired';
 import { Screen } from '../../components/Screen';
 import { colors } from '../../constants/colors';
+import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/apiError';
 
 type SelectedFile = {
@@ -18,6 +20,21 @@ type SelectedFile = {
 };
 
 export function ApplicationCreateScreen() {
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+
+  if (!isAuthenticated) {
+    return (
+      <LoginRequired
+        title="Чтобы отправить заявку, войдите в аккаунт"
+        description="Смотреть услуги, страны, университеты и новости можно без регистрации. Отправка заявки доступна только после входа."
+      />
+    );
+  }
+
+  return <ApplicationCreateForm />;
+}
+
+function ApplicationCreateForm() {
   const servicesQuery = useQuery({ queryKey: ['services'], queryFn: contentApi.getServices });
   const countriesQuery = useQuery({ queryKey: ['countries'], queryFn: contentApi.getCountries });
   const universitiesQuery = useQuery({ queryKey: ['universities'], queryFn: () => contentApi.getUniversities() });
@@ -47,7 +64,12 @@ export function ApplicationCreateScreen() {
     const result = await DocumentPicker.getDocumentAsync({
       multiple: true,
       copyToCacheDirectory: true,
-      type: ['application/pdf', 'image/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+      type: [
+        'application/pdf',
+        'image/*',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ],
     });
 
     if (result.canceled) return;
@@ -137,8 +159,13 @@ export function ApplicationCreateScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
         {(servicesQuery.data || []).map(service => {
           const active = serviceId === service.id;
+
           return (
-            <Pressable key={service.id} style={[styles.chip, active && styles.chipActive]} onPress={() => setServiceId(active ? null : service.id)}>
+            <Pressable
+              key={service.id}
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => setServiceId(active ? null : service.id)}
+            >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>{service.title}</Text>
             </Pressable>
           );
@@ -157,8 +184,13 @@ export function ApplicationCreateScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
         {(countriesQuery.data || []).map(item => {
           const active = targetCountryId === item.id;
+
           return (
-            <Pressable key={item.id} style={[styles.chip, active && styles.chipActive]} onPress={() => setTargetCountryId(active ? null : item.id)}>
+            <Pressable
+              key={item.id}
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => setTargetCountryId(active ? null : item.id)}
+            >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
             </Pressable>
           );
@@ -169,9 +201,16 @@ export function ApplicationCreateScreen() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
         {(universitiesQuery.data || []).slice(0, 20).map(item => {
           const active = targetUniversityId === item.id;
+
           return (
-            <Pressable key={item.id} style={[styles.chip, active && styles.chipActive]} onPress={() => setTargetUniversityId(active ? null : item.id)}>
-              <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>{item.name}</Text>
+            <Pressable
+              key={item.id}
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => setTargetUniversityId(active ? null : item.id)}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
+                {item.name}
+              </Text>
             </Pressable>
           );
         })}
@@ -181,6 +220,7 @@ export function ApplicationCreateScreen() {
       <AppInput label="Желаемая специальность" value={specialty} onChangeText={setSpecialty} placeholder="Medicine" />
       <AppInput label="Язык обучения" value={studyLanguage} onChangeText={setStudyLanguage} placeholder="English / Russian / Chinese" />
       <AppInput label="Год начала обучения" value={startYear} onChangeText={setStartYear} keyboardType="number-pad" placeholder="2026" />
+
       <AppInput
         label="Комментарий"
         value={comment}

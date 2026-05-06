@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
@@ -19,9 +21,9 @@ export type MainTabParamList = {
 };
 
 export type RootStackParamList = {
+  App: NavigatorScreenParams<MainTabParamList> | undefined;
+  Auth: NavigatorScreenParams<AuthStackParamList> | undefined;
   Onboarding: undefined;
-  Auth: undefined;
-  App: undefined;
 
   ServiceDetail: { slug: string };
   UniversityDetail: { slug: string };

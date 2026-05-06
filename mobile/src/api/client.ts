@@ -28,7 +28,7 @@ async function setStoredItem(key: string, value: string) {
     try {
       globalThis.localStorage?.setItem(key, value);
     } catch {
-      // localStorage may be unavailable in private mode.
+      // localStorage может быть недоступен.
     }
 
     return;
@@ -44,7 +44,7 @@ async function deleteStoredItem(key: string) {
     try {
       globalThis.localStorage?.removeItem(key);
     } catch {
-      // localStorage may be unavailable in private mode.
+      // localStorage может быть недоступен.
     }
 
     return;
@@ -80,10 +80,15 @@ export const tokenStorage = {
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 20000,
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Device-Platform': Platform.OS,
-  },
+  headers:
+    Platform.OS === 'web'
+      ? {
+          'Content-Type': 'application/json',
+        }
+      : {
+          'Content-Type': 'application/json',
+          'X-Device-Platform': Platform.OS,
+        },
 });
 
 let isRefreshing = false;

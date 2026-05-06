@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 
-const DEFAULT_PROD_API_URL = 'https://students-life.ru/api/v1';
+const DEFAULT_PROD_API_URL = 'http://127.0.0.1:8000/api/v1';
 
 type ExpoExtra = {
   apiBaseUrl?: string;
