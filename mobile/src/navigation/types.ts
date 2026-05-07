@@ -9,14 +9,7 @@ export type MainTabParamList = {
   Home: undefined;
   Services: undefined;
   Universities: { country?: string } | undefined;
-  ApplicationCreate:
-    | {
-        serviceId?: number;
-        universityId?: number;
-      }
-    | undefined;
   News: undefined;
-  Chat: undefined;
   Profile: undefined;
 };
 
@@ -35,6 +28,7 @@ export type RootStackParamList = {
   MyApplications: undefined;
   FavoriteUniversities: undefined;
   Notifications: undefined;
+  Chat: undefined;
   ChatRoom: { id: number };
 
   ApplicationCreate:

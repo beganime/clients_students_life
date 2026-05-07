@@ -1,7 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   Dimensions,
-  FlatList,
   ImageBackground,
   Linking,
   Pressable,
@@ -13,7 +12,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { commonApi, contentApi } from '../../api/endpoints';
+import { BannerSlider } from '../../components/BannerSlider';
 import { Screen } from '../../components/Screen';
+import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors } from '../../constants/colors';
 import { HomeBanner, OfficeContact } from '../../types/api';
 import { getMediaUrl } from '../../utils/media';
@@ -77,11 +78,6 @@ const fallbackNewsBanners: HomeBanner[] = [
 
 export function HomeScreen() {
   const navigation = useNavigation<any>();
-  const [heroIndex, setHeroIndex] = useState(0);
-  const [newsIndex, setNewsIndex] = useState(0);
-
-  const heroRef = useRef<FlatList<HomeBanner>>(null);
-  const newsRef = useRef<FlatList<HomeBanner>>(null);
 
   const homeQuery = useQuery({
     queryKey: ['home-content'],
@@ -150,6 +146,19 @@ export function HomeScreen() {
     }
   };
 
+  const openVisa = () => {
+    const visaService = servicesQuery.data?.find(item =>
+      item.title.toLowerCase().includes('виз'),
+    );
+
+    if (visaService) {
+      navigation.navigate('ServiceDetail', { slug: visaService.slug });
+      return;
+    }
+
+    navigation.navigate('Services');
+  };
+
   return (
     <Screen scroll style={styles.screen}>
       <View style={styles.topBar}>
@@ -159,29 +168,16 @@ export function HomeScreen() {
         </View>
 
         <Pressable style={styles.topButton} onPress={() => navigation.navigate('Profile')}>
+          <SvgIcon name="profile" size={18} color={colors.text} />
           <Text style={styles.topButtonText}>Профиль</Text>
         </Pressable>
       </View>
 
-      <FlatList
-        ref={heroRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
+      <BannerSlider
         data={heroBanners}
-        keyExtractor={item => String(item.id)}
-        snapToAlignment="center"
-        decelerationRate="fast"
-        onMomentumScrollEnd={event => {
-          const index = Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH);
-          setHeroIndex(index);
-        }}
-        renderItem={({ item }) => (
-          <HeroBanner banner={item} onPress={() => handleBannerPress(item)} />
-        )}
+        itemWidth={CARD_WIDTH}
+        renderItem={item => <HeroBanner banner={item} onPress={() => handleBannerPress(item)} />}
       />
-
-      <Dots total={heroBanners.length} active={heroIndex} />
 
       <View style={styles.infoGrid}>
         <GlassInfoCard title="14+" text="стран для поступления" />
@@ -196,32 +192,24 @@ export function HomeScreen() {
 
       <View style={styles.quickGrid}>
         <QuickActionCard
-          icon="🎓"
+          iconName="university"
           title="Вузы"
           text="Каталог университетов и программ"
           onPress={() => navigation.navigate('Universities')}
         />
+
         <QuickActionCard
-          icon="📝"
+          iconName="application"
           title="Поступить"
           text="Оставить заявку менеджеру"
           onPress={() => navigation.navigate('ApplicationCreate')}
         />
+
         <QuickActionCard
-          icon="🛂"
+          iconName="visa"
           title="Виза"
           text="Поддержка по приглашению и визе"
-          onPress={() => {
-            const visaService = servicesQuery.data?.find(item =>
-              item.title.toLowerCase().includes('виз'),
-            );
-
-            if (visaService) {
-              navigation.navigate('ServiceDetail', { slug: visaService.slug });
-            } else {
-              navigation.navigate('Services');
-            }
-          }}
+          onPress={openVisa}
         />
       </View>
 
@@ -237,6 +225,7 @@ export function HomeScreen() {
             style={styles.countryPill}
             onPress={() => navigation.navigate('Universities', { country: country.slug })}
           >
+            <SvgIcon name="globe" size={16} color={colors.secondary} />
             <Text style={styles.countryText}>{country.name}</Text>
           </Pressable>
         ))}
@@ -247,25 +236,12 @@ export function HomeScreen() {
         <Text style={styles.sectionTitle}>Актуальное</Text>
       </View>
 
-      <FlatList
-        ref={newsRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
+      <BannerSlider
         data={newsBanners}
-        keyExtractor={item => String(item.id)}
-        snapToAlignment="center"
-        decelerationRate="fast"
-        onMomentumScrollEnd={event => {
-          const index = Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH);
-          setNewsIndex(index);
-        }}
-        renderItem={({ item }) => (
-          <SmallBanner banner={item} onPress={() => handleBannerPress(item)} />
-        )}
+        itemWidth={CARD_WIDTH}
+        intervalMs={5200}
+        renderItem={item => <SmallBanner banner={item} onPress={() => handleBannerPress(item)} />}
       />
-
-      <Dots total={newsBanners.length} active={newsIndex} />
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionKicker}>Контакты</Text>
@@ -295,6 +271,7 @@ function HeroBanner({ banner, onPress }: { banner: HomeBanner; onPress: () => vo
         {banner.cta_type !== 'none' ? (
           <Pressable style={styles.heroCta} onPress={onPress}>
             <Text style={styles.heroCtaText}>{banner.cta_text || 'Подробнее'}</Text>
+            <SvgIcon name="chevronRight" size={18} color={colors.primary} />
           </Pressable>
         ) : null}
       </View>
@@ -335,22 +312,13 @@ function SmallBanner({ banner, onPress }: { banner: HomeBanner; onPress: () => v
         {banner.description ? <Text style={styles.smallText}>{banner.description}</Text> : null}
 
         {banner.cta_type !== 'none' ? (
-          <Text style={styles.smallLink}>{banner.cta_text || 'Подробнее'} →</Text>
+          <View style={styles.smallLinkRow}>
+            <Text style={styles.smallLink}>{banner.cta_text || 'Подробнее'}</Text>
+            <SvgIcon name="chevronRight" size={17} color={colors.white} />
+          </View>
         ) : null}
       </View>
     </Pressable>
-  );
-}
-
-function Dots({ total, active }: { total: number; active: number }) {
-  if (total <= 1) return null;
-
-  return (
-    <View style={styles.dots}>
-      {Array.from({ length: total }).map((_, index) => (
-        <View key={index} style={[styles.dot, active === index && styles.dotActive]} />
-      ))}
-    </View>
   );
 }
 
@@ -364,19 +332,21 @@ function GlassInfoCard({ title, text }: { title: string; text: string }) {
 }
 
 function QuickActionCard({
-  icon,
+  iconName,
   title,
   text,
   onPress,
 }: {
-  icon: string;
+  iconName: SvgIconName;
   title: string;
   text: string;
   onPress: () => void;
 }) {
   return (
     <Pressable style={styles.quickCard} onPress={onPress}>
-      <Text style={styles.quickIcon}>{icon}</Text>
+      <View style={styles.quickIconBox}>
+        <SvgIcon name={iconName} size={28} color={colors.primary} />
+      </View>
       <Text style={styles.quickTitle}>{title}</Text>
       <Text style={styles.quickText}>{text}</Text>
     </Pressable>
@@ -419,18 +389,19 @@ function ContactsBlock({
             </Text>
 
             {contact.office_name ? <Text style={styles.contactName}>{contact.office_name}</Text> : null}
-            {contact.address ? <Text style={styles.contactLine}>📍 {contact.address}</Text> : null}
-            {contact.phone ? <Text style={styles.contactLine}>☎️ {contact.phone}</Text> : null}
-            {contact.whatsapp ? <Text style={styles.contactLine}>WhatsApp: {contact.whatsapp}</Text> : null}
-            {contact.telegram ? <Text style={styles.contactLine}>Telegram: {contact.telegram}</Text> : null}
-            {contact.email ? <Text style={styles.contactLine}>✉️ {contact.email}</Text> : null}
-            {contact.work_hours ? <Text style={styles.contactLine}>🕘 {contact.work_hours}</Text> : null}
+
+            {contact.address ? <ContactLine icon="mapPin" text={contact.address} /> : null}
+            {contact.phone ? <ContactLine icon="phone" text={contact.phone} /> : null}
+            {contact.whatsapp ? <ContactLine icon="phone" text={`WhatsApp: ${contact.whatsapp}`} /> : null}
+            {contact.telegram ? <ContactLine icon="chat" text={`Telegram: ${contact.telegram}`} /> : null}
+            {contact.email ? <ContactLine icon="mail" text={contact.email} /> : null}
+            {contact.work_hours ? <ContactLine icon="clock" text={contact.work_hours} /> : null}
           </View>
         ))
       ) : (
         <View style={styles.contactCard}>
           <Text style={styles.contactCity}>Контакты скоро появятся</Text>
-          <Text style={styles.contactLine}>
+          <Text style={styles.contactLineText}>
             Добавьте офисы, телефоны, почты и соцсети через админ-панель.
           </Text>
         </View>
@@ -440,15 +411,24 @@ function ContactsBlock({
         <View style={styles.socialCard}>
           <Text style={styles.socialTitle}>Соцсети и почты</Text>
 
-          {socials?.main_email ? <Text style={styles.contactLine}>Главная почта: {socials.main_email}</Text> : null}
-          {socials?.partners_email ? <Text style={styles.contactLine}>Партнёрам: {socials.partners_email}</Text> : null}
-          {socials?.universities_email ? <Text style={styles.contactLine}>Вузам: {socials.universities_email}</Text> : null}
-          {socials?.instagram ? <Text style={styles.contactLine}>Instagram: {socials.instagram}</Text> : null}
-          {socials?.tiktok ? <Text style={styles.contactLine}>TikTok: {socials.tiktok}</Text> : null}
-          {socials?.telegram ? <Text style={styles.contactLine}>Telegram: {socials.telegram}</Text> : null}
-          {socials?.website ? <Text style={styles.contactLine}>Сайт: {socials.website}</Text> : null}
+          {socials?.main_email ? <ContactLine icon="mail" text={`Главная почта: ${socials.main_email}`} /> : null}
+          {socials?.partners_email ? <ContactLine icon="mail" text={`Партнёрам: ${socials.partners_email}`} /> : null}
+          {socials?.universities_email ? <ContactLine icon="mail" text={`Вузам: ${socials.universities_email}`} /> : null}
+          {socials?.instagram ? <ContactLine icon="globe" text={`Instagram: ${socials.instagram}`} /> : null}
+          {socials?.tiktok ? <ContactLine icon="globe" text={`TikTok: ${socials.tiktok}`} /> : null}
+          {socials?.telegram ? <ContactLine icon="chat" text={`Telegram: ${socials.telegram}`} /> : null}
+          {socials?.website ? <ContactLine icon="globe" text={`Сайт: ${socials.website}`} /> : null}
         </View>
       ) : null}
+    </View>
+  );
+}
+
+function ContactLine({ icon, text }: { icon: SvgIconName; text: string }) {
+  return (
+    <View style={styles.contactLine}>
+      <SvgIcon name={icon} size={16} color={colors.secondary} />
+      <Text style={styles.contactLineText}>{text}</Text>
     </View>
   );
 }
@@ -480,12 +460,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   topButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: 'rgba(255,255,255,0.84)',
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'rgba(255,255,255,0.96)',
   },
   topButtonText: {
     color: colors.text,
@@ -493,10 +476,10 @@ const styles = StyleSheet.create({
   },
   bannerWrapper: {
     width: CARD_WIDTH,
-    marginRight: 14,
+    paddingRight: 14,
   },
   heroCard: {
-    minHeight: 320,
+    minHeight: 330,
     borderRadius: 30,
     overflow: 'hidden',
     padding: 18,
@@ -508,7 +491,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   imageHeroCard: {
-    minHeight: 320,
+    minHeight: 330,
     borderRadius: 30,
     overflow: 'hidden',
   },
@@ -576,28 +559,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   heroCtaText: {
     color: colors.primary,
     fontSize: 15,
     fontWeight: '900',
-  },
-  dots: {
-    marginTop: 12,
-    marginBottom: 22,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 7,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(102,112,133,0.28)',
-  },
-  dotActive: {
-    width: 22,
-    backgroundColor: colors.primary,
   },
   infoGrid: {
     flexDirection: 'row',
@@ -651,7 +620,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   quickCard: {
-    minHeight: 112,
+    minHeight: 122,
     borderRadius: 24,
     padding: 18,
     backgroundColor: 'rgba(255,255,255,0.82)',
@@ -663,9 +632,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     elevation: 4,
   },
-  quickIcon: {
-    fontSize: 26,
-    marginBottom: 10,
+  quickIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: 'rgba(229,57,53,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   quickTitle: {
     color: colors.text,
@@ -684,6 +658,9 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   countryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 999,
@@ -696,8 +673,8 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   smallBanner: {
-    width: CARD_WIDTH,
-    minHeight: 190,
+    width: CARD_WIDTH - 14,
+    minHeight: 205,
     borderRadius: 28,
     marginRight: 14,
     padding: 18,
@@ -745,8 +722,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  smallLink: {
+  smallLinkRow: {
     marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  smallLink: {
     color: colors.white,
     fontWeight: '900',
   },
@@ -777,9 +759,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   contactLine: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 8,
+  },
+  contactLineText: {
+    flex: 1,
     color: colors.muted,
     lineHeight: 21,
-    marginTop: 5,
     fontWeight: '600',
   },
   socialCard: {

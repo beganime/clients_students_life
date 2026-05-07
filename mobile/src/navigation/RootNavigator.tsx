@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore';
 
 import { ApplicationCreateScreen } from '../features/applications/ApplicationCreateScreen';
 import { MyApplicationsScreen } from '../features/applications/MyApplicationsScreen';
+import { ChatListScreen } from '../features/chat/ChatListScreen';
 import { ChatRoomScreen } from '../features/chat/ChatRoomScreen';
 import { KnowledgeDetailScreen } from '../features/knowledge/KnowledgeDetailScreen';
 import { KnowledgeListScreen } from '../features/knowledge/KnowledgeListScreen';
@@ -48,7 +49,7 @@ export function RootNavigator() {
         <Stack.Screen
           name="Auth"
           component={AuthNavigator}
-          options={{ headerShown: false }}
+          options={{ headerShown: false, presentation: 'modal' }}
         />
 
         <Stack.Screen
@@ -97,6 +98,12 @@ export function RootNavigator() {
           name="ApplicationCreate"
           component={ApplicationCreateScreen}
           options={{ title: 'Подать заявку' }}
+        />
+
+        <Stack.Screen
+          name="Chat"
+          component={ChatListScreen}
+          options={{ title: 'Чат с менеджером' }}
         />
 
         <Stack.Screen
