@@ -6,6 +6,8 @@ import {
   ChatRoom,
   City,
   Country,
+  FavoriteUniversity,
+  HomeContent,
   KnowledgeArticle,
   NewsPost,
   PaginatedResponse,
@@ -14,7 +16,6 @@ import {
   StaffProfile,
   University,
   UserMe,
-  FavoriteUniversity,
   UserNotification,
 } from '../types/api';
 
@@ -108,6 +109,7 @@ export const authApi = {
 
   async logout() {
     const refresh = await tokenStorage.getRefreshToken();
+
     try {
       if (refresh) {
         await apiClient.post('/accounts/logout/', { refresh });
@@ -118,11 +120,19 @@ export const authApi = {
   },
 };
 
+export const commonApi = {
+  async getHomeContent() {
+    const { data } = await apiClient.get<HomeContent>('/common/home/');
+    return data;
+  },
+};
+
 export const contentApi = {
   async getServices() {
     const { data } = await apiClient.get<PaginatedResponse<Service>>('/services/');
     return data.results;
   },
+
   async toggleFavoriteUniversity(slug: string) {
     const { data } = await apiClient.post<{ is_favorite: boolean }>(`/universities/${slug}/toggle_favorite/`);
     return data;
@@ -264,7 +274,7 @@ export const notificationsApi = {
     const { data } = await apiClient.post('/notifications/device-tokens/', payload);
     return data;
   },
-  
+
   async getMyNotifications() {
     const { data } = await apiClient.get<PaginatedResponse<UserNotification>>('/notifications/my/');
     return data.results;

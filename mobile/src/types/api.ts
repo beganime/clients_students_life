@@ -222,3 +222,63 @@ export type UserNotification = {
   is_read: boolean;
   created_at: string;
 };
+
+export type HomeBanner = {
+  id: number;
+  slot: 'hero' | 'news';
+  title: string;
+  subtitle?: string;
+  description?: string;
+  badge?: string;
+  image?: string | null;
+  cta_text?: string;
+  cta_type:
+    | 'none'
+    | 'url'
+    | 'application'
+    | 'universities'
+    | 'news'
+    | 'service'
+    | 'university';
+  cta_url?: string;
+  linked_news_slug?: string;
+  linked_service_slug?: string;
+  linked_university_slug?: string;
+  background_gradient?: string;
+  is_dark?: boolean;
+  sort_order?: number;
+};
+
+export type OfficeContact = {
+  id: number;
+  country?: string;
+  city: string;
+  office_name?: string;
+  address?: string;
+  phone?: string;
+  whatsapp?: string;
+  telegram?: string;
+  email?: string;
+  instagram?: string;
+  tiktok?: string;
+  website?: string;
+  map_url?: string;
+  work_hours?: string;
+  note?: string;
+  sort_order?: number;
+};
+
+export type HomeContent = {
+  hero_banners: HomeBanner[];
+  news_banners: HomeBanner[];
+  contacts: OfficeContact[];
+  socials: {
+    instagram?: string;
+    tiktok?: string;
+    telegram?: string;
+    website?: string;
+    main_email?: string;
+    partners_email?: string;
+    universities_email?: string;
+  };
+};
