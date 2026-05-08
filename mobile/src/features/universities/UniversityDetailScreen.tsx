@@ -8,6 +8,7 @@ import { contentApi } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
 import { Loading } from '../../components/Loading';
 import { Screen } from '../../components/Screen';
+import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors } from '../../constants/colors';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
@@ -72,35 +73,68 @@ export function UniversityDetailScreen() {
   if (isLoading) return <Loading />;
   if (!data) return null;
 
-  const imageUrl = getMediaUrl(data.cover_image || data.logo);
+  const imageUrl = getMediaUrl(data.cover_image || data.logo || null);
 
   return (
     <Screen scroll style={styles.screen}>
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} /> : <View style={styles.placeholder} />}
+      <View style={styles.hero}>
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.image} />
+        ) : (
+          <View style={styles.placeholder}>
+            <SvgIcon name="university" size={44} color={colors.white} />
+          </View>
+        )}
 
-      <Text style={styles.title}>{data.name}</Text>
-      <Text style={styles.location}>{[data.country_name, data.city_name].filter(Boolean).join(', ')}</Text>
+        <View style={styles.imageOverlay} />
+
+        <Pressable style={styles.favoriteFloating} onPress={handleFavoritePress}>
+          <SvgIcon
+            name={data.is_favorite ? 'heartFilled' : 'heart'}
+            size={24}
+            color={colors.primary}
+          />
+        </Pressable>
+
+        <View style={styles.heroContent}>
+          <Text style={styles.title}>{data.name}</Text>
+
+          <View style={styles.locationRow}>
+            <SvgIcon name="mapPin" size={17} color={colors.white} />
+            <Text style={styles.location}>
+              {[data.country_name, data.city_name].filter(Boolean).join(', ') || 'Локация уточняется'}
+            </Text>
+          </View>
+        </View>
+      </View>
 
       <View style={styles.badges}>
-        {data.partner_status ? <Text style={styles.badgeRed}>Партнёр Student’s Life</Text> : null}
-        {data.recognized_status ? <Text style={styles.badgeBlue}>Признаваемый вуз</Text> : null}
+        {data.partner_status ? <Badge title="Партнёр Student’s Life" type="red" /> : null}
+        {data.recognized_status ? <Badge title="Признаваемый вуз" type="blue" /> : null}
       </View>
 
-      <View style={styles.infoBox}>
-        <Text style={styles.info}>Языки: {data.languages || 'уточняется'}</Text>
-        <Text style={styles.info}>Уровни: {data.education_levels || 'уточняется'}</Text>
-        <Text style={styles.info}>Стоимость: {data.tuition_from || 'уточняется'}</Text>
-        <Text style={styles.info}>Общежитие: {data.has_dormitory ? data.dormitory_cost || 'есть' : 'уточняется'}</Text>
-        <Text style={styles.info}>Сроки подачи: {data.application_deadline || 'уточняется'}</Text>
+      <View style={styles.infoGrid}>
+        <InfoCard icon="language" label="Языки" value={data.languages || 'уточняется'} />
+        <InfoCard icon="document" label="Уровни" value={data.education_levels || 'уточняется'} />
+        <InfoCard icon="money" label="Стоимость" value={data.tuition_from || 'уточняется'} />
+        <InfoCard icon="building" label="Общежитие" value={data.has_dormitory ? data.dormitory_cost || 'есть' : 'уточняется'} />
+        <InfoCard icon="calendar" label="Сроки подачи" value={data.application_deadline || 'уточняется'} />
       </View>
 
-      <AppButton title="Подать заявку в этот вуз" onPress={handleApplyPress} />
+      <View style={styles.actions}>
+        <AppButton title="Подать заявку в этот вуз" onPress={handleApplyPress} />
 
-      <Pressable style={styles.favoriteButton} onPress={handleFavoritePress}>
-        <Text style={styles.favoriteButtonText}>
-          {data.is_favorite ? '★ В избранном' : '☆ В избранное'}
-        </Text>
-      </Pressable>
+        <Pressable style={styles.favoriteButton} onPress={handleFavoritePress}>
+          <SvgIcon
+            name={data.is_favorite ? 'heartFilled' : 'heart'}
+            size={19}
+            color={colors.primary}
+          />
+          <Text style={styles.favoriteButtonText}>
+            {data.is_favorite ? 'В избранном' : 'Добавить в избранное'}
+          </Text>
+        </Pressable>
+      </View>
 
       {data.programs?.length ? (
         <View style={styles.programsBox}>
@@ -109,127 +143,266 @@ export function UniversityDetailScreen() {
           {data.programs.map(program => (
             <View key={program.id} style={styles.programCard}>
               <Text style={styles.programTitle}>{program.title}</Text>
-              <Text style={styles.programMeta}>Уровень: {program.level}</Text>
-              <Text style={styles.programMeta}>Язык: {program.language || 'уточняется'}</Text>
-              <Text style={styles.programMeta}>
-                Стоимость: {program.tuition_fee ? `${program.tuition_fee} ${program.currency}` : 'уточняется'}
-              </Text>
+
+              <ProgramMeta icon="document" text={`Уровень: ${program.level}`} />
+              <ProgramMeta icon="language" text={`Язык: ${program.language || 'уточняется'}`} />
+              <ProgramMeta
+                icon="money"
+                text={`Стоимость: ${program.tuition_fee ? `${program.tuition_fee} ${program.currency}` : 'уточняется'}`}
+              />
             </View>
           ))}
         </View>
       ) : null}
 
-      <View style={styles.markdownBox}>
-        <Markdown>{data.description_markdown || ''}</Markdown>
-      </View>
+      {data.description_markdown ? (
+        <View style={styles.markdownBox}>
+          <Text style={styles.sectionTitle}>Описание</Text>
+          <Markdown>{data.description_markdown}</Markdown>
+        </View>
+      ) : null}
     </Screen>
+  );
+}
+
+function Badge({ title, type }: { title: string; type: 'red' | 'blue' }) {
+  return (
+    <View style={[styles.badge, type === 'red' ? styles.badgeRed : styles.badgeBlue]}>
+      <SvgIcon
+        name={type === 'red' ? 'star' : 'check'}
+        size={14}
+        color={type === 'red' ? colors.primary : colors.secondary}
+      />
+      <Text style={[styles.badgeText, type === 'red' ? styles.badgeTextRed : styles.badgeTextBlue]}>
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+function InfoCard({ icon, label, value }: { icon: SvgIconName; label: string; value: string }) {
+  return (
+    <View style={styles.infoCard}>
+      <View style={styles.infoIconBox}>
+        <SvgIcon name={icon} size={21} color={colors.secondary} />
+      </View>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+function ProgramMeta({ icon, text }: { icon: SvgIconName; text: string }) {
+  return (
+    <View style={styles.programMetaRow}>
+      <SvgIcon name={icon} size={15} color={colors.secondary} />
+      <Text style={styles.programMeta}>{text}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     padding: 20,
+    paddingBottom: 42,
+    backgroundColor: '#F4F7FB',
+  },
+  hero: {
+    minHeight: 340,
+    borderRadius: 34,
+    overflow: 'hidden',
+    backgroundColor: '#101828',
+    marginBottom: 16,
+    justifyContent: 'flex-end',
+    shadowColor: '#101828',
+    shadowOpacity: 0.24,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 12,
   },
   image: {
+    ...StyleSheet.absoluteFillObject,
     width: '100%',
-    height: 210,
-    borderRadius: 22,
-    backgroundColor: colors.border,
-    marginBottom: 18,
+    height: '100%',
   },
   placeholder: {
-    width: '100%',
-    height: 130,
-    borderRadius: 22,
-    backgroundColor: '#EEF4FF',
-    marginBottom: 18,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#101828',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(16,24,40,0.54)',
+  },
+  favoriteFloating: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.96)',
+  },
+  heroContent: {
+    padding: 22,
   },
   title: {
-    color: colors.text,
-    fontSize: 28,
+    color: colors.white,
+    fontSize: 31,
+    lineHeight: 37,
     fontWeight: '900',
   },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 10,
+  },
   location: {
-    marginTop: 8,
-    color: colors.secondary,
-    fontSize: 16,
+    color: colors.white,
+    fontSize: 15,
     fontWeight: '800',
   },
   badges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 12,
+    marginBottom: 16,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
   },
   badgeRed: {
-    backgroundColor: '#FDECEC',
-    color: colors.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    fontWeight: '800',
+    backgroundColor: 'rgba(229,57,53,0.1)',
+    borderColor: 'rgba(229,57,53,0.18)',
   },
   badgeBlue: {
-    backgroundColor: '#EAF2FF',
+    backgroundColor: 'rgba(21,101,192,0.1)',
+    borderColor: 'rgba(21,101,192,0.18)',
+  },
+  badgeText: {
+    fontWeight: '900',
+    fontSize: 12,
+  },
+  badgeTextRed: {
+    color: colors.primary,
+  },
+  badgeTextBlue: {
     color: colors.secondary,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
+  },
+  infoGrid: {
+    gap: 12,
+    marginBottom: 18,
+  },
+  infoCard: {
+    borderRadius: 24,
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.96)',
+    shadowColor: '#101828',
+    shadowOpacity: 0.07,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  infoIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    backgroundColor: 'rgba(21,101,192,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 9,
+  },
+  infoLabel: {
+    color: colors.muted,
+    fontSize: 13,
     fontWeight: '800',
   },
-  infoBox: {
-    backgroundColor: colors.card,
-    borderRadius: 18,
-    padding: 16,
-    marginVertical: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  info: {
+  infoValue: {
+    marginTop: 4,
     color: colors.text,
-    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  actions: {
+    gap: 12,
+    marginBottom: 24,
   },
   favoriteButton: {
-    marginTop: 12,
+    minHeight: 50,
     alignSelf: 'flex-start',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.primary,
+    paddingHorizontal: 16,
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(229,57,53,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   favoriteButtonText: {
     color: colors.primary,
     fontWeight: '900',
   },
   programsBox: {
-    marginTop: 24,
+    marginTop: 4,
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: '900',
     marginBottom: 12,
   },
   programCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.96)',
+    shadowColor: '#101828',
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   programTitle: {
     color: colors.text,
     fontWeight: '900',
-    fontSize: 16,
+    fontSize: 17,
+    lineHeight: 23,
+    marginBottom: 9,
+  },
+  programMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 6,
   },
   programMeta: {
+    flex: 1,
     color: colors.muted,
-    marginTop: 5,
+    fontWeight: '700',
   },
   markdownBox: {
-    marginTop: 22,
+    marginTop: 18,
+    borderRadius: 26,
+    padding: 18,
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.96)',
   },
 });
