@@ -1,16 +1,18 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 
 from .models import AppSetting, HomeBanner, OfficeContact
 
 
 @admin.register(AppSetting)
-class AppSettingAdmin(admin.ModelAdmin):
+class AppSettingAdmin(ModelAdmin):
     list_display = ('key', 'description', 'updated_at')
     search_fields = ('key', 'description', 'value')
+    list_per_page = 30
 
 
 @admin.register(HomeBanner)
-class HomeBannerAdmin(admin.ModelAdmin):
+class HomeBannerAdmin(ModelAdmin):
     list_display = (
         'title',
         'slot',
@@ -23,6 +25,8 @@ class HomeBannerAdmin(admin.ModelAdmin):
     search_fields = ('title', 'subtitle', 'description', 'badge')
     autocomplete_fields = ('linked_news', 'linked_service', 'linked_university')
     list_editable = ('is_active', 'sort_order')
+    list_per_page = 30
+
     fieldsets = (
         ('Основное', {
             'fields': (
@@ -52,7 +56,7 @@ class HomeBannerAdmin(admin.ModelAdmin):
 
 
 @admin.register(OfficeContact)
-class OfficeContactAdmin(admin.ModelAdmin):
+class OfficeContactAdmin(ModelAdmin):
     list_display = (
         'city',
         'country',
@@ -74,3 +78,4 @@ class OfficeContactAdmin(admin.ModelAdmin):
         'email',
     )
     list_editable = ('is_active', 'sort_order')
+    list_per_page = 30

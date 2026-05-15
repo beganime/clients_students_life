@@ -21,6 +21,7 @@ import { getMediaUrl } from '../../utils/media';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = Math.min(width - 40, 760);
+const OFFICIAL_WEBSITE_URL = 'https://students-life.ru/ru';
 
 const fallbackHeroBanners: HomeBanner[] = [
   {
@@ -112,9 +113,11 @@ export function HomeScreen() {
       case 'application':
         navigation.navigate('ApplicationCreate');
         break;
+
       case 'universities':
         navigation.navigate('Universities');
         break;
+
       case 'news':
         if (banner.linked_news_slug) {
           navigation.navigate('NewsDetail', { slug: banner.linked_news_slug });
@@ -122,6 +125,7 @@ export function HomeScreen() {
           navigation.navigate('News');
         }
         break;
+
       case 'service':
         if (banner.linked_service_slug) {
           navigation.navigate('ServiceDetail', { slug: banner.linked_service_slug });
@@ -129,6 +133,7 @@ export function HomeScreen() {
           navigation.navigate('Services');
         }
         break;
+
       case 'university':
         if (banner.linked_university_slug) {
           navigation.navigate('UniversityDetail', { slug: banner.linked_university_slug });
@@ -136,11 +141,13 @@ export function HomeScreen() {
           navigation.navigate('Universities');
         }
         break;
+
       case 'url':
         if (banner.cta_url) {
           Linking.openURL(banner.cta_url);
         }
         break;
+
       default:
         break;
     }
@@ -163,8 +170,10 @@ export function HomeScreen() {
     <Screen scroll style={styles.screen}>
       <View style={styles.topBar}>
         <View>
-          <Text style={styles.logo}>Student’s Life</Text>
-          <Text style={styles.logoSubtitle}>International Education</Text>
+          <View style={styles.logoRow}>
+            <Text style={styles.logoRed}>Student’s</Text>
+            <Text style={styles.logoBlue}> Life</Text>
+          </View>
         </View>
 
         <Pressable style={styles.topButton} onPress={() => navigation.navigate('Profile')}>
@@ -176,6 +185,7 @@ export function HomeScreen() {
       <BannerSlider
         data={heroBanners}
         itemWidth={CARD_WIDTH}
+        showArrows={false}
         renderItem={item => <HeroBanner banner={item} onPress={() => handleBannerPress(item)} />}
       />
 
@@ -240,8 +250,12 @@ export function HomeScreen() {
         data={newsBanners}
         itemWidth={CARD_WIDTH}
         intervalMs={5200}
+        showArrows={false}
+        style={styles.newsSlider}
         renderItem={item => <SmallBanner banner={item} onPress={() => handleBannerPress(item)} />}
       />
+
+      <OfficialWebsiteCard />
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionKicker}>Контакты</Text>
@@ -258,15 +272,27 @@ function HeroBanner({ banner, onPress }: { banner: HomeBanner; onPress: () => vo
   const gradient = banner.background_gradient || '#E53935,#1565C0';
   const [firstColor, secondColor] = gradient.split(',');
 
-  const content = (
-    <View style={[styles.heroCard, { backgroundColor: firstColor || colors.primary }]}>
-      <View style={[styles.heroGlow, { backgroundColor: secondColor || colors.secondary }]} />
+  const card = (
+    <View
+      style={[
+        styles.heroCard,
+        { backgroundColor: firstColor || colors.primary },
+        imageUrl ? styles.heroCardOnImage : null,
+      ]}
+    >
+      {!imageUrl ? (
+        <View style={[styles.heroGlow, { backgroundColor: secondColor || colors.secondary }]} />
+      ) : null}
 
       <View style={styles.glassLayer}>
         {banner.badge ? <Text style={styles.badge}>{banner.badge}</Text> : null}
         {banner.subtitle ? <Text style={styles.heroSubtitle}>{banner.subtitle}</Text> : null}
+
         <Text style={styles.heroTitle}>{banner.title}</Text>
-        {banner.description ? <Text style={styles.heroDescription}>{banner.description}</Text> : null}
+
+        {banner.description ? (
+          <Text style={styles.heroDescription}>{banner.description}</Text>
+        ) : null}
 
         {banner.cta_type !== 'none' ? (
           <Pressable style={styles.heroCta} onPress={onPress}>
@@ -281,8 +307,12 @@ function HeroBanner({ banner, onPress }: { banner: HomeBanner; onPress: () => vo
   if (imageUrl) {
     return (
       <Pressable onPress={onPress} style={styles.bannerWrapper}>
-        <ImageBackground source={{ uri: imageUrl }} imageStyle={styles.heroImage} style={styles.imageHeroCard}>
-          <View style={styles.imageOverlay}>{content}</View>
+        <ImageBackground
+          source={{ uri: imageUrl }}
+          imageStyle={styles.heroImage}
+          style={styles.imageHeroCard}
+        >
+          <View style={styles.imageOverlay}>{card}</View>
         </ImageBackground>
       </Pressable>
     );
@@ -290,26 +320,35 @@ function HeroBanner({ banner, onPress }: { banner: HomeBanner; onPress: () => vo
 
   return (
     <Pressable onPress={onPress} style={styles.bannerWrapper}>
-      {content}
+      {card}
     </Pressable>
   );
 }
 
 function SmallBanner({ banner, onPress }: { banner: HomeBanner; onPress: () => void }) {
+  const imageUrl = getMediaUrl(banner.image || null);
   const gradient = banner.background_gradient || '#101828,#1565C0';
   const [firstColor, secondColor] = gradient.split(',');
 
-  return (
-    <Pressable
-      style={[styles.smallBanner, { backgroundColor: firstColor || colors.text }]}
-      onPress={onPress}
+  const content = (
+    <View
+      style={[
+        styles.smallBannerInner,
+        !imageUrl ? { backgroundColor: firstColor || colors.text } : null,
+      ]}
     >
-      <View style={[styles.smallGlow, { backgroundColor: secondColor || colors.secondary }]} />
+      {!imageUrl ? (
+        <View style={[styles.smallGlow, { backgroundColor: secondColor || colors.secondary }]} />
+      ) : null}
 
       <View style={styles.smallGlass}>
         {banner.badge ? <Text style={styles.smallBadge}>{banner.badge}</Text> : null}
+
         <Text style={styles.smallTitle}>{banner.title}</Text>
-        {banner.description ? <Text style={styles.smallText}>{banner.description}</Text> : null}
+
+        {banner.description ? (
+          <Text style={styles.smallText}>{banner.description}</Text>
+        ) : null}
 
         {banner.cta_type !== 'none' ? (
           <View style={styles.smallLinkRow}>
@@ -318,6 +357,26 @@ function SmallBanner({ banner, onPress }: { banner: HomeBanner; onPress: () => v
           </View>
         ) : null}
       </View>
+    </View>
+  );
+
+  if (imageUrl) {
+    return (
+      <Pressable style={styles.smallBanner} onPress={onPress}>
+        <ImageBackground
+          source={{ uri: imageUrl }}
+          imageStyle={styles.smallImage}
+          style={styles.smallImageBg}
+        >
+          <View style={styles.smallImageOverlay}>{content}</View>
+        </ImageBackground>
+      </Pressable>
+    );
+  }
+
+  return (
+    <Pressable style={styles.smallBanner} onPress={onPress}>
+      {content}
     </Pressable>
   );
 }
@@ -347,8 +406,32 @@ function QuickActionCard({
       <View style={styles.quickIconBox}>
         <SvgIcon name={iconName} size={28} color={colors.primary} />
       </View>
+
       <Text style={styles.quickTitle}>{title}</Text>
       <Text style={styles.quickText}>{text}</Text>
+    </Pressable>
+  );
+}
+
+function OfficialWebsiteCard() {
+  return (
+    <Pressable
+      style={styles.websiteCard}
+      onPress={() => Linking.openURL(OFFICIAL_WEBSITE_URL)}
+    >
+      <View style={styles.websiteIconBox}>
+        <SvgIcon name="globe" size={27} color={colors.white} strokeWidth={2.5} />
+      </View>
+
+      <View style={styles.websiteContent}>
+        <Text style={styles.websiteKicker}>Официальный сайт</Text>
+        <Text style={styles.websiteTitle}>students-life.ru</Text>
+        <Text style={styles.websiteText}>
+          Больше информации о Student’s Life, направлениях, услугах и партнёрах
+        </Text>
+      </View>
+
+      <SvgIcon name="chevronRight" size={22} color={colors.primary} strokeWidth={2.8} />
     </Pressable>
   );
 }
@@ -370,12 +453,12 @@ function ContactsBlock({
 }) {
   const hasSocials = Boolean(
     socials?.instagram ||
-    socials?.tiktok ||
-    socials?.telegram ||
-    socials?.website ||
-    socials?.main_email ||
-    socials?.partners_email ||
-    socials?.universities_email,
+      socials?.tiktok ||
+      socials?.telegram ||
+      socials?.website ||
+      socials?.main_email ||
+      socials?.partners_email ||
+      socials?.universities_email,
   );
 
   return (
@@ -446,18 +529,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  logo: {
-    color: colors.primary,
-    fontSize: 28,
-    fontWeight: '900',
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  logoSubtitle: {
+  logoRed: {
+    color: colors.primary,
+    fontSize: 29,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+  },
+  logoBlue: {
     color: colors.secondary,
-    fontSize: 12,
-    fontWeight: '800',
-    marginTop: 2,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    fontSize: 29,
+    fontWeight: '900',
+    letterSpacing: -0.4,
   },
   topButton: {
     flexDirection: 'row',
@@ -490,6 +576,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 16 },
     elevation: 10,
   },
+  heroCardOnImage: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   imageHeroCard: {
     minHeight: 330,
     borderRadius: 30,
@@ -500,7 +592,7 @@ const styles = StyleSheet.create({
   },
   imageOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(16,24,40,0.25)',
+    backgroundColor: 'rgba(16,24,40,0.36)',
   },
   heroGlow: {
     position: 'absolute',
@@ -672,19 +764,40 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     fontWeight: '900',
   },
+  newsSlider: {
+    marginBottom: 28,
+  },
   smallBanner: {
     width: CARD_WIDTH - 14,
     minHeight: 205,
     borderRadius: 28,
     marginRight: 14,
-    padding: 18,
     overflow: 'hidden',
-    justifyContent: 'flex-end',
     shadowColor: '#101828',
     shadowOpacity: 0.16,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 12 },
     elevation: 8,
+  },
+  smallBannerInner: {
+    flex: 1,
+    minHeight: 205,
+    borderRadius: 28,
+    padding: 18,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  smallImageBg: {
+    minHeight: 205,
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  smallImage: {
+    borderRadius: 28,
+  },
+  smallImageOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(16,24,40,0.38)',
   },
   smallGlow: {
     position: 'absolute',
@@ -731,6 +844,53 @@ const styles = StyleSheet.create({
   smallLink: {
     color: colors.white,
     fontWeight: '900',
+  },
+  websiteCard: {
+    marginBottom: 34,
+    borderRadius: 24,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(229,57,53,0.16)',
+    shadowColor: '#101828',
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  websiteIconBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 19,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  websiteContent: {
+    flex: 1,
+  },
+  websiteKicker: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  websiteTitle: {
+    marginTop: 3,
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  websiteText: {
+    marginTop: 4,
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
   },
   contactsBox: {
     gap: 12,

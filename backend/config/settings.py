@@ -17,6 +17,8 @@ ALLOWED_HOSTS = config(
 )
 
 INSTALLED_APPS = [
+    'unfold',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -187,3 +189,45 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+
+UNFOLD = {
+    'SITE_TITLE': 'Student’s Life Admin',
+    'SITE_HEADER': 'Student’s Life',
+    'SITE_SUBHEADER': 'Панель управления приложением',
+    'SITE_URL': 'https://students-life.ru/ru',
+    'SITE_SYMBOL': 'school',
+    'SHOW_HISTORY': True,
+    'SHOW_VIEW_ON_SITE': True,
+    'COLORS': {
+        'primary': {
+            '50': '254 242 242',
+            '100': '254 226 226',
+            '200': '254 202 202',
+            '300': '252 165 165',
+            '400': '248 113 113',
+            '500': '229 57 53',
+            '600': '220 38 38',
+            '700': '185 28 28',
+            '800': '153 27 27',
+            '900': '127 29 29',
+            '950': '69 10 10',
+        },
+        'secondary': {
+            '50': '239 246 255',
+            '100': '219 234 254',
+            '200': '191 219 254',
+            '300': '147 197 253',
+            '400': '96 165 250',
+            '500': '21 101 192',
+            '600': '37 99 235',
+            '700': '29 78 216',
+            '800': '30 64 175',
+            '900': '30 58 138',
+            '950': '23 37 84',
+        },
+    },
+    'SIDEBAR': {
+        'show_search': True,
+        'show_all_applications': True,
+    },
+}

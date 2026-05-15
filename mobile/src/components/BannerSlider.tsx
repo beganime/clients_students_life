@@ -22,6 +22,7 @@ type Props<T> = {
   autoplay?: boolean;
   intervalMs?: number;
   style?: ViewStyle;
+  showArrows?: boolean;
 };
 
 export function BannerSlider<T>({
@@ -31,6 +32,7 @@ export function BannerSlider<T>({
   autoplay = true,
   intervalMs = 4500,
   style,
+  showArrows = false,
 }: Props<T>) {
   const ref = useRef<FlatList<T>>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -102,13 +104,27 @@ export function BannerSlider<T>({
 
       {canSlide ? (
         <>
-          <Pressable style={[styles.arrow, styles.arrowLeft]} onPress={() => goTo(activeIndex - 1)}>
-            <SvgIcon name="chevronLeft" size={20} color={colors.text} />
-          </Pressable>
+          {showArrows ? (
+            <>
+              <Pressable
+                style={[styles.arrow, styles.arrowLeft]}
+                onPress={() => goTo(activeIndex - 1)}
+                accessibilityRole="button"
+                accessibilityLabel="Предыдущий баннер"
+              >
+                <SvgIcon name="chevronLeft" size={20} color={colors.text} />
+              </Pressable>
 
-          <Pressable style={[styles.arrow, styles.arrowRight]} onPress={() => goTo(activeIndex + 1)}>
-            <SvgIcon name="chevronRight" size={20} color={colors.text} />
-          </Pressable>
+              <Pressable
+                style={[styles.arrow, styles.arrowRight]}
+                onPress={() => goTo(activeIndex + 1)}
+                accessibilityRole="button"
+                accessibilityLabel="Следующий баннер"
+              >
+                <SvgIcon name="chevronRight" size={20} color={colors.text} />
+              </Pressable>
+            </>
+          ) : null}
 
           <View style={styles.dots}>
             {safeData.map((_, index) => (

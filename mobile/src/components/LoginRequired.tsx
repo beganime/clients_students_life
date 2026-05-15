@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from './AppButton';
 import { Screen } from './Screen';
+import { SvgIcon } from './SvgIcon';
 import { colors } from '../constants/colors';
 
 type Props = {
@@ -21,7 +22,10 @@ export function LoginRequired({
     <Screen>
       <View style={styles.container}>
         <View style={styles.card}>
-          <Text style={styles.icon}>🔒</Text>
+          <View style={styles.iconBox}>
+            <SvgIcon name="lock" size={36} color={colors.primary} strokeWidth={2.5} />
+          </View>
+
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>{description}</Text>
 
@@ -51,15 +55,27 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 24,
+    borderRadius: 28,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 22,
+    padding: 24,
     alignItems: 'center',
+    shadowColor: '#101828',
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
-  icon: {
-    fontSize: 42,
-    marginBottom: 14,
+  iconBox: {
+    width: 76,
+    height: 76,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(229,57,53,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(229,57,53,0.16)',
+    marginBottom: 18,
   },
   title: {
     color: colors.text,
