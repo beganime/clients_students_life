@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 
-const DEFAULT_PROD_API_URL = 'https://stud-life.com';
+const DEFAULT_PROD_API_URL = 'https://stud-life.com/api/v1';
 
 type ExpoExtra = {
   apiBaseUrl?: string;
