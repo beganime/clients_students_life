@@ -139,6 +139,9 @@ export type Application = {
   service?: number | null;
   service_title?: string;
   status: string;
+  manager_sl_application_id?: string;
+  manager_sl_sync_status?: 'pending' | 'synced' | 'failed';
+  manager_sl_sync_error?: string;
   assigned_manager_name?: string;
   full_name: string;
   phone?: string;
@@ -196,13 +199,25 @@ export type UserProfile = {
   language?: string;
 };
 
+export type UserActivity = {
+  is_online: boolean;
+  last_seen?: string | null;
+  last_active_at?: string | null;
+  device_platform?: string;
+  app_version?: string;
+  updated_at?: string;
+};
+
 export type UserMe = {
   id: number;
   username: string;
   email: string;
   first_name: string;
   last_name: string;
+  role: 'user' | 'manager';
+  is_manager: boolean;
   profile?: UserProfile;
+  activity?: UserActivity | null;
 };
 
 export type FavoriteUniversity = {

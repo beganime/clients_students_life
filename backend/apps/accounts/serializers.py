@@ -2,9 +2,22 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from .models import ClientProfile
+from .models import AppRole, AppUserActivity, ClientProfile, get_app_role_code, is_manager_user
 
 User = get_user_model()
+
+
+class AppUserActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppUserActivity
+        fields = (
+            'is_online',
+            'last_seen',
+            'last_active_at',
+            'device_platform',
+            'app_version',
+            'updated_at',
+        )
 
 
 class ClientProfileSerializer(serializers.ModelSerializer):
@@ -24,6 +37,9 @@ class ClientProfileSerializer(serializers.ModelSerializer):
 
 class UserMeSerializer(serializers.ModelSerializer):
     profile = ClientProfileSerializer(source='client_profile', required=False)
+    role = serializers.SerializerMethodField()
+    is_manager = serializers.SerializerMethodField()
+    activity = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -33,9 +49,25 @@ class UserMeSerializer(serializers.ModelSerializer):
             'email',
             'first_name',
             'last_name',
+            'role',
+            'is_manager',
             'profile',
+            'activity',
         )
-        read_only_fields = ('id', 'username')
+        read_only_fields = ('id', 'username', 'role', 'is_manager', 'activity')
+
+    def get_role(self, obj):
+        return get_app_role_code(obj)
+
+    def get_is_manager(self, obj):
+        return is_manager_user(obj)
+
+    def get_activity(self, obj):
+        try:
+            activity = obj.app_activity
+        except AppUserActivity.DoesNotExist:
+            return None
+        return AppUserActivitySerializer(activity).data
 
     def update(self, instance, validated_data):
         profile_data = validated_data.pop('client_profile', {})
@@ -44,9 +76,14 @@ class UserMeSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
 
-        profile, _ = ClientProfile.objects.get_or_create(user=instance)
+        profile, _ = ClientProfile.objects.get_or_create(
+            user=instance,
+            defaults={'role': AppRole.default_role()},
+        )
         for attr, value in profile_data.items():
             setattr(profile, attr, value)
+        if not profile.role_id:
+            profile.role = AppRole.default_role()
         profile.save()
 
         return instance
@@ -113,5 +150,5 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
 
-        ClientProfile.objects.create(user=user, **profile_fields)
+        ClientProfile.objects.create(user=user, role=AppRole.default_role(), **profile_fields)
         return user

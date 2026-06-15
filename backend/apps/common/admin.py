@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
-from .models import AppSetting, HomeBanner, OfficeContact
+from .models import AppSetting, HomeBanner, OfficeContact, PrivacyPolicy
 
 
 @admin.register(AppSetting)
@@ -79,3 +79,12 @@ class OfficeContactAdmin(ModelAdmin):
     )
     list_editable = ('is_active', 'sort_order')
     list_per_page = 30
+
+
+@admin.register(PrivacyPolicy)
+class PrivacyPolicyAdmin(ModelAdmin):
+    list_display = ('title', 'is_active', 'updated_at')
+    list_filter = ('is_active', 'updated_at')
+    search_fields = ('title', 'content')
+    list_editable = ('is_active',)
+    readonly_fields = ('created_at', 'updated_at')

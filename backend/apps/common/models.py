@@ -39,6 +39,20 @@ class AppSetting(TimeStampedModel):
         return self.key
 
 
+class PrivacyPolicy(TimeStampedModel):
+    title = models.CharField('Title', max_length=255, default='Privacy Policy')
+    content = models.TextField('Content')
+    is_active = models.BooleanField('Active', default=True)
+
+    class Meta:
+        verbose_name = 'Privacy policy'
+        verbose_name_plural = 'Privacy policies'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return self.title
+
+
 class HomeBanner(TimeStampedModel, SortableModel):
     class Slot(models.TextChoices):
         HERO = 'hero', 'Главный верхний баннер'

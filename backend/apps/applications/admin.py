@@ -28,6 +28,8 @@ class ApplicationAdmin(admin.ModelAdmin):
         'target_country',
         'target_university',
         'source',
+        'manager_sl_sync_status',
+        'manager_sl_application_id',
         'created_at',
     )
     list_filter = (
@@ -37,6 +39,7 @@ class ApplicationAdmin(admin.ModelAdmin):
         'target_country',
         'target_university',
         'source',
+        'manager_sl_sync_status',
         'created_at',
     )
     search_fields = (
@@ -47,8 +50,24 @@ class ApplicationAdmin(admin.ModelAdmin):
         'telegram',
         'email',
         'comment',
+        'manager_sl_application_id',
+        'idempotency_key',
     )
-    readonly_fields = ('application_number', 'source', 'ip_address', 'user_agent', 'device_platform', 'created_at', 'updated_at')
+    readonly_fields = (
+        'application_number',
+        'source',
+        'manager_sl_application_id',
+        'manager_sl_sync_status',
+        'manager_sl_sync_error',
+        'manager_sl_payload',
+        'idempotency_key',
+        'synced_at',
+        'ip_address',
+        'user_agent',
+        'device_platform',
+        'created_at',
+        'updated_at',
+    )
     inlines = [ApplicationFileInline, ApplicationStatusHistoryInline]
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)

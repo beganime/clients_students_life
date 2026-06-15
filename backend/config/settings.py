@@ -135,6 +135,7 @@ CSRF_TRUSTED_ORIGINS = config(
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-device-platform',
+    'idempotency-key',
 ]
 
 REST_FRAMEWORK = {
@@ -152,6 +153,18 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'register': config('THROTTLE_REGISTER_RATE', default='5/hour'),
+        'login': config('THROTTLE_LOGIN_RATE', default='10/min'),
+        'applications_create': config('THROTTLE_APPLICATION_CREATE_RATE', default='5/hour'),
+        'push_token': config('THROTTLE_PUSH_TOKEN_RATE', default='10/min'),
+        'activity': config('THROTTLE_ACTIVITY_RATE', default='60/min'),
+        'chat_message': config('THROTTLE_CHAT_MESSAGE_RATE', default='20/min'),
+        'chat_upload': config('THROTTLE_CHAT_UPLOAD_RATE', default='10/min'),
+    },
 }
 
 SIMPLE_JWT = {
@@ -182,6 +195,10 @@ CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://localhost:6379/0')
 
 FIREBASE_CREDENTIALS_PATH = config('FIREBASE_CREDENTIALS_PATH', default='')
+
+MANAGER_SL_API_BASE_URL = config('MANAGER_SL_API_BASE_URL', default='')
+MANAGER_SL_LEADS_API_KEY = config('MANAGER_SL_LEADS_API_KEY', default='')
+MANAGER_SL_TIMEOUT_SECONDS = config('MANAGER_SL_TIMEOUT_SECONDS', default=8, cast=int)
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 

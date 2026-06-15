@@ -8,6 +8,10 @@ import { useAuthStore } from '../store/authStore';
 
 const USE_NATIVE_DEVICE_TOKEN = true;
 
+function deviceLabel() {
+  return Device.modelName || Device.modelId || '';
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -52,7 +56,7 @@ export function usePushNotifications() {
         await notificationsApi.saveDeviceToken({
           token,
           platform: Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'unknown',
-          device_id: Device.osInternalBuildId || Device.modelId || '',
+          device_id: deviceLabel(),
         });
       } catch (error) {
         console.log('Push registration error', error);

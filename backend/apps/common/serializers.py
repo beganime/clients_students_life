@@ -1,12 +1,18 @@
 from rest_framework import serializers
 
-from .models import AppSetting, HomeBanner, OfficeContact
+from .models import AppSetting, HomeBanner, OfficeContact, PrivacyPolicy
 
 
 class AppSettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppSetting
         fields = ('key', 'value', 'description')
+
+
+class PrivacyPolicySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrivacyPolicy
+        fields = ('title', 'content', 'updated_at')
 
 
 class HomeBannerSerializer(serializers.ModelSerializer):

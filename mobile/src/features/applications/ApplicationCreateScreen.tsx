@@ -29,6 +29,10 @@ type SubmitStatus = {
   text: string;
 } | null;
 
+function makeIdempotencyKey() {
+  return `mobile-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 export function ApplicationCreateScreen() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
@@ -174,17 +178,25 @@ function ApplicationCreateForm() {
         email,
         preferred_contact_method: whatsapp ? 'whatsapp' : telegram ? 'telegram' : email ? 'email' : 'phone',
         target_country: targetCountryId,
+        target_country_name: countriesQuery.data?.find(item => item.id === targetCountryId)?.name,
         target_university: targetUniversityId,
+        target_university_name: universitiesQuery.data?.find(item => item.id === targetUniversityId)?.name,
         education_level: educationLevel,
         specialty,
         study_language: studyLanguage,
         start_year: startYear,
         comment,
+        idempotency_key: makeIdempotencyKey(),
       });
 
       for (const file of files) {
         await applicationsApi.uploadFile(application.id, file, 'other');
       }
+
+      const syncWarning =
+        application.manager_sl_sync_status === 'failed'
+          ? ' Заявка сохранена в приложении; менеджер получит ее после восстановления связи с основной CRM.'
+          : '';
 
       setStatus({
         type: 'success',
@@ -192,6 +204,10 @@ function ApplicationCreateForm() {
       });
 
       Alert.alert('Заявка отправлена', `Номер заявки: ${application.application_number}`);
+      if (syncWarning) {
+        setStatus(prev => (prev ? { ...prev, text: `${prev.text}.${syncWarning}` } : prev));
+      }
+
       resetForm();
     } catch (error) {
       setStatus({

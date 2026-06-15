@@ -118,6 +118,29 @@ class Application(TimeStampedModel):
 
     source = models.CharField('Источник заявки', max_length=100, default='mobile_app')
     ip_address = models.GenericIPAddressField('IP-адрес', null=True, blank=True)
+    target_country_external_id = models.PositiveIntegerField('manager-sl country ID', null=True, blank=True)
+    target_city_external_id = models.PositiveIntegerField('manager-sl city ID', null=True, blank=True)
+    target_university_external_id = models.PositiveIntegerField('manager-sl university ID', null=True, blank=True)
+    target_program_external_id = models.PositiveIntegerField('manager-sl program ID', null=True, blank=True)
+    target_country_snapshot = models.CharField('Target country snapshot', max_length=255, blank=True)
+    target_city_snapshot = models.CharField('Target city snapshot', max_length=255, blank=True)
+    target_university_snapshot = models.CharField('Target university snapshot', max_length=255, blank=True)
+    target_program_snapshot = models.CharField('Target program snapshot', max_length=255, blank=True)
+    manager_sl_application_id = models.CharField('manager-sl application ID', max_length=100, blank=True)
+    manager_sl_sync_status = models.CharField(
+        'manager-sl sync status',
+        max_length=20,
+        choices=(
+            ('pending', 'Pending'),
+            ('synced', 'Synced'),
+            ('failed', 'Failed'),
+        ),
+        default='pending',
+    )
+    manager_sl_sync_error = models.TextField('manager-sl sync error', blank=True)
+    manager_sl_payload = models.JSONField('manager-sl payload', default=dict, blank=True)
+    idempotency_key = models.CharField('Idempotency key', max_length=120, unique=True, null=True, blank=True)
+    synced_at = models.DateTimeField('Synced at', null=True, blank=True)
     user_agent = models.TextField('User Agent', blank=True)
     device_platform = models.CharField('Платформа устройства', max_length=100, blank=True)
 

@@ -2,6 +2,8 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.accounts.models import is_manager_user
+
 from .models import ChatMessage, ChatRoom
 from .serializers import ChatMessageSerializer, ChatRoomSerializer
 
@@ -15,7 +17,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = ChatRoom.objects.select_related('user', 'application', 'assigned_manager').prefetch_related('messages')
-        if self.request.user.is_staff:
+        if is_manager_user(self.request.user):
             return qs
         return qs.filter(user=self.request.user)
 
@@ -58,6 +60,6 @@ class ChatMessageViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = ChatMessage.objects.select_related('room', 'sender_user', 'sender_staff')
-        if self.request.user.is_staff:
+        if is_manager_user(self.request.user):
             return qs
         return qs.filter(room__user=self.request.user)

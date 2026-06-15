@@ -7,7 +7,7 @@ import { tk } from './tk';
 import { uz } from './uz';
 
 i18n.use(initReactI18next).init({
-  compatibilityJSON: 'v3',
+  compatibilityJSON: 'v4',
   lng: 'ru',
   fallbackLng: 'ru',
   resources: {

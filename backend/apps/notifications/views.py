@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from .models import DeviceToken, PushNotification, UserNotification
 from .serializers import DeviceTokenSerializer, PushNotificationSerializer, UserNotificationSerializer
+from apps.accounts.models import is_manager_user
 
 
 class DeviceTokenViewSet(mixins.CreateModelMixin,
@@ -12,13 +13,18 @@ class DeviceTokenViewSet(mixins.CreateModelMixin,
                          viewsets.GenericViewSet):
     serializer_class = DeviceTokenSerializer
 
+    def get_throttles(self):
+        if self.action == 'create':
+            self.throttle_scope = 'push_token'
+        return super().get_throttles()
+
     def get_permissions(self):
         if self.action == 'create':
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
-        if self.request.user.is_staff:
+        if is_manager_user(self.request.user):
             return DeviceToken.objects.all().order_by('-created_at')
         return DeviceToken.objects.filter(user=self.request.user).order_by('-created_at')
 

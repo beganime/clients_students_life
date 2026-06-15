@@ -45,6 +45,7 @@ export type RegisterPayload = {
 
 export type ApplicationCreatePayload = {
   service?: number | null;
+  idempotency_key?: string;
   full_name: string;
   birth_date?: string;
   citizenship?: string;
@@ -56,9 +57,13 @@ export type ApplicationCreatePayload = {
   email?: string;
   preferred_contact_method?: 'phone' | 'whatsapp' | 'telegram' | 'email';
   target_country?: number | null;
+  target_country_name?: string;
   target_city?: number | null;
+  target_city_name?: string;
   target_university?: number | null;
+  target_university_name?: string;
   target_program?: number | null;
+  target_program_title?: string;
   education_level?: string;
   specialty?: string;
   study_language?: string;
@@ -111,12 +116,25 @@ export const authApi = {
     const refresh = await tokenStorage.getRefreshToken();
 
     try {
+      await apiClient.post('/accounts/activity/', { state: 'inactive', is_online: false }).catch(() => undefined);
+
       if (refresh) {
         await apiClient.post('/accounts/logout/', { refresh });
       }
     } finally {
       await tokenStorage.clearTokens();
     }
+  },
+
+  async updateActivity(payload: {
+    state: 'active' | 'inactive' | 'background';
+    is_online?: boolean;
+    device_platform?: string;
+    device_id?: string;
+    app_version?: string;
+  }) {
+    const { data } = await apiClient.post('/accounts/activity/', payload);
+    return data;
   },
 };
 
@@ -201,7 +219,10 @@ export const contentApi = {
 
 export const applicationsApi = {
   async createApplication(payload: ApplicationCreatePayload) {
-    const { data } = await apiClient.post<Application>('/applications/', payload);
+    const idempotencyKey = payload.idempotency_key;
+    const { data } = await apiClient.post<Application>('/applications/', payload, {
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
     return data;
   },
 

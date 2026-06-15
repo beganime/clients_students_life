@@ -1,15 +1,27 @@
+from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 
+from .models import AppUserActivity
 from .serializers import RegisterSerializer, UserMeSerializer
+
+
+def clean_device_value(value, max_length=255):
+    return str(value or '').strip()[:max_length]
+
+
+class LoginView(TokenObtainPairView):
+    throttle_scope = 'login'
 
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_scope = 'register'
 
 
 class MeView(APIView):
@@ -47,3 +59,44 @@ class LogoutView(APIView):
             return Response({'detail': 'Некорректный refresh token.'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'detail': 'Выход выполнен.'}, status=status.HTTP_200_OK)
+
+
+class ActivityView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_scope = 'activity'
+
+    def post(self, request):
+        state = str(request.data.get('state') or request.data.get('status') or '').lower()
+        is_online = request.data.get('is_online')
+        if is_online is None:
+            is_online = state in {'active', 'online', 'opened', 'foreground'}
+        is_online = bool(is_online)
+
+        now = timezone.now()
+        activity, _ = AppUserActivity.objects.get_or_create(user=request.user)
+        activity.is_online = is_online
+        activity.last_seen = now
+        if is_online:
+            activity.last_active_at = now
+        activity.device_platform = clean_device_value(
+            request.data.get('device_platform') or request.headers.get('X-Device-Platform'),
+            40,
+        )
+        activity.device_id = clean_device_value(request.data.get('device_id'), 255)
+        activity.app_version = clean_device_value(request.data.get('app_version'), 80)
+        activity.save(
+            update_fields=[
+                'is_online',
+                'last_seen',
+                'last_active_at',
+                'device_platform',
+                'device_id',
+                'app_version',
+                'updated_at',
+            ],
+        )
+        return Response({
+            'is_online': activity.is_online,
+            'last_seen': activity.last_seen,
+            'last_active_at': activity.last_active_at,
+        })

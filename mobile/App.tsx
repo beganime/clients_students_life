@@ -7,10 +7,12 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { useAppActivity } from './src/hooks/useAppActivity';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
 import { asyncStoragePersister, queryClient } from './src/api/queryClient';
 
 function AppContent() {
+  useAppActivity();
   usePushNotifications();
   return <RootNavigator />;
 }

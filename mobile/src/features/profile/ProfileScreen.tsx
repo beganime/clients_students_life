@@ -1,11 +1,12 @@
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { Screen } from '../../components/Screen';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors } from '../../constants/colors';
+import { PRIVACY_POLICY_URL } from '../../constants/config';
 import { useAuthStore } from '../../store/authStore';
 import { getMediaUrl } from '../../utils/media';
 
@@ -42,6 +43,11 @@ export function ProfileScreen() {
             variant="outline"
             onPress={() => navigation.navigate('Auth', { screen: 'Register' })}
           />
+          <AppButton
+            title="Политика конфиденциальности"
+            variant="outline"
+            onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          />
         </View>
       </Screen>
     );
@@ -68,6 +74,7 @@ export function ProfileScreen() {
       </View>
 
       <View style={styles.infoCard}>
+        <ProfileInfo icon="lock" label="Role" value={user.role || 'user'} />
         <ProfileInfo icon="phone" label="Телефон" value={user.profile?.phone || 'не указан'} />
         <ProfileInfo icon="phone" label="WhatsApp" value={user.profile?.whatsapp || 'не указан'} />
         <ProfileInfo icon="chat" label="Telegram" value={user.profile?.telegram || 'не указан'} />
@@ -105,6 +112,12 @@ export function ProfileScreen() {
           icon="chat"
           title="Чат с менеджером"
           onPress={() => navigation.navigate('Chat')}
+        />
+
+        <ProfileMenuItem
+          icon="document"
+          title="Политика конфиденциальности"
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
         />
 
         <Pressable

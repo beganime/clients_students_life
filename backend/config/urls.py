@@ -3,12 +3,16 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
+
+from apps.accounts.views import LoginView
+from apps.common.views import privacy_policy_page
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('privacy-policy/', privacy_policy_page, name='privacy-policy'),
 
-    path('api/v1/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/v1/auth/login/', LoginView.as_view(), name='token_obtain_pair'),
     path('api/v1/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     path('api/v1/schema/', SpectacularAPIView.as_view(), name='schema'),
