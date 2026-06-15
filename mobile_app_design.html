@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Student's Life | Образование за рубежом</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fef7f5;
+            color: #1e1a2f;
+            line-height: 1.4;
+            padding-bottom: 85px;
+        }
+        
+         :root {
+            --primary-red: #dc2626;
+            --primary-dark: #b91c1c;
+            --primary-gradient: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            --accent-red: #f97316;
+            --light-bg: #fff5f5;
+        }
+        /* Анимации */
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-up {
+            animation: fadeInUp 0.4s ease forwards;
+        }
+        /* Шапка */
+        
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #ffdddd;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        
+        .logo {
+            font-weight: 800;
+            font-size: 22px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .burger-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            transition: transform 0.2s;
+        }
+        
+        .burger-btn:active {
+            transform: scale(0.9);
+        }
+        /* Боковое меню справа */
+        
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -280px;
+            width: 280px;
+            height: 100%;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+            z-index: 30;
+            transition: right 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            border-left: 1px solid #ffcece;
+        }
+        
+        .side-menu.open {
+            right: 0;
+        }
+        
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 25;
+            display: none;
+        }
+        
+        .menu-overlay.active {
+            display: block;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 18px;
+            font-weight: 500;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0e0e0;
+            color: #2d1a1a;
+            cursor: pointer;
+            transition: padding 0.2s;
+        }
+        
+        .menu-item:hover {
+            padding-left: 8px;
+            color: #dc2626;
+        }
+        
+        .close-menu {
+            text-align: left;
+            font-size: 24px;
+            cursor: pointer;
+            color: #b91c1c;
+            margin-bottom: 10px;
+            transition: opacity 0.2s;
+        }
+        /* Герой-баннер */
+        
+        .hero-fullwidth {
+            width: 100%;
+            background: linear-gradient(125deg, #991b1b 0%, #7f1d1d 40%, #dc2626 100%);
+            color: white;
+            padding: 48px 20px 52px 20px;
+            margin-bottom: 28px;
+        }
+        
+        .hero-content {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(5px);
+            padding: 6px 16px;
+            border-radius: 60px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .hero-content h1 {
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 18px;
+        }
+        
+        .btn-primary-red {
+            background: #ffedd5;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 48px;
+            font-weight: 800;
+            color: #991b1b;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-primary-red:active {
+            transform: scale(0.96);
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 0 20px;
+            margin: 0 auto;
+        }
+        /* Карточки статистики */
+        
+        .stats-row {
+            display: flex;
+            gap: 14px;
+            margin: 0 16px 32px 16px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            background: white;
+            flex: 1;
+            padding: 18px 6px;
+            border-radius: 28px;
+            text-align: center;
+            border: 1px solid #ffe2e2;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-number {
+            font-size: 28px;
+            font-weight: 800;
+            color: #b91c1c;
+        }
+        /* Услуги */
+        
+        .section-title {
+            font-size: 26px;
+            font-weight: 800;
+            margin: 12px 0 4px;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0 30px;
+        }
+        
+        .service-card {
+            background: white;
+            border-radius: 32px;
+            padding: 20px 12px;
+            text-align: center;
+            border: 1px solid #fad7d7;
+            transition: all 0.25s ease;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .service-icon {
+            background: #fef2f2;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 30px;
+            margin: 0 auto 16px;
+            transition: background 0.2s;
+        }
+        
+        .service-card:hover .service-icon {
+            background: #ffdfdf;
+        }
+        /* Направления */
+        
+        .countries-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 18px;
+            padding: 12px 4px 26px;
+            scrollbar-width: thin;
+        }
+        
+        .country-horizontal {
+            min-width: 260px;
+            background: white;
+            border-radius: 32px;
+            overflow: hidden;
+            border: 1px solid #ffe0e0;
+            transition: transform 0.2s;
+        }
+        
+        .country-horizontal:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .country-image {
+            width: 100%;
+            height: 140px;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .tag {
+            background: #ffefef;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #a12323;
+            display: inline-block;
+            margin-right: 6px;
+            margin-top: 8px;
+        }
+        /* Баннеры */
+        
+        .info-banner-calm {
+            background: #fff9f0;
+            border-radius: 32px;
+            padding: 22px 20px;
+            border-left: 6px solid #f97316;
+            margin: 16px 0 28px;
+            transition: box-shadow 0.2s;
+        }
+        
+        .info-banner-calm:hover {
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-outline-red {
+            background: transparent;
+            border: 1.5px solid #dc2626;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 700;
+            color: #b91c1c;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        
+        .btn-outline-red:hover {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .promo-banner {
+            background: linear-gradient(95deg, #fff1ea, #ffe6e0);
+            border-radius: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 6px 6px 24px;
+            margin: 20px 0 30px;
+            flex-wrap: wrap;
+        }
+        
+        .news-card {
+            background: white;
+            border-radius: 32px;
+            padding: 20px;
+            margin-bottom: 18px;
+            border: 1px solid #ffdddd;
+            transition: all 0.2s;
+        }
+        
+        .news-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.03);
+        }
+        
+        .official-site-block {
+            background: #2d1a1a;
+            border-radius: 32px;
+            padding: 22px;
+            margin: 24px 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        /* Контакты */
+        
+        .offices-detailed {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 16px 0 24px;
+        }
+        
+        .office-card-phone {
+            background: white;
+            border-radius: 28px;
+            padding: 18px 20px;
+            border: 1px solid #ffdbdb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+        
+        .office-card-phone:hover {
+            background: #fffbfb;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.03);
+        }
+        
+        .office-name-phone {
+            font-weight: 800;
+            font-size: 18px;
+        }
+        
+        .address-mock {
+            font-size: 12px;
+            color: #7a5e5e;
+            margin-top: 6px;
+        }
+        
+        .call-small-link {
+            background: #fef2f2;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #dc2626;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        
+        .call-small-link:hover {
+            background: #dc2626;
+            color: white;
+        }
+        /* Нижняя навигация (фикс) */
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 32px 32px 0 0;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.08);
+            border-top: 1px solid #fad7d7;
+            z-index: 15;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 500;
+            color: #6a5151;
+            gap: 4px;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.1s;
+        }
+        
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            stroke: #b91c1c;
+            fill: none;
+            stroke-width: 1.7;
+            transition: stroke 0.2s;
+        }
+        
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+        /* Страницы */
+        
+        .page-content {
+            display: block;
+        }
+        
+        .hidden-page {
+            display: none;
+        }
+        
+        .guest-mode {
+            background: #fef2e8;
+            border-radius: 28px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .page-banner {
+            background: linear-gradient(115deg, #dc2626, #b91c1c);
+            border-radius: 32px;
+            padding: 24px 20px;
+            margin: 20px 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            color: white;
+        }
+        
+        .motivation-banner {
+            background: linear-gradient(125deg, #f97316, #dc2626);
+            border-radius: 36px;
+            padding: 32px 24px;
+            text-align: center;
+            margin: 30px 0 20px;
+            color: white;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 28px;
+            flex-wrap: wrap;
+            margin: 12px 0 16px;
+            font-size: 13px;
+        }
+        
+        .footer-links span {
+            color: #2d1a1a;
+            background: rgba(255, 255, 240, 0.8);
+            padding: 6px 14px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .footer-links span:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+        /* Карточки заявка / visa support (красивое оформление) */
+        
+        .service-page-card {
+            background: white;
+            border-radius: 32px;
+            padding: 24px 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ffdddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            transition: all 0.25s;
+        }
+        
+        .service-page-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 25px -12px rgba(0, 0, 0, 0.08);
+            border-color: #ffaaaa;
+        }
+        
+        .service-page-card .card-text {
+            flex: 2;
+        }
+        
+        .service-page-card strong {
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .service-page-card svg {
+            width: 32px;
+            height: 32px;
+            stroke: #dc2626;
+            stroke-width: 1.5;
+        }
+        
+        @media (min-width: 640px) {
+            .container {
+                max-width: 640px;
+                margin: 0 auto;
+            }
+            .services-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .bottom-nav {
+                max-width: 640px;
+                left: 50%;
+                transform: translateX(-50%);
+                border-radius: 32px 32px 0 0;
+            }
+        }
+        
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .text-muted {
+            color: #7a5e5e;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-header">
+        <div class="logo">Student's Life</div>
+        <button class="burger-btn" id="burgerBtn">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+    </div>
+
+    <div class="side-menu" id="sideMenu">
+        <div class="close-menu" id="closeMenuBtn">✕</div>
+        <div class="menu-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Помощь</div>
+        <div class="menu-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H5.78a1.65 1.65 0 0 0-1.51 1 1.65 1.65 0 0 0 .33 1.82l.07.08A10 10 0 0 0 12 17.66a10 10 0 0 0 6.18-2.17l.07-.08z"/></svg>            Настройки</div>
+        <div class="menu-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> Смена темы</div>
+        <div class="menu-item"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 8h14M5 12h14M5 16h10"/><path d="m12 3 3 3-3 3"/></svg> Языки</div>
+    </div>
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <!-- ГЛАВНАЯ -->
+    <div id="mainPage" class="page-content">
+        <div class="hero-fullwidth">
+            <div class="hero-content">
+                <div class="hero-badge">Student's Life</div>
+                <h1>Создай своё будущее</h1>
+                <p>Поступление, виза, жильё и сопровождение студентов в России, Европе и Азии.</p>
+                <button class="btn-primary-red" onclick="alert('Оставить заявку')">Подать заявку 
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+            </div>
+        </div>
+        <div class="container">
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-number">14+</div>
+                    <div class="stat-label">стран</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">1500+</div>
+                    <div class="stat-label">студентов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">поддержка</div>
+                </div>
+            </div>
+
+            <div class="flex-between">
+                <h2 class="section-title">Услуги</h2><span style="color:#dc2626;">Комплексная поддержка</span></div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+                    <h4>Вузы</h4>
+                    <p>Каталог университетов</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <h4>Поступить</h4>
+                    <p>Заявка менеджеру</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M8 10h8M8 14h5"/></svg></div>
+                    <h4>Виза</h4>
+                    <p>Приглашение и виза</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 10c0 4-7 10-7 10s-7-6-7-10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2"/></svg></div>
+                    <h4>Туры</h4>
+                    <p>Образовательные туры</p>
+                </div>
+            </div>
+
+            <div class="flex-between">
+                <h2 class="section-title">Направления</h2><span class="text-muted">Популярные страны</span></div>
+            <div class="countries-scroll">
+                <div class="country-horizontal">
+                    <div class="country-image" style="background-image: url('https://placehold.co/600x400/e2b6b6/ffffff?text=China');"></div>
+                    <div class="country-info">
+                        <div class="country-name">Китай</div>
+                        <div><span class="tag">Технобудущее</span><span class="tag">Глобал Хаб</span></div>
+                    </div>
+                </div>
+                <div class="country-horizontal">
+                    <div class="country-image" style="background-image: url('https://placehold.co/600x400/d9b4b4/ffffff?text=Russia');"></div>
+                    <div class="country-info">
+                        <div class="country-name">Россия</div>
+                        <div><span class="tag">Доступно</span><span class="tag">STEM</span></div>
+                    </div>
+                </div>
+                <div class="country-horizontal">
+                    <div class="country-image" style="background-image: url('https://placehold.co/600x400/cfaeae/ffffff?text=Turkey');"></div>
+                    <div class="country-info">
+                        <div class="country-name">Турция</div>
+                        <div><span class="tag">Средиземноморье</span></div>
+                    </div>
+                </div>
+                <div class="country-horizontal">
+                    <div class="country-image" style="background-image: url('https://placehold.co/600x400/c0a0a0/ffffff?text=Cyprus');"></div>
+                    <div class="country-info">
+                        <div class="country-name">Кипр</div>
+                        <div><span class="tag">Европейский</span></div>
+                    </div>
+                </div>
+                <div class="country-horizontal">
+                    <div class="country-image" style="background-image: url('https://placehold.co/600x400/ba9b9b/ffffff?text=Belarus');"></div>
+                    <div class="country-info">
+                        <div class="country-name">Беларусь</div>
+                        <div><span class="tag">Традиции</span></div>
+                    </div>
+                </div>
+                <div class="country-horizontal">
+                    <div class="country-image" style="background-image: url('https://placehold.co/600x400/b48f8f/ffffff?text=Bulgaria');"></div>
+                    <div class="country-info">
+                        <div class="country-name">Болгария</div>
+                        <div><span class="tag">Граница ЕС</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-banner-calm">
+                <h3> Важная информация</h3>
+                <p>Скоро старт приёма документов. Оставьте заявку, чтобы менеджер проверил документы.</p><button class="btn-outline-red" onclick="alert('Начать')">Начать →</button></div>
+            <div class="promo-banner">
+                <div>
+                    <h4>Летняя кампания 2025</h4>
+                    <p>Скидка до 40%</p><button class="btn-outline-red" style="padding:6px 18px;" onclick="alert('Акция')">Узнать</button></div>
+                <div class="promo-image" style="background-image: url('https://placehold.co/400x300/e6b8a8/ffffff?text=Campaign'); width:100px; height:90px; background-size:cover; border-radius:28px;"></div>
+            </div>
+
+            <div class="flex-between">
+                <h2 class="section-title">Новости и акции</h2><span id="allNewsLink" style="color:#dc2626; cursor:pointer;">Все новости →</span></div>
+            <div class="news-card"><strong>Ранний старт 2025</strong>
+                <p>Приём заявок открыт. Скидка на визу до 20 июля.</p>
+                <div class="news-link" id="newsDetail1">Подробнее →</div>
+            </div>
+            <div class="news-card"><strong>Вебинар “Образование в Европе”</strong>
+                <p>12 июня в 17:00</p>
+                <div class="news-link" id="newsDetail2">Узнать →</div>
+            </div>
+
+            <div class="official-site-block">
+                <div><span>Официальный сайт</span><br><small style="color:#ffbcbc;">students-life.ru/ru</small></div>
+                <div class="site-url">students-life.ru</div>
+            </div>
+
+            <h2 class="section-title">Наши офисы</h2>
+            <div class="offices-detailed">
+                <div class="office-card-phone">
+                    <div>
+                        <div class="office-name-phone">Лебап</div>
+                        <div class="address-mock">ул. Парковая, 12, офис 5</div>
+                    </div>
+                    <div><span class="office-phone">+993 6334657894</span> <a href="tel:+9936334657894" class="call-small-link">Позвонить</a></div>
+                </div>
+                <div class="office-card-phone">
+                    <div>
+                        <div class="office-name-phone">Ашхабад</div>
+                        <div class="address-mock">пр. Махтумкули, 44, БЦ «Алтын Асыр»</div>
+                    </div>
+                    <div><span class="office-phone">+993 55658676</span> <a href="tel:+99355658676" class="call-small-link">Позвонить</a></div>
+                </div>
+                <div class="office-card-phone">
+                    <div>
+                        <div class="office-name-phone">Мары</div>
+                        <div class="address-mock">ул. Анкары, 9, 2 этаж</div>
+                    </div>
+                    <div><span class="office-phone">+993 546643343</span> <a href="tel:+993546643343" class="call-small-link">Позвонить</a></div>
+                </div>
+                <div class="office-card-phone">
+                    <div>
+                        <div class="office-name-phone">Балканабад</div>
+                        <div class="address-mock">мкр. Гурбансолтан, 15/1</div>
+                    </div>
+                    <div><span class="office-phone">+993 454565754</span> <a href="tel:+993454565754" class="call-small-link">Позвонить</a></div>
+                </div>
+                <div class="office-card-phone">
+                    <div>
+                        <div class="office-name-phone">Дашагуз</div>
+                        <div class="address-mock">улица Независимости, 3, офис 7</div>
+                    </div>
+                    <div><span class="office-phone">+993 545454567</span> <a href="tel:+993545454567" class="call-small-link">Позвонить</a></div>
+                </div>
+                <div class="office-card-phone">
+                    <div>
+                        <div class="office-name-phone">Казань</div>
+                        <div class="address-mock">ул. Баумана, 21, БЦ «Петровский»</div>
+                    </div>
+                    <div><span class="office-phone">+7 42323789</span> <a href="tel:+742323789" class="call-small-link">Позвонить</a></div>
+                </div>
+                <div class="office-card-phone">
+                    <div>
+                        <div class="office-name-phone">Ташкент</div>
+                        <div class="address-mock">Амира Темура проспект, 24, офис 301</div>
+                    </div>
+                    <div><span class="office-phone">+4 454546575</span> <a href="tel:+4454546575" class="call-small-link">Позвонить</a></div>
+                </div>
+            </div>
+
+            <!-- Баннер мотивационный -->
+            <div class="motivation-banner">
+                <h3>Сделай шаг.</h3>
+                <h3 style="font-size: 24px;">Не просто мечтай.</h3>
+            </div>
+            <!-- Ссылки после баннера -->
+            <div class="footer-links">
+                <span onclick="alert('Условия использования')">Условия использования</span>
+                <span onclick="alert('Политика конфиденциальности')">Политика конфиденциальности</span>
+                <span onclick="alert('О нас: миссия, команда, партнёры')">О нас</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА УСЛУГИ (с улучшенными карточками) -->
+    <div id="servicesPage" class="page-content hidden-page">
+        <div class="container" style="margin-top:20px">
+            <button class="back-home-btn" style="background:#fce7e7; border:none; padding:8px 20px; border-radius:40px; margin-bottom:20px;">← На главную</button>
+            <div class="page-banner">
+                <div>
+                    <h3>Услуги</h3>
+                    <p>Полный цикл поддержки</p>
+                </div>
+                <div class="page-banner-img" style="background-image: url('https://placehold.co/200x200/ffffff/991b1b?text=Services'); width:80px; height:80px; background-size:cover; border-radius:28px;"></div>
+            </div>
+            <div class="services-grid" style="margin-top:20px;">
+                <div class="service-card">
+                    <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg></div>
+                    <h4>Вузы</h4>
+                    <p>Каталог университетов</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <h4>Поступить</h4>
+                    <p>Заявка менеджеру</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>
+                    <h4>Виза</h4>
+                    <p>Приглашение и виза</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 10c0 4-7 10-7 10s-7-6-7-10a7 7 0 1 1 14 0z"/></svg></div>
+                    <h4>Туры</h4>
+                    <p>Образовательные туры</p>
+                </div>
+            </div>
+            <!-- КРАСИВЫЕ КАРТОЧКИ ДЛЯ ЗАЯВКИ И VISA SUPPORT -->
+            <div class="service-page-card">
+                <div class="card-text">
+                    <strong><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Заявка</strong>
+                    <p>Заполните заявку, и менеджер свяжется с вами.</p>
+                </div>
+                <button class="btn-outline-red" onclick="alert('Форма заявки')">Перейти →</button>
+            </div>
+            <div class="service-page-card">
+                <div class="card-text">
+                    <strong><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M8 10h8M8 14h5"/></svg> Visa support</strong>
+                    <p>Помощь с приглашением, документами и визовым процессом.</p>
+                </div>
+                <button class="btn-outline-red" onclick="alert('Визовая поддержка')">Перейти →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА ВУЗЫ -->
+    <div id="universitiesPage" class="page-content hidden-page">
+        <div class="container" style="margin-top:20px">
+            <button class="back-home-btn" style="background:#fce7e7; border:none; padding:8px 20px; border-radius:40px;">← На главную</button>
+            <div class="page-banner">
+                <div>
+                    <h3>Каталог вузов</h3>
+                    <p>Найдите университет мечты</p>
+                </div>
+                <div class="page-banner-img" style="background-image: url('https://placehold.co/200x200/ffffff/991b1b?text=Uni'); width:80px; height:80px; background-size:cover; border-radius:28px;"></div>
+            </div>
+            <p>Выбирайте страну, стоимость, языки.</p>
+            <input type="text" placeholder="Поиск по названию" style="width:100%; padding:14px; border-radius:60px; border:1px solid #ffbbbb; margin:12px 0;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;"><span class="tag">Все страны</span><span class="tag">Партнёры</span><span class="tag">Общежитие</span></div>
+            <div class="news-card" style="text-align:center; margin-top:20px;"><strong>Найдено: 0</strong>
+                <p>Университеты не найдены. Попробуйте изменить страну.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА НОВОСТИ -->
+    <div id="newsPage" class="page-content hidden-page">
+        <div class="container" style="margin-top:20px">
+            <button class="back-home-btn" style="background:#fce7e7; border:none; padding:8px 20px; border-radius:40px;">← На главную</button>
+            <div class="page-banner">
+                <div>
+                    <h3>Новости</h3>
+                    <p>Будьте в курсе событий</p>
+                </div>
+                <div class="page-banner-img" style="background-image: url('https://placehold.co/200x200/ffffff/991b1b?text=News'); width:80px; height:80px; background-size:cover; border-radius:28px;"></div>
+            </div>
+            <p>Актуальные новости, гайды, дедлайны.</p>
+            <div class="news-card"><strong>Новостей пока нет</strong>
+                <p>Добавьте новости через админ-панель.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА ПРОФИЛЬ -->
+    <div id="profilePage" class="page-content hidden-page">
+        <div class="container" style="margin-top:20px">
+            <button class="back-home-btn" style="background:#fce7e7; border:none; padding:8px 20px; border-radius:40px;">← На главную</button>
+            <div class="page-banner">
+                <div>
+                    <h3>Профиль</h3>
+                    <p>Войдите, чтобы сохранять вузы</p>
+                </div>
+                <div class="page-banner-img" style="background-image: url('https://placehold.co/200x200/ffffff/991b1b?text=Profile'); width:80px; height:80px; background-size:cover; border-radius:28px;"></div>
+            </div>
+            <div class="guest-mode"><strong>Гостевой режим</strong>
+                <p>Чтобы подать заявку, писать менеджеру — войдите или зарегистрируйтесь.</p>
+                <div class="row-buttons"><button class="btn-outline-red" onclick="alert('Вход')">Войти</button><button class="btn-outline-red" onclick="alert('Регистрация')">Зарегистрироваться</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ФИКСИРОВАННАЯ НАВИГАЦИЯ -->
+    <div class="bottom-nav">
+        <div class="nav-item" data-page="main"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Главная</span></div>
+        <div class="nav-item" data-page="services"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Услуги</span></div>
+        <div class="nav-item" data-page="universities"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span>Вузы</span></div>
+        <div class="nav-item" data-page="news"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Новости</span></div>
+        <div class="nav-item" data-page="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M5 20v-2a7 7 0 0 1 14 0v2"/></svg><span>Профиль</span></div>
+    </div>
+
+    <script>
+        // бургер (выезд справа)
+        const burger = document.getElementById('burgerBtn');
+        const sideMenu = document.getElementById('sideMenu');
+        const overlay = document.getElementById('menuOverlay');
+
+        function closeMenu() {
+            sideMenu.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+        burger.addEventListener('click', () => {
+            sideMenu.classList.add('open');
+            overlay.classList.add('active');
+        });
+        overlay.addEventListener('click', closeMenu);
+        document.getElementById('closeMenuBtn').addEventListener('click', closeMenu);
+
+        const pages = {
+            main: document.getElementById('mainPage'),
+            services: document.getElementById('servicesPage'),
+            universities: document.getElementById('universitiesPage'),
+            news: document.getElementById('newsPage'),
+            profile: document.getElementById('profilePage')
+        };
+
+        function showPage(pageId) {
+            Object.values(pages).forEach(p => p.classList.add('hidden-page'));
+            pages[pageId].classList.remove('hidden-page');
+            window.scrollTo(0, 0);
+        }
+        document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const page = el.getAttribute('data-page');
+                if (page && pages[page]) showPage(page);
+            });
+        });
+        document.querySelectorAll('.back-home-btn').forEach(btn => {
+            btn.addEventListener('click', () => showPage('main'));
+        });
+        const allNewsLink = document.getElementById('allNewsLink');
+        const newsDetail1 = document.getElementById('newsDetail1');
+        const newsDetail2 = document.getElementById('newsDetail2');
+        if (allNewsLink) allNewsLink.addEventListener('click', () => showPage('news'));
+        if (newsDetail1) newsDetail1.addEventListener('click', () => showPage('news'));
+        if (newsDetail2) newsDetail2.addEventListener('click', () => showPage('news'));
+    </script>
+</body>
+
+</html>
