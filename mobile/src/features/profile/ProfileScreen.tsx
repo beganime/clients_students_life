@@ -14,6 +14,7 @@ export function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { user, isAuthenticated, logout } = useAuthStore();
   const avatarUrl = getMediaUrl(user?.profile?.avatar || null);
+  const isManager = Boolean(user?.is_manager);
 
   if (!isAuthenticated || !user) {
     return (
@@ -74,7 +75,7 @@ export function ProfileScreen() {
       </View>
 
       <View style={styles.infoCard}>
-        <ProfileInfo icon="lock" label="Role" value={user.role || 'user'} />
+        <ProfileInfo icon="lock" label="Роль" value={isManager ? 'manager' : user.role || 'user'} />
         <ProfileInfo icon="phone" label="Телефон" value={user.profile?.phone || 'не указан'} />
         <ProfileInfo icon="phone" label="WhatsApp" value={user.profile?.whatsapp || 'не указан'} />
         <ProfileInfo icon="chat" label="Telegram" value={user.profile?.telegram || 'не указан'} />
@@ -100,17 +101,19 @@ export function ProfileScreen() {
         />
         <ProfileMenuItem
           icon="document"
-          title="Мои заявки"
+          title={isManager ? 'Заявки клиентов' : 'Мои заявки'}
           onPress={() => navigation.navigate('MyApplications')}
         />
-        <ProfileMenuItem
-          icon="application"
-          title="Подать новую заявку"
-          onPress={() => navigation.navigate('ApplicationCreate')}
-        />
+        {!isManager ? (
+          <ProfileMenuItem
+            icon="application"
+            title="Подать новую заявку"
+            onPress={() => navigation.navigate('ApplicationCreate')}
+          />
+        ) : null}
         <ProfileMenuItem
           icon="chat"
-          title="Чат с менеджером"
+          title={isManager ? 'Входящие чаты клиентов' : 'Чат с менеджером'}
           onPress={() => navigation.navigate('Chat')}
         />
 

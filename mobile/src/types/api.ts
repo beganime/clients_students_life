@@ -167,12 +167,29 @@ export type ApplicationFile = {
 
 export type ChatRoom = {
   id: number;
+  user?: number;
+  user_name?: string;
+  user_email?: string;
+  user_activity?: UserActivity | null;
   application?: number | null;
+  application_number?: string;
   status: string;
   assigned_manager?: StaffProfile | null;
   last_message?: ChatMessage | null;
+  unread_count?: number;
   created_at: string;
   updated_at: string;
+};
+
+export type ChatAttachment = {
+  id: number;
+  url?: string | null;
+  original_name?: string;
+  content_type?: string;
+  size?: number;
+  width?: number | null;
+  height?: number | null;
+  created_at: string;
 };
 
 export type ChatMessage = {
@@ -181,9 +198,13 @@ export type ChatMessage = {
   sender_user?: number | null;
   sender_user_name?: string;
   sender_staff?: StaffProfile | null;
+  sender_role?: 'user' | 'manager';
+  sender_display_name?: string;
   message_type: 'text' | 'image' | 'file';
   text?: string;
   file?: string | null;
+  attachments?: ChatAttachment[];
+  is_mine?: boolean;
   is_read: boolean;
   created_at: string;
 };

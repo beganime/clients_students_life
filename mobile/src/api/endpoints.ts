@@ -278,8 +278,26 @@ export const chatApi = {
 
   async sendMessage(roomId: number, text: string) {
     const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, {
-      message_type: 'text',
       text,
+    });
+    return data;
+  },
+
+  async sendImage(roomId: number, file: { uri: string; name: string; type: string }, text = '') {
+    const formData = new FormData();
+    if (text.trim()) {
+      formData.append('text', text.trim());
+    }
+    formData.append('image', {
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
+    } as any);
+
+    const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     return data;
   },

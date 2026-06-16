@@ -99,7 +99,9 @@ class ApplicationViewSet(mixins.CreateModelMixin,
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def my(self, request):
-        queryset = self.get_queryset().filter(user=request.user)
+        queryset = self.get_queryset()
+        if not is_manager_user(request.user):
+            queryset = queryset.filter(user=request.user)
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = ApplicationListSerializer(page, many=True, context={'request': request})
@@ -127,7 +129,7 @@ class ApplicationFileViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = ApplicationFile.objects.select_related('application', 'uploaded_by')
-        if self.request.user.is_staff:
+        if is_manager_user(self.request.user):
             return qs
         return qs.filter(application__user=self.request.user)
     

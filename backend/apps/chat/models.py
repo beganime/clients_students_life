@@ -1,9 +1,19 @@
+import os
+import uuid
+
 from django.conf import settings
 from django.db import models
 
 from apps.applications.models import Application
 from apps.common.models import TimeStampedModel
 from apps.staff.models import StaffProfile
+
+
+def chat_image_upload_to(instance, filename):
+    ext = os.path.splitext(filename or '')[1].lower()
+    if ext not in {'.jpg', '.jpeg', '.png', '.webp'}:
+        ext = '.jpg'
+    return f'chat/images/{uuid.uuid4().hex}{ext}'
 
 
 class ChatRoom(TimeStampedModel):
@@ -85,3 +95,26 @@ class ChatMessage(TimeStampedModel):
 
     def __str__(self):
         return f'Сообщение #{self.id}'
+
+
+class ChatAttachment(TimeStampedModel):
+    message = models.ForeignKey(
+        ChatMessage,
+        on_delete=models.CASCADE,
+        related_name='attachments',
+        verbose_name='Сообщение',
+    )
+    file = models.ImageField('Изображение', upload_to=chat_image_upload_to)
+    original_name = models.CharField('Исходное имя файла', max_length=255, blank=True)
+    content_type = models.CharField('Content-Type', max_length=100, blank=True)
+    size = models.PositiveIntegerField('Размер, байт', default=0)
+    width = models.PositiveIntegerField('Ширина', null=True, blank=True)
+    height = models.PositiveIntegerField('Высота', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Вложение чата'
+        verbose_name_plural = 'Вложения чата'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return self.original_name or f'Вложение #{self.id}'

@@ -18,6 +18,7 @@ Copy `backend/.env.example` and set:
 - `MANAGER_SL_LEADS_API_KEY` - API key sent only by backend to manager-sl `POST /api/leads/create/`.
 - `MANAGER_SL_TIMEOUT_SECONDS` - manager-sl request timeout.
 - `THROTTLE_*` values - scoped DRF rate limits for register, login, application creation, push token save, activity, and future chat actions.
+- `CHAT_IMAGE_MAX_UPLOAD_SIZE`, `CHAT_IMAGE_MAX_STORED_SIZE`, `CHAT_IMAGE_MAX_DIMENSION` - server-side chat photo validation and compression limits.
 
 No manager-sl keys are stored in the mobile app.
 
@@ -34,5 +35,8 @@ No manager-sl keys are stored in the mobile app.
 - `GET /api/v1/universities/` and `GET /api/v1/universities/programs/` - proxies manager-sl catalog when configured.
 - `GET /api/v1/services/` - proxies manager-sl public services when configured.
 - `POST /api/v1/applications/` - creates a local app application, uses `Idempotency-Key`, then syncs to manager-sl lead API and stores `manager_sl_application_id`/sync status.
+- `GET/POST /api/v1/chat/` - client chat rooms; managers see client rooms according to app role.
+- `GET /api/v1/chat/{id}/messages/` - chat history for polling/refetch.
+- `POST /api/v1/chat/{id}/send_message/` - text or image message, with scoped rate limits and image validation/compression.
 
 If manager-sl is temporarily unavailable during application creation, the local application remains saved with `manager_sl_sync_status=failed` and a user-friendly mobile message can be shown.

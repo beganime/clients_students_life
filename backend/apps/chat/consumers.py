@@ -3,7 +3,10 @@ import json
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
+from apps.accounts.models import is_manager_user
+
 from .models import ChatMessage, ChatRoom
+from .services import notify_chat_message, staff_profile_for
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -49,6 +52,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'text': message['text'],
                     'sender_user': message['sender_user'],
                     'sender_staff': message['sender_staff'],
+                    'sender_role': message['sender_role'],
+                    'sender_display_name': message['sender_display_name'],
+                    'message_type': ChatMessage.MessageType.TEXT,
+                    'attachments': [],
+                    'is_read': False,
                     'created_at': message['created_at'],
                 },
             },
@@ -64,7 +72,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except ChatRoom.DoesNotExist:
             return False
 
-        if self.user.is_staff:
+        if is_manager_user(self.user):
             return True
 
         return room.user_id == self.user.id
@@ -72,18 +80,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def create_message(self, text):
         room = ChatRoom.objects.get(id=self.room_id)
+        sender_staff = staff_profile_for(self.user) if is_manager_user(self.user) else None
         message = ChatMessage.objects.create(
             room=room,
             sender_user=self.user,
+            sender_staff=sender_staff,
             message_type=ChatMessage.MessageType.TEXT,
             text=text,
         )
-        room.save()
+        if sender_staff and not room.assigned_manager_id:
+            room.assigned_manager = sender_staff
+        room.save(update_fields=['assigned_manager', 'updated_at'] if sender_staff else ['updated_at'])
+        notify_chat_message(message)
 
         return {
             'id': message.id,
             'text': message.text,
             'sender_user': message.sender_user_id,
-            'sender_staff': None,
+            'sender_staff': sender_staff.id if sender_staff else None,
+            'sender_role': 'manager' if sender_staff else 'user',
+            'sender_display_name': sender_staff.full_name if sender_staff else (self.user.get_full_name() or self.user.email or self.user.username),
             'created_at': message.created_at.isoformat(),
         }
