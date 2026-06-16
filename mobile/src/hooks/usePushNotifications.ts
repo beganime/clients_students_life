@@ -58,8 +58,8 @@ export function usePushNotifications() {
           platform: Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'unknown',
           device_id: deviceLabel(),
         });
-      } catch (error) {
-        console.log('Push registration error', error);
+      } catch {
+        // Push registration must not interrupt the main app flow.
       }
     }
 

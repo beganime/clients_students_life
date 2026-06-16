@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from corsheaders.defaults import default_headers
 from decouple import Csv, config
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -15,6 +16,12 @@ ALLOWED_HOSTS = config(
     default='localhost,127.0.0.1,0.0.0.0,*',
     cast=Csv(),
 )
+
+if not DEBUG and SECRET_KEY in {'dev-secret-key', 'change-me'}:
+    raise ImproperlyConfigured('Set a strong SECRET_KEY when DEBUG=False.')
+
+if not DEBUG and '*' in ALLOWED_HOSTS:
+    raise ImproperlyConfigured('ALLOWED_HOSTS must not contain "*" when DEBUG=False.')
 
 INSTALLED_APPS = [
     'unfold',
@@ -119,7 +126,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=DEBUG, cast=bool)
+CORS_ALLOW_ALL_ORIGINS = DEBUG and config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
@@ -204,12 +211,25 @@ CHAT_IMAGE_MAX_UPLOAD_SIZE = config('CHAT_IMAGE_MAX_UPLOAD_SIZE', default=6 * 10
 CHAT_IMAGE_MAX_STORED_SIZE = config('CHAT_IMAGE_MAX_STORED_SIZE', default=2 * 1024 * 1024, cast=int)
 CHAT_IMAGE_MAX_DIMENSION = config('CHAT_IMAGE_MAX_DIMENSION', default=1600, cast=int)
 
+APPLICATION_FILE_MAX_UPLOAD_SIZE = config('APPLICATION_FILE_MAX_UPLOAD_SIZE', default=10 * 1024 * 1024, cast=int)
+
+CHAT_WEBSOCKET_ENABLED = config('CHAT_WEBSOCKET_ENABLED', default=False, cast=bool)
+CHAT_WEBSOCKET_ALLOW_QUERY_TOKEN = config('CHAT_WEBSOCKET_ALLOW_QUERY_TOKEN', default=False, cast=bool)
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
 
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = config('SECURE_REFERRER_POLICY', default='same-origin')
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=0 if DEBUG else 31536000, cast=int)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=not DEBUG, cast=bool)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=False, cast=bool)
+X_FRAME_OPTIONS = 'DENY'
 
 UNFOLD = {
     'SITE_TITLE': 'Student’s Life Admin',

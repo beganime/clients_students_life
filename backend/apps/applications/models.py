@@ -1,3 +1,4 @@
+import os
 import uuid
 
 from django.conf import settings
@@ -10,6 +11,13 @@ from apps.services.models import Service
 from apps.staff.models import StaffProfile
 from apps.locations.models import Country, City
 from apps.universities.models import University, Program
+
+
+def application_file_upload_to(instance, filename):
+    ext = os.path.splitext(filename or '')[1].lower()
+    if ext not in {'.pdf', '.jpg', '.jpeg', '.png', '.webp'}:
+        ext = '.bin'
+    return f'applications/files/{uuid.uuid4().hex}{ext}'
 
 
 class Application(TimeStampedModel):
@@ -174,7 +182,7 @@ class ApplicationFile(TimeStampedModel):
         related_name='files',
         verbose_name='Заявка'
     )
-    file = models.FileField('Файл', upload_to='applications/files/')
+    file = models.FileField('Файл', upload_to=application_file_upload_to)
     file_type = models.CharField('Тип файла', max_length=50, choices=FileType.choices, default=FileType.OTHER)
     original_name = models.CharField('Оригинальное имя файла', max_length=255, blank=True)
     uploaded_by = models.ForeignKey(

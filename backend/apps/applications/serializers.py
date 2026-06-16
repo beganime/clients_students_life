@@ -4,6 +4,7 @@ from apps.common.manager_sl import manager_sl_enabled
 from apps.locations.models import City, Country
 from apps.universities.models import Program, University
 
+from .file_utils import validate_application_file
 from .models import Application, ApplicationFile, ApplicationStatusHistory
 
 
@@ -19,6 +20,10 @@ class ApplicationFileSerializer(serializers.ModelSerializer):
             'created_at',
         )
         read_only_fields = ('id', 'application', 'original_name', 'created_at')
+
+    def validate_file(self, value):
+        validate_application_file(value)
+        return value
         
 class ApplicationStatusHistorySerializer(serializers.ModelSerializer):
     changed_by_name = serializers.CharField(source='changed_by.get_full_name', read_only=True)

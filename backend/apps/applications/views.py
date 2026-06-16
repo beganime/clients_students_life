@@ -5,6 +5,7 @@ from django.http import FileResponse, Http404
 
 from apps.accounts.models import is_manager_user
 
+from .file_utils import clean_original_name
 from .manager_sl_sync import sync_application_to_manager_sl
 from .models import Application, ApplicationFile
 from .serializers import (
@@ -118,7 +119,7 @@ class ApplicationViewSet(mixins.CreateModelMixin,
         serializer.save(
             application=application,
             uploaded_by=request.user,
-            original_name=uploaded_file.name if uploaded_file else '',
+            original_name=clean_original_name(uploaded_file) if uploaded_file else '',
         )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

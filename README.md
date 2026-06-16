@@ -19,6 +19,8 @@ Copy `backend/.env.example` and set:
 - `MANAGER_SL_TIMEOUT_SECONDS` - manager-sl request timeout.
 - `THROTTLE_*` values - scoped DRF rate limits for register, login, application creation, push token save, activity, and future chat actions.
 - `CHAT_IMAGE_MAX_UPLOAD_SIZE`, `CHAT_IMAGE_MAX_STORED_SIZE`, `CHAT_IMAGE_MAX_DIMENSION` - server-side chat photo validation and compression limits.
+- `APPLICATION_FILE_MAX_UPLOAD_SIZE` - maximum size for application document uploads.
+- `CHAT_WEBSOCKET_ENABLED`, `CHAT_WEBSOCKET_ALLOW_QUERY_TOKEN` - optional WebSocket transport switches; polling is the default mobile chat transport.
 
 No manager-sl keys are stored in the mobile app.
 
@@ -40,3 +42,10 @@ No manager-sl keys are stored in the mobile app.
 - `POST /api/v1/chat/{id}/send_message/` - text or image message, with scoped rate limits and image validation/compression.
 
 If manager-sl is temporarily unavailable during application creation, the local application remains saved with `manager_sl_sync_status=failed` and a user-friendly mobile message can be shown.
+
+## Sprint 3 hardening
+
+- Application document uploads are restricted to PDF/JPEG/PNG/WebP, size-limited, signature-checked, and saved with generated names.
+- Chat WebSocket transport is disabled by default; polling/refetch is the supported mobile chat path.
+- Production settings reject weak `SECRET_KEY` and wildcard `ALLOWED_HOSTS` when `DEBUG=False`.
+- See `docs/mobile-production-checklist.md` for the release/security checklist and manual QA scenarios.
