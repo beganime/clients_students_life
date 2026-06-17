@@ -6,276 +6,259 @@ import Markdown from 'react-native-markdown-display';
 
 import { contentApi } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
+import { AppCard } from '../../components/AppCard';
+import { Badge } from '../../components/Badge';
+import { CTASection } from '../../components/CTASection';
+import { ErrorState } from '../../components/ErrorState';
 import { Loading } from '../../components/Loading';
 import { Screen } from '../../components/Screen';
+import { SectionHeader } from '../../components/SectionHeader';
+import { StepperBlock } from '../../components/StepperBlock';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
-import { colors } from '../../constants/colors';
+import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
 import { RootStackParamList } from '../../navigation/types';
 import { getMediaUrl } from '../../utils/media';
 
 type R = RouteProp<RootStackParamList, 'ServiceDetail'>;
 
+const serviceSteps = [
+  { title: 'Консультация', description: 'Менеджер уточняет задачу, страну, сроки и документы.' },
+  { title: 'Проверка данных', description: 'Проверяем анкету, контактные данные и текущую ситуацию студента.' },
+  { title: 'План действий', description: 'Объясняем этапы, сроки, оплату и следующий шаг.' },
+];
+
 export function ServiceDetailScreen() {
   const route = useRoute<R>();
   const navigation = useNavigation<any>();
 
-  const { data, isLoading } = useQuery({
+  const serviceQuery = useQuery({
     queryKey: ['service', route.params.slug],
     queryFn: () => contentApi.getService(route.params.slug),
   });
 
-  if (isLoading) return <Loading />;
-  if (!data) return null;
+  if (serviceQuery.isLoading) return <Loading />;
 
+  if (serviceQuery.isError) {
+    return (
+      <Screen scroll style={styles.screen}>
+        <ErrorState onAction={() => serviceQuery.refetch()} />
+      </Screen>
+    );
+  }
+
+  if (!serviceQuery.data) return null;
+
+  const data = serviceQuery.data;
   const imageUrl = getMediaUrl(data.cover_image || data.icon || null);
 
   return (
     <Screen scroll style={styles.screen}>
-      <View style={styles.hero}>
-        <View style={styles.glowRed} />
+      <View style={[styles.hero, shadows.premium]}>
         <View style={styles.glowBlue} />
-
-        {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.heroImage} />
-        ) : (
-          <View style={styles.heroIconBox}>
-            <SvgIcon name="services" size={38} color={colors.white} />
-          </View>
-        )}
-
-        <View style={styles.heroGlass}>
-          <Text style={styles.kicker}>Услуга Student’s Life</Text>
-          <Text style={styles.title}>{data.title}</Text>
-          <Text style={styles.description}>{data.short_description}</Text>
+        <View style={styles.glowCoral} />
+        {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.heroImage} /> : null}
+        <View style={styles.iconBox}>
+          <SvgIcon name="services" size={34} color={colors.white} strokeWidth={2.4} />
+        </View>
+        <Badge label="Услуга Student’s Life" variant="mint" />
+        <Text style={styles.title}>{data.title}</Text>
+        <Text style={styles.description}>{data.short_description || 'Комплексная поддержка по выбранной услуге.'}</Text>
+        <View style={styles.heroActions}>
+          <AppButton title={data.button_text || 'Подать заявку'} onPress={() => navigation.navigate('ApplicationCreate', { serviceId: data.id })} />
+          <AppButton title="Написать в чат" variant="outline" onPress={() => navigation.navigate('Chat')} />
         </View>
       </View>
 
-      <View style={styles.ctaCard}>
-        <View style={styles.ctaIconBox}>
-          <SvgIcon name="application" size={28} color={colors.primary} />
-        </View>
-
-        <Text style={styles.ctaTitle}>Хотите воспользоваться услугой?</Text>
-        <Text style={styles.ctaText}>
-          Оставьте заявку, и менеджер Student’s Life свяжется с вами.
-        </Text>
-
-        <AppButton
-          title={data.button_text || 'Подать заявку'}
-          onPress={() => navigation.navigate('ApplicationCreate', { serviceId: data.id })}
-        />
+      <SectionHeader eyebrow="Что входит" title="Что входит в услугу" />
+      <View style={styles.grid}>
+        <InfoCard icon="check" title="Персональный разбор" text="Менеджер объяснит, что подходит именно под вашу ситуацию." />
+        <InfoCard icon="document" title="Документы" text={data.required_documents || 'Список документов зависит от страны, вуза и услуги.'} />
+        <InfoCard icon="clock" title="Сроки" text={data.estimated_time || 'Сроки уточняются после консультации и проверки документов.'} />
       </View>
 
-      <View style={styles.infoGrid}>
-        {data.estimated_time ? (
-          <InfoCard icon="clock" title="Срок" text={data.estimated_time} />
-        ) : null}
+      <SectionHeader eyebrow="Этапы" title="Как проходит оформление" description="Без сложных технических формулировок — только понятные шаги." />
+      <StepperBlock steps={serviceSteps} />
 
-        {data.required_documents ? (
-          <InfoCard icon="document" title="Документы" text={data.required_documents} />
-        ) : null}
-      </View>
+      <AppCard style={styles.documentsCard}>
+        <Text style={styles.documentsTitle}>Какие документы могут понадобиться</Text>
+        <DocLine text="паспорт или документ, удостоверяющий личность" />
+        <DocLine text="аттестат, диплом или справка об обучении" />
+        <DocLine text="переводы документов, фото, контакты и анкета" />
+        <Text style={styles.documentsNote}>Точный список менеджер даст после первичной консультации.</Text>
+      </AppCard>
 
       {data.description_markdown ? (
-        <View style={styles.markdownBox}>
+        <AppCard style={styles.markdownBox}>
           <Text style={styles.sectionTitle}>Подробнее</Text>
           <Markdown>{data.description_markdown}</Markdown>
-        </View>
+        </AppCard>
       ) : null}
+
+      <CTASection
+        eyebrow="Следующий шаг"
+        title="Оставьте заявку — она ни к чему не обязывает"
+        description="Менеджер свяжется с вами и объяснит, какие действия нужны дальше."
+        primaryText="Оставить заявку"
+        onPrimaryPress={() => navigation.navigate('ApplicationCreate', { serviceId: data.id })}
+        secondaryText="Открыть чат"
+        onSecondaryPress={() => navigation.navigate('Chat')}
+      />
     </Screen>
   );
 }
 
-function InfoCard({
-  icon,
-  title,
-  text,
-}: {
-  icon: SvgIconName;
-  title: string;
-  text: string;
-}) {
+function InfoCard({ icon, title, text }: { icon: SvgIconName; title: string; text: string }) {
   return (
-    <View style={styles.infoCard}>
+    <AppCard style={styles.infoCard}>
       <View style={styles.infoIconBox}>
-        <SvgIcon name={icon} size={22} color={colors.secondary} />
+        <SvgIcon name={icon} size={22} color={colors.primary} />
       </View>
       <Text style={styles.infoTitle}>{title}</Text>
       <Text style={styles.infoText}>{text}</Text>
+    </AppCard>
+  );
+}
+
+function DocLine({ text }: { text: string }) {
+  return (
+    <View style={styles.docLine}>
+      <SvgIcon name="check" size={16} color={colors.success} />
+      <Text style={styles.docText}>{text}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    padding: 20,
-    paddingBottom: 42,
-    backgroundColor: '#F4F7FB',
+    backgroundColor: colors.background,
   },
   hero: {
-    minHeight: 305,
-    borderRadius: 34,
-    backgroundColor: '#101828',
-    padding: 18,
+    minHeight: 350,
+    borderRadius: radius.xl,
+    backgroundColor: colors.primaryDark,
+    padding: spacing.lg,
     justifyContent: 'flex-end',
     overflow: 'hidden',
-    marginBottom: 18,
-    shadowColor: '#101828',
-    shadowOpacity: 0.24,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 18 },
-    elevation: 12,
-  },
-  glowRed: {
-    position: 'absolute',
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: colors.primary,
-    top: -90,
-    right: -80,
-    opacity: 0.68,
+    marginBottom: spacing.lg,
   },
   glowBlue: {
     position: 'absolute',
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: colors.secondary,
-    bottom: -110,
-    left: -85,
-    opacity: 0.7,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: colors.primary,
+    top: -105,
+    right: -95,
+    opacity: 0.68,
+  },
+  glowCoral: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: colors.accent,
+    left: -90,
+    bottom: -96,
+    opacity: 0.24,
   },
   heroImage: {
     position: 'absolute',
-    right: 18,
-    top: 18,
+    right: spacing.lg,
+    top: spacing.lg,
     width: 78,
     height: 78,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderRadius: 26,
+    opacity: 0.9,
   },
-  heroIconBox: {
-    position: 'absolute',
-    right: 18,
-    top: 18,
-    width: 78,
-    height: 78,
-    borderRadius: 25,
+  iconBox: {
+    width: 66,
+    height: 66,
+    borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-  },
-  heroGlass: {
-    borderRadius: 28,
-    padding: 20,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-  },
-  kicker: {
-    color: 'rgba(255,255,255,0.78)',
-    fontSize: 12,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
+    borderColor: 'rgba(255,255,255,0.26)',
+    marginBottom: spacing.md,
   },
   title: {
     color: colors.white,
     fontSize: 32,
     lineHeight: 38,
-    fontWeight: '900',
+    fontWeight: typography.weights.heavy,
+    marginTop: spacing.md,
   },
   description: {
-    marginTop: 10,
-    color: 'rgba(255,255,255,0.88)',
-    fontSize: 15,
-    lineHeight: 22,
+    color: 'rgba(255,255,255,0.84)',
+    fontSize: typography.body,
+    lineHeight: 23,
+    marginTop: spacing.sm,
+    fontWeight: typography.weights.medium,
   },
-  ctaCard: {
-    borderRadius: 28,
-    padding: 18,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.96)',
-    marginBottom: 16,
-    shadowColor: '#101828',
-    shadowOpacity: 0.08,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 5,
+  heroActions: {
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
-  ctaIconBox: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(229,57,53,0.1)',
-    marginBottom: 12,
-  },
-  ctaTitle: {
-    color: colors.text,
-    fontSize: 21,
-    fontWeight: '900',
-  },
-  ctaText: {
-    color: colors.muted,
-    lineHeight: 21,
-    marginTop: 6,
-    marginBottom: 16,
-    fontWeight: '700',
-  },
-  infoGrid: {
-    gap: 12,
+  grid: {
+    gap: spacing.md,
   },
   infoCard: {
-    borderRadius: 24,
-    padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.96)',
-    shadowColor: '#101828',
-    shadowOpacity: 0.06,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
+    padding: spacing.lg,
   },
   infoIconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 17,
-    backgroundColor: 'rgba(21,101,192,0.1)',
+    width: 50,
+    height: 50,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: spacing.sm,
   },
   infoTitle: {
     color: colors.text,
-    fontSize: 17,
-    fontWeight: '900',
+    fontSize: typography.subtitle,
+    fontWeight: typography.weights.heavy,
   },
   infoText: {
     color: colors.muted,
     lineHeight: 21,
-    marginTop: 6,
-    fontWeight: '700',
+    marginTop: spacing.xs,
+    fontWeight: typography.weights.medium,
+  },
+  documentsCard: {
+    marginTop: spacing.xl,
+  },
+  documentsTitle: {
+    color: colors.text,
+    fontSize: typography.subtitle,
+    fontWeight: typography.weights.heavy,
+    marginBottom: spacing.md,
+  },
+  docLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  docText: {
+    flex: 1,
+    color: colors.muted,
+    fontWeight: typography.weights.bold,
+    lineHeight: 20,
+  },
+  documentsNote: {
+    color: colors.primary,
+    fontWeight: typography.weights.bold,
+    marginTop: spacing.md,
+    lineHeight: 20,
   },
   markdownBox: {
-    marginTop: 18,
-    borderRadius: 26,
-    padding: 18,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.96)',
+    marginTop: spacing.xl,
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 23,
-    fontWeight: '900',
-    marginBottom: 12,
+    fontSize: typography.subtitle,
+    fontWeight: typography.weights.heavy,
+    marginBottom: spacing.md,
   },
 });
