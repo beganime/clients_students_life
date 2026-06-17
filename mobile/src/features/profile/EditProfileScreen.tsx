@@ -4,9 +4,12 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { authApi } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
+import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
+import { Badge } from '../../components/Badge';
 import { Screen } from '../../components/Screen';
-import { colors } from '../../constants/colors';
+import { SvgIcon } from '../../components/SvgIcon';
+import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { getMediaUrl } from '../../utils/media';
@@ -41,15 +44,12 @@ export function EditProfileScreen() {
       quality: 0.8,
     });
 
-    if (!result.canceled) {
-      setAvatarUri(result.assets[0].uri);
-    }
+    if (!result.canceled) setAvatarUri(result.assets[0].uri);
   };
 
   const handleSave = async () => {
     try {
       setLoading(true);
-
       const formData = new FormData();
       formData.append('first_name', firstName);
       formData.append('last_name', lastName);
@@ -62,77 +62,69 @@ export function EditProfileScreen() {
       formData.append('profile.language', user?.profile?.language || 'ru');
 
       if (avatarUri) {
-        formData.append('profile.avatar', {
-          uri: avatarUri,
-          name: 'avatar.jpg',
-          type: 'image/jpeg',
-        } as any);
+        formData.append('profile.avatar', { uri: avatarUri, name: 'avatar.jpg', type: 'image/jpeg' } as any);
       }
 
       await authApi.updateMeFormData(formData);
       await refreshMe();
-      Alert.alert('Готово', 'Профиль обновлён');
+      Alert.alert('Готово', 'Профиль обновлён.');
     } catch (error) {
-      Alert.alert('Ошибка', getApiErrorMessage(error, 'Не удалось обновить профиль'));
+      Alert.alert('Не удалось обновить профиль', getApiErrorMessage(error, 'Проверьте данные и попробуйте ещё раз.'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Screen scroll>
-      <Text style={styles.title}>Редактировать профиль</Text>
+    <Screen scroll style={styles.screen}>
+      <View style={[styles.hero, shadows.premium]}>
+        <View style={styles.glowBlue} />
+        <View style={styles.glowMint} />
+        <Badge label="Профиль" variant="mint" icon="profile" />
+        <Text style={styles.title}>Редактировать данные</Text>
+        <Text style={styles.subtitle}>Актуальные контакты помогут менеджеру быстрее отвечать по заявкам и документам.</Text>
+      </View>
 
-      <Pressable style={styles.avatarBox} onPress={pickAvatar}>
-        {currentAvatar ? <Image source={{ uri: currentAvatar }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder} />}
-        <Text style={styles.avatarText}>Изменить фото</Text>
-      </Pressable>
+      <AppCard style={styles.avatarCard}>
+        <Pressable style={styles.avatarBox} onPress={pickAvatar}>
+          {currentAvatar ? <Image source={{ uri: currentAvatar }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={42} color={colors.primary} /></View>}
+          <Text style={styles.avatarText}>Изменить фото</Text>
+        </Pressable>
+      </AppCard>
 
-      <AppInput label="Имя" value={firstName} onChangeText={setFirstName} />
-      <AppInput label="Фамилия" value={lastName} onChangeText={setLastName} />
-      <AppInput label="Телефон" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-      <AppInput label="WhatsApp" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" />
-      <AppInput label="Telegram" value={telegram} onChangeText={setTelegram} placeholder="@username" />
-      <AppInput label="Страна" value={country} onChangeText={setCountry} />
-      <AppInput label="Город" value={city} onChangeText={setCity} />
-      <AppInput label="Гражданство" value={citizenship} onChangeText={setCitizenship} />
-
-      <AppButton title="Сохранить" onPress={handleSave} loading={loading} style={styles.button} />
+      <AppCard style={styles.formCard}>
+        <Text style={styles.sectionTitle}>Основные данные</Text>
+        <View style={styles.nameRow}>
+          <AppInput wrapperStyle={styles.nameInput} label="Имя" value={firstName} onChangeText={setFirstName} />
+          <AppInput wrapperStyle={styles.nameInput} label="Фамилия" value={lastName} onChangeText={setLastName} />
+        </View>
+        <AppInput label="Телефон" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+        <AppInput label="WhatsApp" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" />
+        <AppInput label="Telegram" value={telegram} onChangeText={setTelegram} placeholder="@username" />
+        <AppInput label="Страна" value={country} onChangeText={setCountry} />
+        <AppInput label="Город" value={city} onChangeText={setCity} />
+        <AppInput label="Гражданство" value={citizenship} onChangeText={setCitizenship} />
+        <AppButton title="Сохранить изменения" onPress={handleSave} loading={loading} style={styles.button} />
+      </AppCard>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: '900',
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  avatarBox: {
-    alignItems: 'center',
-    marginBottom: 22,
-  },
-  avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: colors.border,
-  },
-  avatarPlaceholder: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: '#FDECEC',
-  },
-  avatarText: {
-    marginTop: 10,
-    color: colors.secondary,
-    fontWeight: '900',
-  },
-  button: {
-    marginTop: 8,
-    marginBottom: 40,
-  },
+  screen: { backgroundColor: colors.background },
+  hero: { minHeight: 280, borderRadius: radius.xl, backgroundColor: colors.primaryDark, padding: spacing.lg, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: spacing.lg },
+  glowBlue: { position: 'absolute', width: 270, height: 270, borderRadius: 135, backgroundColor: colors.primary, top: -105, right: -95, opacity: 0.68 },
+  glowMint: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.success, left: -90, bottom: -96, opacity: 0.22 },
+  title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
+  subtitle: { color: 'rgba(255,255,255,0.84)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
+  avatarCard: { alignItems: 'center', marginBottom: spacing.lg },
+  avatarBox: { alignItems: 'center' },
+  avatar: { width: 112, height: 112, borderRadius: 56, backgroundColor: colors.border },
+  avatarPlaceholder: { width: 112, height: 112, borderRadius: 56, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+  avatarText: { marginTop: spacing.sm, color: colors.primary, fontWeight: typography.weights.heavy },
+  formCard: { marginBottom: spacing.xl },
+  sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.md },
+  nameRow: { flexDirection: 'row', gap: spacing.sm },
+  nameInput: { flex: 1 },
+  button: { marginTop: spacing.sm },
 });
