@@ -2,6 +2,9 @@ import Constants from 'expo-constants';
 
 const DEFAULT_PROD_API_URL = 'https://stud-life.com/api/v1';
 
+export const OFFICIAL_SITE_URL = 'https://students-life.ru';
+export const COMPANY_APPS_URL = '';
+
 type ExpoExtra = {
   apiBaseUrl?: string;
 };
@@ -22,3 +25,4 @@ export const API_ROOT_URL = API_BASE_URL.replace('/api/v1', '');
 export const PRIVACY_POLICY_URL = `${API_ROOT_URL}/privacy-policy/`;
 
 export const APP_NAME = "Student's Life";
+export const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
