@@ -9,30 +9,17 @@ import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { LoginRequired } from '../../components/LoginRequired';
+import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
-import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
+import { colors, spacing, typography } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 
 const statusLabels: Record<string, string> = {
-  new: 'Новая',
-  accepted: 'Принята',
-  manager_assigned: 'Назначен менеджер',
-  consultation: 'На консультации',
-  waiting_documents: 'Ожидаются документы',
-  documents_received: 'Документы получены',
-  in_progress: 'В работе',
-  sent_to_university: 'Отправлено в университет',
-  waiting_response: 'Ожидается ответ',
-  approved: 'Одобрено',
-  rejected: 'Отказ',
-  completed: 'Завершено',
-  closed: 'Закрыто',
+  new: 'Новая', accepted: 'Принята', manager_assigned: 'Назначен менеджер', consultation: 'На консультации', waiting_documents: 'Ожидаются документы', documents_received: 'Документы получены', in_progress: 'В работе', sent_to_university: 'Отправлено в университет', waiting_response: 'Ожидается ответ', approved: 'Одобрено', rejected: 'Отказ', completed: 'Завершено', closed: 'Закрыто',
 };
 
 const syncLabels: Record<string, string> = {
-  pending: 'ожидает синхронизации',
-  synced: 'передана в CRM',
-  failed: 'будет передана позже',
+  pending: 'ожидает синхронизации', synced: 'передана в CRM', failed: 'будет передана позже',
 };
 
 export function MyApplicationsScreen() {
@@ -65,13 +52,11 @@ function MyApplicationsContent() {
         keyExtractor={item => String(item.id)}
         ListHeaderComponent={
           <View>
-            <View style={[styles.hero, shadows.premium]}>
-              <View style={styles.glowBlue} />
-              <View style={styles.glowMint} />
+            <RedGradientHero style={styles.hero}>
               <Badge label={isManager ? 'Manager panel' : 'История заявок'} variant="mint" icon="document" />
               <Text style={styles.title}>{isManager ? 'Заявки из приложения' : 'Мои заявки'}</Text>
               <Text style={styles.subtitle}>{isManager ? 'Новые заявки клиентов с текущим статусом и CRM-синхронизацией.' : 'Здесь сохраняется история обращений, выбранные страны и статус обработки.'}</Text>
-            </View>
+            </RedGradientHero>
             {applicationsQuery.isLoading ? <LoadingSkeleton rows={3} height={132} /> : null}
             {applicationsQuery.isError ? <ErrorState onAction={() => applicationsQuery.refetch()} /> : null}
           </View>
@@ -101,15 +86,13 @@ function InfoLine({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 20, paddingBottom: 44, backgroundColor: colors.background },
-  hero: { minHeight: 280, borderRadius: radius.xl, backgroundColor: colors.primaryDark, padding: spacing.lg, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: spacing.lg },
-  glowBlue: { position: 'absolute', width: 270, height: 270, borderRadius: 135, backgroundColor: colors.primary, top: -105, right: -95, opacity: 0.68 },
-  glowMint: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.success, left: -90, bottom: -96, opacity: 0.22 },
+  list: { padding: 20, paddingBottom: 44, backgroundColor: '#FEF7F5' },
+  hero: { minHeight: 260, marginBottom: spacing.lg },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
-  subtitle: { color: 'rgba(255,255,255,0.84)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
-  card: { marginBottom: spacing.md },
+  subtitle: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
+  card: { marginBottom: spacing.md, borderColor: '#FFDDDD' },
   topRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
   cardTitle: { marginTop: spacing.md, color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy },
-  status: { marginTop: spacing.sm, color: colors.primary, fontWeight: typography.weights.heavy },
+  status: { marginTop: spacing.sm, color: '#B91C1C', fontWeight: typography.weights.heavy },
   info: { marginTop: spacing.xs, color: colors.muted, lineHeight: 20, fontWeight: typography.weights.medium },
 });
