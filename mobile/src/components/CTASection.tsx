@@ -1,8 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, shadows, spacing, typography } from '../constants/colors';
+import { colors, spacing, typography } from '../constants/colors';
 import { AppButton } from './AppButton';
+import { RedGradientHero } from './RedGradientHero';
 
 type Props = {
   eyebrow?: string;
@@ -16,9 +17,7 @@ type Props = {
 
 export function CTASection({ eyebrow, title, description, primaryText, onPrimaryPress, secondaryText, onSecondaryPress }: Props) {
   return (
-    <View style={[styles.card, shadows.premium]}>
-      <View style={styles.glowBlue} />
-      <View style={styles.glowCoral} />
+    <RedGradientHero style={styles.card}>
       {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
       <Text style={styles.title}>{title}</Text>
       {description ? <Text style={styles.description}>{description}</Text> : null}
@@ -26,40 +25,17 @@ export function CTASection({ eyebrow, title, description, primaryText, onPrimary
         <AppButton title={primaryText} onPress={onPrimaryPress} style={styles.button} />
         {secondaryText && onSecondaryPress ? <AppButton title={secondaryText} onPress={onSecondaryPress} variant="outline" style={styles.button} /> : null}
       </View>
-    </View>
+    </RedGradientHero>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    backgroundColor: colors.primaryDark,
-    overflow: 'hidden',
+    minHeight: 230,
     marginTop: spacing.xl,
   },
-  glowBlue: {
-    position: 'absolute',
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: colors.primary,
-    top: -95,
-    right: -85,
-    opacity: 0.62,
-  },
-  glowCoral: {
-    position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    backgroundColor: colors.accent,
-    bottom: -96,
-    left: -78,
-    opacity: 0.28,
-  },
   eyebrow: {
-    color: 'rgba(255,255,255,0.74)',
+    color: 'rgba(255,255,255,0.78)',
     fontSize: typography.tiny,
     fontWeight: typography.weights.heavy,
     letterSpacing: 1,
@@ -73,7 +49,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.heavy,
   },
   description: {
-    color: 'rgba(255,255,255,0.84)',
+    color: 'rgba(255,255,255,0.9)',
     marginTop: spacing.sm,
     fontSize: typography.body,
     lineHeight: 23,
