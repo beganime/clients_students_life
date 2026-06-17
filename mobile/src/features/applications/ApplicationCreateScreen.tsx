@@ -12,10 +12,10 @@ import { Badge } from '../../components/Badge';
 import { CTASection } from '../../components/CTASection';
 import { Loading } from '../../components/Loading';
 import { LoginRequired } from '../../components/LoginRequired';
+import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
-import { SectionHeader } from '../../components/SectionHeader';
 import { SvgIcon } from '../../components/SvgIcon';
-import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
+import { colors, radius, spacing, typography } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/apiError';
 
@@ -30,12 +30,7 @@ export function ApplicationCreateScreen() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   if (!isAuthenticated) {
-    return (
-      <LoginRequired
-        title="Чтобы отправить заявку, войдите в аккаунт"
-        description="Зарегистрированные пользователи видят историю заявок, ответы менеджера и персональные предложения."
-      />
-    );
+    return <LoginRequired title="Чтобы отправить заявку, войдите в аккаунт" description="Зарегистрированные пользователи видят историю заявок, ответы менеджера и персональные предложения." />;
   }
 
   return <ApplicationCreateForm />;
@@ -53,7 +48,6 @@ function ApplicationCreateForm() {
   const [serviceId, setServiceId] = useState<number | null>(route.params?.serviceId || null);
   const [targetCountryId, setTargetCountryId] = useState<number | null>(null);
   const [targetUniversityId, setTargetUniversityId] = useState<number | null>(route.params?.universityId || null);
-
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
@@ -102,41 +96,26 @@ function ApplicationCreateForm() {
   };
 
   const handlePickFile = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      multiple: true,
-      copyToCacheDirectory: true,
-      type: ['application/pdf', 'image/*'],
-    });
-
+    const result = await DocumentPicker.getDocumentAsync({ multiple: true, copyToCacheDirectory: true, type: ['application/pdf', 'image/*'] });
     if (result.canceled) return;
-
-    const pickedFiles = result.assets.map(asset => ({
-      uri: asset.uri,
-      name: asset.name,
-      type: asset.mimeType || 'application/octet-stream',
-    }));
-
+    const pickedFiles = result.assets.map(asset => ({ uri: asset.uri, name: asset.name, type: asset.mimeType || 'application/octet-stream' }));
     setFiles(prev => [...prev, ...pickedFiles]);
   };
 
   const handleSubmit = async () => {
     setStatus(null);
     setSuccessNumber('');
-
     if (!fullName.trim()) {
       setStatus({ type: 'error', text: 'Введите ФИО студента.' });
       return;
     }
-
     if (!phone && !whatsapp && !telegram && !email) {
       setStatus({ type: 'error', text: 'Укажите хотя бы один способ связи.' });
       return;
     }
-
     try {
       setLoading(true);
       setStatus({ type: 'info', text: 'Отправляем заявку...' });
-
       const application = await applicationsApi.createApplication({
         service: serviceId,
         full_name: fullName,
@@ -158,11 +137,7 @@ function ApplicationCreateForm() {
         comment,
         idempotency_key: makeIdempotencyKey(),
       });
-
-      for (const file of files) {
-        await applicationsApi.uploadFile(application.id, file, 'other');
-      }
-
+      for (const file of files) await applicationsApi.uploadFile(application.id, file, 'other');
       setSuccessNumber(application.application_number);
       setStatus({ type: 'success', text: `Заявка отправлена. Номер: ${application.application_number}` });
       resetForm();
@@ -194,21 +169,17 @@ function ApplicationCreateForm() {
 
   return (
     <Screen scroll style={styles.screen}>
-      <View style={[styles.hero, shadows.premium]}>
-        <View style={styles.glowBlue} />
-        <View style={styles.glowMint} />
+      <RedGradientHero style={styles.hero}>
         <Badge label="Заявка ни к чему не обязывает" variant="mint" icon="check" />
         <Text style={styles.title}>Расскажите, куда хотите поступить</Text>
         <Text style={styles.subtitle}>Менеджер свяжется с вами, проверит данные и объяснит следующие шаги.</Text>
-      </View>
+      </RedGradientHero>
 
       <FormSection step="1" title="Услуга и направление" description="Выберите услугу, страну и университет, если уже знаете желаемый вариант.">
         <Text style={styles.label}>Выберите услугу</Text>
         <ChipScroll items={servicesQuery.data || []} activeId={serviceId} getLabel={item => item.title} onPress={item => setServiceId(serviceId === item.id ? null : item.id)} />
-
         <Text style={styles.label}>Желаемая страна обучения</Text>
         <ChipScroll items={countriesQuery.data || []} activeId={targetCountryId} getLabel={item => item.name} onPress={item => setTargetCountryId(targetCountryId === item.id ? null : item.id)} />
-
         <Text style={styles.label}>Желаемый университет</Text>
         <ChipScroll items={(universitiesQuery.data || []).slice(0, 20)} activeId={targetUniversityId} getLabel={item => item.name} onPress={item => setTargetUniversityId(targetUniversityId === item.id ? null : item.id)} />
       </FormSection>
@@ -232,90 +203,40 @@ function ApplicationCreateForm() {
       </FormSection>
 
       <FormSection step="4" title="Документы" description="Можно прикрепить PDF или фото. Если документов пока нет — заявку всё равно можно отправить.">
-        <Pressable style={styles.fileButton} onPress={handlePickFile}>
-          <SvgIcon name="file" size={20} color={colors.primary} />
-          <Text style={styles.fileButtonText}>Прикрепить документы</Text>
-        </Pressable>
-        {files.map((file, index) => (
-          <View key={`${file.uri}-${index}`} style={styles.fileItem}>
-            <SvgIcon name="document" size={17} color={colors.primary} />
-            <Text style={styles.fileName}>{file.name}</Text>
-            <Pressable onPress={() => setFiles(prev => prev.filter((_, itemIndex) => itemIndex !== index))}>
-              <SvgIcon name="close" size={17} color={colors.mutedLight} />
-            </Pressable>
-          </View>
-        ))}
+        <Pressable style={styles.fileButton} onPress={handlePickFile}><SvgIcon name="file" size={20} color="#B91C1C" /><Text style={styles.fileButtonText}>Прикрепить документы</Text></Pressable>
+        {files.map((file, index) => <View key={`${file.uri}-${index}`} style={styles.fileItem}><SvgIcon name="document" size={17} color="#B91C1C" /><Text style={styles.fileName}>{file.name}</Text><Pressable onPress={() => setFiles(prev => prev.filter((_, itemIndex) => itemIndex !== index))}><SvgIcon name="close" size={17} color={colors.mutedLight} /></Pressable></View>)}
       </FormSection>
 
       {status ? <StatusBox type={status.type} text={status.text} /> : null}
-
       <AppButton title="Отправить заявку" onPress={handleSubmit} loading={loading} style={styles.submitButton} />
-
-      <CTASection
-        eyebrow="Важно"
-        title="Зарегистрированные пользователи получают больше"
-        description="История заявок, ответы менеджера, персональные предложения и скидки остаются в вашем аккаунте."
-        primaryText="Открыть чат"
-        onPrimaryPress={() => navigation.navigate('Chat')}
-        secondaryText="Мои заявки"
-        onSecondaryPress={() => navigation.navigate('MyApplications')}
-      />
+      <CTASection eyebrow="Важно" title="Зарегистрированные пользователи получают больше" description="История заявок, ответы менеджера, персональные предложения и скидки остаются в вашем аккаунте." primaryText="Открыть чат" onPrimaryPress={() => navigation.navigate('Chat')} secondaryText="Мои заявки" onSecondaryPress={() => navigation.navigate('MyApplications')} />
     </Screen>
   );
 }
 
 function FormSection({ step, title, description, children }: { step: string; title: string; description: string; children: React.ReactNode }) {
-  return (
-    <AppCard style={styles.sectionCard}>
-      <View style={styles.sectionHeaderRow}>
-        <View style={styles.stepCircle}><Text style={styles.stepText}>{step}</Text></View>
-        <View style={styles.sectionTitleBox}>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          <Text style={styles.sectionDescription}>{description}</Text>
-        </View>
-      </View>
-      <View style={styles.sectionContent}>{children}</View>
-    </AppCard>
-  );
+  return <AppCard style={styles.sectionCard}><View style={styles.sectionHeaderRow}><View style={styles.stepCircle}><Text style={styles.stepText}>{step}</Text></View><View style={styles.sectionTitleBox}><Text style={styles.sectionTitle}>{title}</Text><Text style={styles.sectionDescription}>{description}</Text></View></View><View style={styles.sectionContent}>{children}</View></AppCard>;
 }
 
 function ChipScroll<T extends { id: number }>({ items, activeId, getLabel, onPress }: { items: T[]; activeId: number | null; getLabel: (item: T) => string; onPress: (item: T) => void }) {
   if (!items.length) return <Text style={styles.emptyHint}>Пока нет вариантов. Можно отправить заявку без выбора.</Text>;
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-      {items.map(item => {
-        const active = activeId === item.id;
-        return (
-          <Pressable key={item.id} style={[styles.chip, active && styles.chipActive]} onPress={() => onPress(item)}>
-            <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>{getLabel(item)}</Text>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
-  );
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>{items.map(item => { const active = activeId === item.id; return <Pressable key={item.id} style={[styles.chip, active && styles.chipActive]} onPress={() => onPress(item)}><Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>{getLabel(item)}</Text></Pressable>; })}</ScrollView>;
 }
 
 function StatusBox({ type, text }: { type: 'success' | 'error' | 'info'; text: string }) {
-  const color = type === 'success' ? colors.success : type === 'error' ? colors.danger : colors.primary;
+  const color = type === 'success' ? colors.success : type === 'error' ? colors.danger : '#B91C1C';
   const icon = type === 'success' ? 'check' : type === 'error' ? 'warning' : 'application';
-  return (
-    <View style={[styles.statusBox, { borderColor: `${color}33`, backgroundColor: `${color}12` }]}>
-      <SvgIcon name={icon} size={18} color={color} />
-      <Text style={[styles.statusText, { color }]}>{text}</Text>
-    </View>
-  );
+  return <View style={[styles.statusBox, { borderColor: `${color}33`, backgroundColor: `${color}12` }]}><SvgIcon name={icon} size={18} color={color} /><Text style={[styles.statusText, { color }]}>{text}</Text></View>;
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: colors.background },
-  hero: { minHeight: 300, borderRadius: radius.xl, backgroundColor: colors.primaryDark, padding: spacing.lg, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: spacing.lg },
-  glowBlue: { position: 'absolute', width: 280, height: 280, borderRadius: 140, backgroundColor: colors.primary, top: -105, right: -95, opacity: 0.68 },
-  glowMint: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.success, left: -90, bottom: -96, opacity: 0.22 },
+  screen: { backgroundColor: '#FEF7F5' },
+  hero: { minHeight: 280, marginBottom: spacing.lg },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
-  subtitle: { color: 'rgba(255,255,255,0.84)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
-  sectionCard: { marginBottom: spacing.lg },
+  subtitle: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
+  sectionCard: { marginBottom: spacing.lg, borderColor: '#FFDDDD' },
   sectionHeaderRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
-  stepCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  stepCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#DC2626', alignItems: 'center', justifyContent: 'center' },
   stepText: { color: colors.white, fontWeight: typography.weights.heavy },
   sectionTitleBox: { flex: 1 },
   sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy },
@@ -323,20 +244,20 @@ const styles = StyleSheet.create({
   sectionContent: { marginTop: spacing.lg },
   label: { color: colors.text, fontSize: typography.small, fontWeight: typography.weights.heavy, marginBottom: spacing.sm },
   chipsRow: { marginBottom: spacing.md },
-  chip: { maxWidth: 240, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.card, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, marginRight: spacing.sm },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chip: { maxWidth: 240, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.card, borderRadius: radius.pill, borderWidth: 1, borderColor: '#FFDDDD', marginRight: spacing.sm },
+  chipActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
   chipText: { color: colors.muted, fontWeight: typography.weights.bold },
   chipTextActive: { color: colors.white },
   emptyHint: { color: colors.mutedLight, fontWeight: typography.weights.bold, marginBottom: spacing.md },
   textarea: { minHeight: 110, textAlignVertical: 'top', paddingTop: spacing.md },
-  fileButton: { minHeight: 56, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.sm },
-  fileButtonText: { color: colors.primary, fontWeight: typography.weights.heavy },
-  fileItem: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  fileButton: { minHeight: 56, borderRadius: radius.md, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FFDDDD', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.sm },
+  fileButtonText: { color: '#B91C1C', fontWeight: typography.weights.heavy },
+  fileItem: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm, borderWidth: 1, borderColor: '#FFDDDD', flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   fileName: { flex: 1, color: colors.text, fontWeight: typography.weights.bold },
   statusBox: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1 },
   statusText: { flex: 1, fontWeight: typography.weights.bold, lineHeight: 20 },
   submitButton: { marginBottom: spacing.sm },
-  successCard: { alignItems: 'center', marginTop: spacing.xl },
+  successCard: { alignItems: 'center', marginTop: spacing.xl, borderColor: '#FFDDDD' },
   successIcon: { width: 76, height: 76, borderRadius: 28, backgroundColor: 'rgba(16,185,129,0.10)', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
   successTitle: { color: colors.text, fontSize: typography.title, fontWeight: typography.weights.heavy, textAlign: 'center' },
   successText: { color: colors.muted, fontSize: typography.body, lineHeight: 23, textAlign: 'center', marginTop: spacing.sm },
