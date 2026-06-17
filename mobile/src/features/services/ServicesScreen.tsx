@@ -4,14 +4,15 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { contentApi } from '../../api/endpoints';
+import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { CTASection } from '../../components/CTASection';
 import { ErrorState } from '../../components/ErrorState';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
+import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SectionHeader } from '../../components/SectionHeader';
-import { ServiceCard } from '../../components/ServiceCard';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
 
@@ -36,23 +37,22 @@ export function ServicesScreen() {
 
   return (
     <Screen scroll style={styles.screen}>
-      <View style={[styles.hero, shadows.premium]}>
-        <View style={styles.glowBlue} />
-        <View style={styles.glowCoral} />
-        <Text style={styles.kicker}>Student’s Life Services</Text>
-        <Text style={styles.title}>Услуги, которые помогают поступить без хаоса</Text>
-        <Text style={styles.description}>Поступление, визы, документы, сопровождение и консультации собраны в одном понятном сценарии.</Text>
+      <RedGradientHero style={styles.hero}>
+        <Text style={styles.kicker}>Услуги</Text>
+        <Text style={styles.title}>Полный цикл поддержки</Text>
+        <Text style={styles.description}>Выберите нужный раздел: каталог вузов, заявка на поступление, визовое сопровождение или дополнительные услуги.</Text>
         <View style={styles.heroActions}>
           <AppButton title="Оставить заявку" onPress={() => navigation.navigate('ApplicationCreate')} />
           <AppButton title="Посмотреть вузы" variant="outline" onPress={() => navigation.navigate('Universities')} />
         </View>
-      </View>
+      </RedGradientHero>
 
-      <SectionHeader eyebrow="Быстрый выбор" title="Основные направления" />
+      <SectionHeader eyebrow="Быстрый выбор" title="Основные услуги" />
       <View style={styles.mainGrid}>
-        <ServiceActionCard icon="university" title="Вузы" subtitle="Каталог университетов, стран и программ." onPress={() => navigation.navigate('Universities')} />
-        <ServiceActionCard icon="application" title="Поступить" subtitle="Заполните заявку, менеджер свяжется с вами." onPress={() => navigation.navigate('ApplicationCreate')} />
-        <ServiceActionCard icon="visa" title="Виза" subtitle="Поддержка с приглашением, документами и визой." onPress={openVisa} />
+        <ServiceActionCard icon="university" title="Вузы" subtitle="Каталог университетов" onPress={() => navigation.navigate('Universities')} />
+        <ServiceActionCard icon="application" title="Поступить" subtitle="Заявка менеджеру" onPress={() => navigation.navigate('ApplicationCreate')} />
+        <ServiceActionCard icon="visa" title="Виза" subtitle="Приглашение и виза" onPress={openVisa} />
+        <ServiceActionCard icon="mapPin" title="Туры" subtitle="Образовательные туры" onPress={() => navigation.navigate('ApplicationCreate')} />
       </View>
 
       <AppCard style={styles.includesCard}>
@@ -63,18 +63,25 @@ export function ServicesScreen() {
         <InfoLine icon="chat" text="связь с менеджером по вопросам студента" />
       </AppCard>
 
-      <SectionHeader eyebrow="Каталог" title="Все услуги" description="Карточки услуг выглядят как продающие блоки, но сохраняют текущую API-логику." />
-      {servicesQuery.isLoading ? <LoadingSkeleton rows={3} /> : null}
+      <SectionHeader eyebrow="Каталог" title="Дополнительные услуги" description="Карточки выровнены и не ломают сетку: каждая услуга открывает детальную страницу или заявку." />
+      {servicesQuery.isLoading ? <LoadingSkeleton rows={3} height={120} /> : null}
       {servicesQuery.isError ? <ErrorState onAction={() => servicesQuery.refetch()} /> : null}
       {!servicesQuery.isLoading && !servicesQuery.isError ? (
         <View style={styles.servicesList}>
           {(servicesQuery.data || []).map(service => (
-            <ServiceCard
-              key={service.id}
-              service={service}
-              onPress={() => navigation.navigate('ServiceDetail', { slug: service.slug })}
-              onApplyPress={() => navigation.navigate('ApplicationCreate', { serviceId: service.id })}
-            />
+            <AppCard key={service.id} style={styles.servicePageCard}>
+              <View style={styles.serviceCardText}>
+                <View style={styles.serviceTitleRow}>
+                  <View style={styles.serviceSmallIcon}><SvgIcon name="services" size={23} color="#B91C1C" /></View>
+                  <Text style={styles.serviceTitle}>{service.title}</Text>
+                </View>
+                <Text style={styles.serviceText} numberOfLines={3}>{service.short_description || 'Подробнее об услуге Student’s Life.'}</Text>
+              </View>
+              <View style={styles.serviceButtons}>
+                <AppButton title="Подробнее" variant="outline" onPress={() => navigation.navigate('ServiceDetail', { slug: service.slug })} />
+                <AppButton title="Заявка" variant="ghost" onPress={() => navigation.navigate('ApplicationCreate', { serviceId: service.id })} />
+              </View>
+            </AppCard>
           ))}
         </View>
       ) : null}
@@ -94,14 +101,11 @@ export function ServicesScreen() {
 
 function ServiceActionCard({ icon, title, subtitle, onPress }: { icon: SvgIconName; title: string; subtitle: string; onPress: () => void }) {
   return (
-    <AppCard style={styles.actionCard}>
-      <View style={styles.actionTop}>
-        <View style={styles.actionIcon}><SvgIcon name={icon} size={26} color={colors.primary} /></View>
-        <AppButton title="Перейти" variant="ghost" onPress={onPress} />
-      </View>
+    <AnimatedPressable style={[styles.actionCard, shadows.soft]} onPress={onPress}>
+      <View style={styles.actionIcon}><SvgIcon name={icon} size={27} color="#B91C1C" /></View>
       <Text style={styles.actionTitle}>{title}</Text>
       <Text style={styles.actionText}>{subtitle}</Text>
-    </AppCard>
+    </AnimatedPressable>
   );
 }
 
@@ -116,38 +120,14 @@ function InfoLine({ icon, text }: { icon: SvgIconName; text: string }) {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background,
+    backgroundColor: '#FEF7F5',
   },
   hero: {
-    minHeight: 320,
-    borderRadius: radius.xl,
-    backgroundColor: colors.primaryDark,
-    padding: spacing.lg,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  glowBlue: {
-    position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: colors.primary,
-    top: -105,
-    right: -95,
-    opacity: 0.68,
-  },
-  glowCoral: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: colors.accent,
-    left: -90,
-    bottom: -96,
-    opacity: 0.24,
+    minHeight: 280,
+    marginBottom: spacing.lg,
   },
   kicker: {
-    color: 'rgba(255,255,255,0.72)',
+    color: 'rgba(255,255,255,0.82)',
     fontSize: typography.tiny,
     fontWeight: typography.weights.heavy,
     textTransform: 'uppercase',
@@ -155,13 +135,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.white,
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 34,
+    lineHeight: 40,
     fontWeight: typography.weights.heavy,
     marginTop: spacing.sm,
   },
   description: {
-    color: 'rgba(255,255,255,0.84)',
+    color: 'rgba(255,255,255,0.9)',
     fontSize: typography.body,
     lineHeight: 23,
     marginTop: spacing.sm,
@@ -172,38 +152,47 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   mainGrid: {
-    gap: spacing.sm,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
   },
   actionCard: {
+    width: '47.8%',
     minHeight: 150,
-  },
-  actionTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  actionIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
+    borderRadius: 32,
+    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: '#FAD7D7',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
   actionTitle: {
     color: colors.text,
     fontSize: typography.subtitle,
     fontWeight: typography.weights.heavy,
-    marginTop: spacing.md,
+    textAlign: 'center',
   },
   actionText: {
     color: colors.muted,
-    lineHeight: 21,
+    lineHeight: 19,
     marginTop: spacing.xs,
+    fontSize: typography.small,
     fontWeight: typography.weights.medium,
+    textAlign: 'center',
   },
   includesCard: {
     marginTop: spacing.xl,
+    borderColor: '#FFE2E2',
   },
   includesTitle: {
     color: colors.text,
@@ -224,5 +213,41 @@ const styles = StyleSheet.create({
   },
   servicesList: {
     gap: spacing.md,
+  },
+  servicePageCard: {
+    borderRadius: 32,
+    borderColor: '#FFDDDD',
+    gap: spacing.md,
+  },
+  serviceCardText: {
+    flex: 1,
+  },
+  serviceTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  serviceSmallIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 18,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  serviceTitle: {
+    flex: 1,
+    color: colors.text,
+    fontSize: typography.subtitle,
+    fontWeight: typography.weights.heavy,
+  },
+  serviceText: {
+    color: colors.muted,
+    lineHeight: 21,
+    marginTop: spacing.sm,
+    fontWeight: typography.weights.medium,
+  },
+  serviceButtons: {
+    gap: spacing.sm,
   },
 });
