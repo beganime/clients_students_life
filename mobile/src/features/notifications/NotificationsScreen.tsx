@@ -3,15 +3,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { notificationsApi } from '../../api/endpoints';
+import { AppButton } from '../../components/AppButton';
+import { AppCard } from '../../components/AppCard';
+import { Badge } from '../../components/Badge';
 import { EmptyState } from '../../components/EmptyState';
-import { Loading } from '../../components/Loading';
+import { ErrorState } from '../../components/ErrorState';
+import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { Screen } from '../../components/Screen';
-import { colors } from '../../constants/colors';
+import { SvgIcon } from '../../components/SvgIcon';
+import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
 
 export function NotificationsScreen() {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const notificationsQuery = useQuery({
     queryKey: ['my-notifications'],
     queryFn: notificationsApi.getMyNotifications,
   });
@@ -26,43 +31,44 @@ export function NotificationsScreen() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-notifications'] }),
   });
 
-  if (isLoading) return <Loading />;
-
-  const unreadCount = (data || []).filter(item => !item.is_read).length;
+  const unreadCount = (notificationsQuery.data || []).filter(item => !item.is_read).length;
 
   return (
     <Screen>
       <FlatList
         contentContainerStyle={styles.list}
-        data={data || []}
-        refreshing={isRefetching}
-        onRefresh={refetch}
+        data={notificationsQuery.isLoading || notificationsQuery.isError ? [] : notificationsQuery.data || []}
+        refreshing={notificationsQuery.isRefetching}
+        onRefresh={notificationsQuery.refetch}
         keyExtractor={item => String(item.id)}
         ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={styles.title}>Уведомления</Text>
-            <Text style={styles.subtitle}>Непрочитанные: {unreadCount}</Text>
-            {unreadCount > 0 ? (
-              <Pressable style={styles.markAllButton} onPress={() => markAllMutation.mutate()}>
-                <Text style={styles.markAllText}>Отметить все прочитанными</Text>
-              </Pressable>
-            ) : null}
+          <View>
+            <View style={[styles.hero, shadows.premium]}>
+              <View style={styles.glowBlue} />
+              <View style={styles.glowCoral} />
+              <Badge label={`Непрочитанные: ${unreadCount}`} variant={unreadCount > 0 ? 'orange' : 'mint'} icon="bell" />
+              <Text style={styles.title}>Уведомления</Text>
+              <Text style={styles.subtitle}>Важные события по заявкам, чатам и персональным предложениям.</Text>
+              {unreadCount > 0 ? <AppButton title="Отметить все прочитанными" variant="outline" onPress={() => markAllMutation.mutate()} style={styles.heroButton} /> : null}
+            </View>
+            {notificationsQuery.isLoading ? <LoadingSkeleton rows={4} height={100} /> : null}
+            {notificationsQuery.isError ? <ErrorState onAction={() => notificationsQuery.refetch()} /> : null}
           </View>
         }
-        ListEmptyComponent={<EmptyState title="Уведомлений пока нет" />}
+        ListEmptyComponent={!notificationsQuery.isLoading && !notificationsQuery.isError ? <EmptyState title="Уведомлений пока нет" description="Когда появятся новости по заявкам или сообщениям, они будут здесь." /> : null}
         renderItem={({ item }) => (
-          <Pressable
-            style={[styles.card, !item.is_read && styles.unreadCard]}
-            onPress={() => {
-              if (!item.is_read) markReadMutation.mutate(item.id);
-            }}
-          >
-            <View style={styles.row}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              {!item.is_read ? <View style={styles.dot} /> : null}
-            </View>
-            <Text style={styles.body}>{item.body}</Text>
-            <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
+          <Pressable onPress={() => { if (!item.is_read) markReadMutation.mutate(item.id); }}>
+            <AppCard style={[styles.card, !item.is_read && styles.unreadCard]}>
+              <View style={styles.row}>
+                <View style={styles.iconBox}><SvgIcon name="bell" size={19} color={item.is_read ? colors.muted : colors.primary} /></View>
+                <View style={styles.textBox}>
+                  <Text style={styles.cardTitle}>{item.title}</Text>
+                  <Text style={styles.body}>{item.body}</Text>
+                  <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
+                </View>
+                {!item.is_read ? <View style={styles.dot} /> : null}
+              </View>
+            </AppCard>
           </Pressable>
         )}
       />
@@ -71,73 +77,20 @@ export function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: {
-    padding: 20,
-  },
-  header: {
-    marginBottom: 18,
-  },
-  title: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: '900',
-  },
-  subtitle: {
-    marginTop: 8,
-    color: colors.muted,
-    fontWeight: '700',
-  },
-  markAllButton: {
-    marginTop: 12,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.secondary,
-    borderRadius: 14,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  markAllText: {
-    color: colors.secondary,
-    fontWeight: '900',
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  unreadCard: {
-    borderColor: colors.primary,
-    backgroundColor: '#FFF7F7',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardTitle: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: '900',
-    flex: 1,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-    marginLeft: 10,
-  },
-  body: {
-    color: colors.muted,
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  date: {
-    color: colors.muted,
-    marginTop: 10,
-    fontSize: 12,
-  },
+  list: { padding: 20, paddingBottom: 44, backgroundColor: colors.background },
+  hero: { minHeight: 280, borderRadius: radius.xl, backgroundColor: colors.primaryDark, padding: spacing.lg, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: spacing.lg },
+  glowBlue: { position: 'absolute', width: 270, height: 270, borderRadius: 135, backgroundColor: colors.primary, top: -105, right: -95, opacity: 0.68 },
+  glowCoral: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.accent, left: -90, bottom: -96, opacity: 0.24 },
+  title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
+  subtitle: { color: 'rgba(255,255,255,0.84)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
+  heroButton: { marginTop: spacing.lg },
+  card: { marginBottom: spacing.md },
+  unreadCard: { borderColor: colors.primary, backgroundColor: colors.surface },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  iconBox: { width: 42, height: 42, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  textBox: { flex: 1 },
+  cardTitle: { color: colors.text, fontSize: typography.body, fontWeight: typography.weights.heavy },
+  body: { color: colors.muted, marginTop: spacing.xs, lineHeight: 20, fontWeight: typography.weights.medium },
+  date: { color: colors.mutedLight, marginTop: spacing.sm, fontSize: typography.tiny, fontWeight: typography.weights.bold },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent, marginTop: spacing.xs },
 });
