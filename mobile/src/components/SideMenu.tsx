@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { APP_NAME, APP_VERSION, COMPANY_APPS_URL, OFFICIAL_SITE_URL, PRIVACY_POLICY_URL } from '../constants/config';
-import { colors, radius, shadows, spacing, typography } from '../constants/colors';
+import { colors, shadows, spacing, typography } from '../constants/colors';
 import { SvgIcon, SvgIconName } from './SvgIcon';
 
 type Props = {
@@ -10,6 +10,8 @@ type Props = {
   onClose: () => void;
   navigation: any;
 };
+
+const MENU_RED = '#B91C1C';
 
 export function SideMenu({ visible, onClose, navigation }: Props) {
   const navigate = (route: string, params?: object) => {
@@ -70,7 +72,7 @@ function MenuItem({ icon, title, onPress }: { icon: SvgIconName; title: string; 
   return (
     <Pressable style={styles.item} onPress={onPress}>
       <View style={styles.itemIcon}>
-        <SvgIcon name={icon} size={22} color={colors.redDark || colors.danger} />
+        <SvgIcon name={icon} size={22} color={MENU_RED} />
       </View>
       <Text style={styles.itemText}>{title}</Text>
       <SvgIcon name="chevronRight" size={18} color={colors.mutedLight} />
@@ -105,7 +107,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   logo: {
-    color: '#B91C1C',
+    color: MENU_RED,
     fontSize: 22,
     fontWeight: typography.weights.heavy,
   },
@@ -124,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: {
-    color: '#B91C1C',
+    color: MENU_RED,
     fontSize: 28,
     lineHeight: 30,
     fontWeight: typography.weights.bold,
@@ -172,7 +174,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.bold,
   },
   footerLink: {
-    color: '#B91C1C',
+    color: MENU_RED,
     fontWeight: typography.weights.heavy,
   },
 });
