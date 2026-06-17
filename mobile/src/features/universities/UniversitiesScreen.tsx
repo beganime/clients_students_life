@@ -8,13 +8,14 @@ import { AppCard } from '../../components/AppCard';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
+import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
 import { UniversityCard } from '../../components/UniversityCard';
-import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
+import { colors, radius, spacing, typography } from '../../constants/colors';
 import { MainTabParamList } from '../../navigation/types';
 
- type R = RouteProp<MainTabParamList, 'Universities'>;
+type R = RouteProp<MainTabParamList, 'Universities'>;
 
 export function UniversitiesScreen() {
   const navigation = useNavigation<any>();
@@ -40,10 +41,7 @@ export function UniversitiesScreen() {
     return payload;
   }, [search, countrySlug, onlyPartners, withDormitory]);
 
-  const universitiesQuery = useQuery({
-    queryKey: ['universities', filters],
-    queryFn: () => contentApi.getUniversities(filters),
-  });
+  const universitiesQuery = useQuery({ queryKey: ['universities', filters], queryFn: () => contentApi.getUniversities(filters) });
 
   return (
     <Screen>
@@ -55,24 +53,16 @@ export function UniversitiesScreen() {
         onRefresh={universitiesQuery.refetch}
         ListHeaderComponent={
           <View>
-            <View style={[styles.hero, shadows.premium]}>
-              <View style={styles.glowBlue} />
-              <View style={styles.glowMint} />
+            <RedGradientHero style={styles.hero}>
               <Text style={styles.kicker}>Каталог вузов</Text>
               <Text style={styles.title}>Найдите университет под цель студента</Text>
               <Text style={styles.subtitle}>Поиск, фильтры, теги и аккуратные карточки помогают быстрее выбрать страну, город и программу.</Text>
-            </View>
+            </RedGradientHero>
 
             <AppCard style={styles.searchCard}>
               <View style={styles.searchBox}>
                 <SvgIcon name="search" size={20} color={colors.mutedLight} />
-                <TextInput
-                  value={search}
-                  onChangeText={setSearch}
-                  placeholder="Поиск по вузу или специальности"
-                  placeholderTextColor={colors.mutedLight}
-                  style={styles.searchInput}
-                />
+                <TextInput value={search} onChangeText={setSearch} placeholder="Поиск по вузу или специальности" placeholderTextColor={colors.mutedLight} style={styles.searchInput} />
               </View>
 
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
@@ -94,139 +84,31 @@ export function UniversitiesScreen() {
             {universitiesQuery.isError ? <ErrorState onAction={() => universitiesQuery.refetch()} /> : null}
           </View>
         }
-        ListEmptyComponent={
-          !universitiesQuery.isLoading && !universitiesQuery.isError ? (
-            <EmptyState title="Нет подходящих вузов" description="Попробуйте изменить страну, поиск или фильтры." />
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <UniversityCard
-            university={item}
-            onPress={() => navigation.navigate('UniversityDetail', { slug: item.slug })}
-            onApplyPress={() => navigation.navigate('ApplicationCreate', { universityId: item.id })}
-          />
-        )}
+        ListEmptyComponent={!universitiesQuery.isLoading && !universitiesQuery.isError ? <EmptyState title="Нет подходящих вузов" description="Попробуйте изменить страну, поиск или фильтры." /> : null}
+        renderItem={({ item }) => <UniversityCard university={item} onPress={() => navigation.navigate('UniversityDetail', { slug: item.slug })} onApplyPress={() => navigation.navigate('ApplicationCreate', { universityId: item.id })} />}
       />
     </Screen>
   );
 }
 
 function FilterChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </Pressable>
-  );
+  return <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}><Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text></Pressable>;
 }
 
 const styles = StyleSheet.create({
-  list: {
-    padding: 20,
-    paddingBottom: 44,
-    backgroundColor: colors.background,
-  },
-  hero: {
-    minHeight: 300,
-    borderRadius: radius.xl,
-    backgroundColor: colors.primaryDark,
-    padding: spacing.lg,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    marginBottom: spacing.lg,
-  },
-  glowBlue: {
-    position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: colors.primary,
-    top: -105,
-    right: -95,
-    opacity: 0.68,
-  },
-  glowMint: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: colors.success,
-    left: -90,
-    bottom: -96,
-    opacity: 0.22,
-  },
-  kicker: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: typography.tiny,
-    fontWeight: typography.weights.heavy,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  title: {
-    color: colors.white,
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: typography.weights.heavy,
-    marginTop: spacing.sm,
-  },
-  subtitle: {
-    color: 'rgba(255,255,255,0.84)',
-    fontSize: typography.body,
-    lineHeight: 23,
-    marginTop: spacing.sm,
-    fontWeight: typography.weights.medium,
-  },
-  searchCard: {
-    marginBottom: spacing.lg,
-  },
-  searchBox: {
-    minHeight: 52,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  searchInput: {
-    flex: 1,
-    minHeight: 50,
-    color: colors.text,
-    fontSize: typography.body,
-  },
-  chipsRow: {
-    marginTop: spacing.md,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: spacing.sm,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    color: colors.muted,
-    fontWeight: typography.weights.bold,
-  },
-  chipTextActive: {
-    color: colors.white,
-  },
-  countText: {
-    color: colors.muted,
-    fontWeight: typography.weights.heavy,
-    marginTop: spacing.md,
-  },
+  list: { padding: 20, paddingBottom: 44, backgroundColor: '#FEF7F5' },
+  hero: { minHeight: 290, marginBottom: spacing.lg },
+  kicker: { color: 'rgba(255,255,255,0.78)', fontSize: typography.tiny, fontWeight: typography.weights.heavy, textTransform: 'uppercase', letterSpacing: 1 },
+  title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.sm },
+  subtitle: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
+  searchCard: { marginBottom: spacing.lg, borderColor: '#FFDDDD' },
+  searchBox: { minHeight: 52, borderRadius: radius.md, borderWidth: 1, borderColor: '#FFDDDD', backgroundColor: '#FEF7F5', paddingHorizontal: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  searchInput: { flex: 1, minHeight: 50, color: colors.text, fontSize: typography.body },
+  chipsRow: { marginTop: spacing.md },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: '#FFDDDD', marginRight: spacing.sm },
+  chipActive: { backgroundColor: '#DC2626', borderColor: '#DC2626' },
+  chipText: { color: colors.muted, fontWeight: typography.weights.bold },
+  chipTextActive: { color: colors.white },
+  countText: { color: colors.muted, fontWeight: typography.weights.heavy, marginTop: spacing.md },
 });
