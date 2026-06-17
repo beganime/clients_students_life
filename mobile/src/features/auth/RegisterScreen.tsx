@@ -5,9 +5,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
+import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
-import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
+import { colors, radius, spacing, typography } from '../../constants/colors';
 import { AuthStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 
@@ -57,16 +58,7 @@ export function RegisterScreen({ navigation }: Props) {
     try {
       setLoading(true);
       setStatus({ type: 'info', text: 'Создаём аккаунт...' });
-      await registerAndLogin({
-        email: cleanEmail,
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        password,
-        password_confirm: passwordConfirm,
-        phone,
-        whatsapp: phone,
-        language: 'ru',
-      });
+      await registerAndLogin({ email: cleanEmail, first_name: firstName.trim(), last_name: lastName.trim(), password, password_confirm: passwordConfirm, phone, whatsapp: phone, language: 'ru' });
       setStatus({ type: 'success', text: 'Аккаунт создан. Вы успешно вошли в систему.' });
       setTimeout(() => navigation.getParent<any>()?.navigate('App'), 500);
     } catch (error) {
@@ -79,18 +71,14 @@ export function RegisterScreen({ navigation }: Props) {
   return (
     <Screen scroll style={styles.screen}>
       <View style={styles.topBar}>
-        <Pressable style={styles.closeButton} onPress={closeAuth}>
-          <SvgIcon name="close" size={22} color={colors.text} />
-        </Pressable>
+        <Pressable style={styles.closeButton} onPress={closeAuth}><SvgIcon name="close" size={22} color={colors.text} /></Pressable>
       </View>
 
-      <View style={[styles.heroCard, shadows.premium]}>
-        <View style={styles.glowBlue} />
-        <View style={styles.glowMint} />
+      <RedGradientHero style={styles.heroCard}>
         <View style={styles.iconBox}><SvgIcon name="userPlus" size={36} color={colors.white} strokeWidth={2.4} /></View>
         <Text style={styles.title}>Создайте аккаунт</Text>
         <Text style={styles.subtitle}>Так менеджеру проще отвечать, а вам — видеть историю заявок, чатов и персональные предложения.</Text>
-      </View>
+      </RedGradientHero>
 
       <AppCard style={styles.formCard}>
         <View style={styles.nameRow}>
@@ -99,22 +87,11 @@ export function RegisterScreen({ navigation }: Props) {
         </View>
         <AppInput label="Email" value={email} onChangeText={text => { setEmail(text); setStatus(null); }} autoCapitalize="none" keyboardType="email-address" placeholder="student@example.com" />
         <AppInput label="Телефон / WhatsApp" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+993..." />
-        <AppInput
-          label="Пароль"
-          value={password}
-          onChangeText={text => { setPassword(text); setStatus(null); }}
-          secureTextEntry={!showPassword}
-          placeholder="Минимум 6 символов"
-          right={<Pressable onPress={() => setShowPassword(!showPassword)}><Text style={styles.toggleText}>{showPassword ? 'Скрыть' : 'Показать'}</Text></Pressable>}
-        />
+        <AppInput label="Пароль" value={password} onChangeText={text => { setPassword(text); setStatus(null); }} secureTextEntry={!showPassword} placeholder="Минимум 6 символов" right={<Pressable onPress={() => setShowPassword(!showPassword)}><Text style={styles.toggleText}>{showPassword ? 'Скрыть' : 'Показать'}</Text></Pressable>} />
         <AppInput label="Повторите пароль" value={passwordConfirm} onChangeText={text => { setPasswordConfirm(text); setStatus(null); }} secureTextEntry={!showPassword} placeholder="Повторите пароль" helper={passwordMessage} />
-
         {status ? <StatusBox type={status.type} text={status.text} /> : null}
-
         <AppButton title="Создать аккаунт" onPress={handleRegister} loading={loading} />
-        <Pressable style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.loginText}>Уже есть аккаунт? Войти</Text>
-        </Pressable>
+        <Pressable style={styles.loginLink} onPress={() => navigation.navigate('Login')}><Text style={styles.loginText}>Уже есть аккаунт? Войти</Text></Pressable>
       </AppCard>
     </Screen>
   );
@@ -122,84 +99,24 @@ export function RegisterScreen({ navigation }: Props) {
 
 function StatusBox({ type, text }: { type: 'success' | 'error' | 'info'; text: string }) {
   const icon = type === 'success' ? 'check' : type === 'error' ? 'warning' : 'lock';
-  const color = type === 'success' ? colors.success : type === 'error' ? colors.danger : colors.primary;
-  return (
-    <View style={[styles.statusBox, { borderColor: `${color}33`, backgroundColor: `${color}12` }]}>
-      <SvgIcon name={icon} size={18} color={color} />
-      <Text style={[styles.statusText, { color }]}>{text}</Text>
-    </View>
-  );
+  const color = type === 'success' ? colors.success : type === 'error' ? colors.danger : '#B91C1C';
+  return <View style={[styles.statusBox, { borderColor: `${color}33`, backgroundColor: `${color}12` }]}><SvgIcon name={icon} size={18} color={color} /><Text style={[styles.statusText, { color }]}>{text}</Text></View>;
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: colors.background, paddingBottom: 36 },
+  screen: { backgroundColor: '#FEF7F5', paddingBottom: 36 },
   topBar: { alignItems: 'flex-end', marginBottom: spacing.md },
-  closeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  heroCard: {
-    minHeight: 270,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    backgroundColor: colors.primaryDark,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-    marginBottom: spacing.lg,
-  },
-  glowBlue: {
-    position: 'absolute',
-    width: 230,
-    height: 230,
-    borderRadius: 115,
-    backgroundColor: colors.primary,
-    top: -80,
-    right: -70,
-    opacity: 0.68,
-  },
-  glowMint: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: colors.success,
-    bottom: -90,
-    left: -70,
-    opacity: 0.24,
-  },
-  iconBox: {
-    width: 68,
-    height: 68,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.26)',
-    marginBottom: spacing.md,
-  },
+  closeButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FFDDDD' },
+  heroCard: { minHeight: 260, marginBottom: spacing.lg },
+  iconBox: { width: 68, height: 68, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.26)', marginBottom: spacing.md },
   title: { color: colors.white, fontSize: 34, lineHeight: 39, fontWeight: typography.weights.heavy },
-  subtitle: { color: 'rgba(255,255,255,0.84)', marginTop: spacing.sm, fontSize: typography.body, lineHeight: 23 },
-  formCard: { padding: spacing.lg },
+  subtitle: { color: 'rgba(255,255,255,0.9)', marginTop: spacing.sm, fontSize: typography.body, lineHeight: 23 },
+  formCard: { padding: spacing.lg, borderColor: '#FFDDDD' },
   nameRow: { flexDirection: 'row', gap: spacing.sm },
   nameInput: { flex: 1 },
-  toggleText: { color: colors.primary, fontWeight: typography.weights.heavy },
-  statusBox: {
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderWidth: 1,
-  },
+  toggleText: { color: '#B91C1C', fontWeight: typography.weights.heavy },
+  statusBox: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1 },
   statusText: { flex: 1, fontWeight: typography.weights.bold, lineHeight: 20 },
   loginLink: { marginTop: spacing.lg, alignItems: 'center' },
-  loginText: { color: colors.primary, fontSize: typography.body, fontWeight: typography.weights.bold },
+  loginText: { color: '#B91C1C', fontSize: typography.body, fontWeight: typography.weights.bold },
 });
