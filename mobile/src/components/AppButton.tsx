@@ -1,19 +1,22 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle } from 'react-native';
 
-import { colors } from '../constants/colors';
+import { colors, radius, shadows, typography } from '../constants/colors';
+
+type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 
 type Props = {
   title: string;
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary' | 'outline';
-  style?: ViewStyle;
+  variant?: Variant;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function AppButton({ title, onPress, loading, disabled, variant = 'primary', style }: Props) {
   const isDisabled = disabled || loading;
+  const textColor = variant === 'outline' ? colors.primary : variant === 'ghost' ? colors.muted : colors.white;
 
   return (
     <Pressable
@@ -22,49 +25,55 @@ export function AppButton({ title, onPress, loading, disabled, variant = 'primar
       style={({ pressed }) => [
         styles.base,
         styles[variant],
-        pressed && styles.pressed,
+        variant === 'primary' && shadows.soft,
+        pressed && !isDisabled && styles.pressed,
         isDisabled && styles.disabled,
         style,
       ]}
     >
-      {loading ? <ActivityIndicator color={variant === 'outline' ? colors.primary : colors.white} /> : (
-        <Text style={[styles.text, variant === 'outline' && styles.outlineText]}>{title}</Text>
-      )}
+      {loading ? <ActivityIndicator color={textColor} /> : <Text style={[styles.text, { color: textColor }]}>{title}</Text>}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 52,
-    borderRadius: 16,
+    minHeight: 54,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,
+    borderWidth: 1,
   },
   primary: {
     backgroundColor: colors.primary,
-  },
-  secondary: {
-    backgroundColor: colors.secondary,
-  },
-  outline: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
     borderColor: colors.primary,
   },
-  text: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '700',
+  secondary: {
+    backgroundColor: colors.primaryDark,
+    borderColor: colors.primaryDark,
   },
-  outlineText: {
-    color: colors.primary,
+  outline: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+  },
+  danger: {
+    backgroundColor: colors.danger,
+    borderColor: colors.danger,
+  },
+  text: {
+    fontSize: typography.body,
+    fontWeight: typography.weights.heavy,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.52,
   },
 });
