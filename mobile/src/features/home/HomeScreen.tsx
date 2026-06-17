@@ -1,946 +1,483 @@
 import React, { useMemo } from 'react';
-import {
-  Dimensions,
-  ImageBackground,
-  Linking,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Dimensions, Linking, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { commonApi, contentApi } from '../../api/endpoints';
+import { AppButton } from '../../components/AppButton';
+import { AppCard } from '../../components/AppCard';
+import { AnimatedPressable } from '../../components/AnimatedPressable';
+import { Badge } from '../../components/Badge';
 import { BannerSlider } from '../../components/BannerSlider';
+import { CTASection } from '../../components/CTASection';
+import { SectionHeader } from '../../components/SectionHeader';
 import { Screen } from '../../components/Screen';
+import { StepperBlock } from '../../components/StepperBlock';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
-import { colors } from '../../constants/colors';
+import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
 import { HomeBanner, OfficeContact } from '../../types/api';
-import { getMediaUrl } from '../../utils/media';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = Math.min(width - 40, 760);
-const OFFICIAL_WEBSITE_URL = 'https://students-life.ru/ru';
 
 const fallbackHeroBanners: HomeBanner[] = [
   {
     id: -1,
     slot: 'hero',
-    title: 'Создай своё будущее',
+    title: 'Поступление за границу и в российские вузы без лишнего стресса',
     subtitle: 'Student’s Life',
-    description: 'Поступление, виза, жильё и сопровождение студентов в России, Европе и Азии.',
+    description: 'Помогаем выбрать университет, подготовить документы, получить приглашение, визу и сопровождение после приезда.',
     badge: 'Международное образование',
-    cta_text: 'Подать заявку',
+    cta_text: 'Оставить заявку',
     cta_type: 'application',
-    background_gradient: '#E53935,#1565C0',
-    is_dark: true,
   },
   {
     id: -2,
     slot: 'hero',
-    title: 'Поступление в университеты',
-    subtitle: 'Подкурс, бакалавриат, магистратура',
-    description: 'Подбираем вуз, готовим документы и сопровождаем студента до результата.',
-    badge: 'Admissions',
-    cta_text: 'Смотреть вузы',
+    title: 'Каталог вузов, стран и программ в одном приложении',
+    subtitle: 'Подбор под цель студента',
+    description: 'Смотрите направления, стоимость, языки обучения, общежитие и партнёрские университеты.',
+    badge: 'Каталог',
+    cta_text: 'Посмотреть вузы',
     cta_type: 'universities',
-    background_gradient: '#1565C0,#0D47A1',
-    is_dark: true,
-  },
-  {
-    id: -3,
-    slot: 'hero',
-    title: 'Виза и сопровождение',
-    subtitle: 'От приглашения до приезда',
-    description: 'Помогаем с приглашением, визой, билетами, жильём и адаптацией.',
-    badge: 'Visa support',
-    cta_text: 'Услуги',
-    cta_type: 'service',
-    background_gradient: '#B71C1C,#E53935',
-    is_dark: true,
   },
 ];
 
-const fallbackNewsBanners: HomeBanner[] = [
-  {
-    id: -10,
-    slot: 'news',
-    title: 'Скоро старт приёма документов',
-    subtitle: 'Подготовьте заявку заранее',
-    description: 'Оставьте заявку, чтобы менеджер проверил документы и подобрал подходящие варианты.',
-    badge: 'Важно',
-    cta_text: 'Начать',
-    cta_type: 'application',
-    background_gradient: '#101828,#1565C0',
-    is_dark: true,
-  },
+const fallbackDirections = ['Россия', 'Турция', 'Китай', 'Беларусь', 'Кипр', 'Европа'];
+
+const workSteps = [
+  { title: 'Консультация', description: 'Уточняем цель, страну, бюджет и сроки.' },
+  { title: 'Подбор программы', description: 'Предлагаем подходящие университеты и направления.' },
+  { title: 'Документы', description: 'Проверяем анкету, переводы и пакет для подачи.' },
+  { title: 'Приглашение', description: 'Сопровождаем до получения официального приглашения.' },
+  { title: 'Виза', description: 'Помогаем пройти визовый этап без лишней путаницы.' },
+  { title: 'Приезд и адаптация', description: 'Поддерживаем с жильём, связью и первыми шагами.' },
 ];
 
 export function HomeScreen() {
   const navigation = useNavigation<any>();
 
-  const homeQuery = useQuery({
-    queryKey: ['home-content'],
-    queryFn: commonApi.getHomeContent,
-    retry: 1,
-  });
-
-  const servicesQuery = useQuery({
-    queryKey: ['services'],
-    queryFn: contentApi.getServices,
-  });
-
-  const countriesQuery = useQuery({
-    queryKey: ['countries'],
-    queryFn: contentApi.getCountries,
-  });
+  const homeQuery = useQuery({ queryKey: ['home-content'], queryFn: commonApi.getHomeContent, retry: 1 });
+  const servicesQuery = useQuery({ queryKey: ['services'], queryFn: contentApi.getServices });
+  const countriesQuery = useQuery({ queryKey: ['countries'], queryFn: contentApi.getCountries });
 
   const heroBanners = useMemo(() => {
     const items = homeQuery.data?.hero_banners?.filter(Boolean) || [];
     return items.length ? items.slice(0, 3) : fallbackHeroBanners;
   }, [homeQuery.data]);
 
-  const newsBanners = useMemo(() => {
-    const items = homeQuery.data?.news_banners?.filter(Boolean) || [];
-    return items.length ? items.slice(0, 3) : fallbackNewsBanners;
-  }, [homeQuery.data]);
-
+  const services = servicesQuery.data || [];
   const contacts = homeQuery.data?.contacts || [];
 
-  const handleBannerPress = (banner: HomeBanner) => {
-    switch (banner.cta_type) {
-      case 'application':
-        navigation.navigate('ApplicationCreate');
-        break;
-
-      case 'universities':
-        navigation.navigate('Universities');
-        break;
-
-      case 'news':
-        if (banner.linked_news_slug) {
-          navigation.navigate('NewsDetail', { slug: banner.linked_news_slug });
-        } else {
-          navigation.navigate('News');
-        }
-        break;
-
-      case 'service':
-        if (banner.linked_service_slug) {
-          navigation.navigate('ServiceDetail', { slug: banner.linked_service_slug });
-        } else {
-          navigation.navigate('Services');
-        }
-        break;
-
-      case 'university':
-        if (banner.linked_university_slug) {
-          navigation.navigate('UniversityDetail', { slug: banner.linked_university_slug });
-        } else {
-          navigation.navigate('Universities');
-        }
-        break;
-
-      case 'url':
-        if (banner.cta_url) {
-          Linking.openURL(banner.cta_url);
-        }
-        break;
-
-      default:
-        break;
-    }
-  };
-
-  const openVisa = () => {
-    const visaService = servicesQuery.data?.find(item =>
-      item.title.toLowerCase().includes('виз'),
-    );
-
-    if (visaService) {
-      navigation.navigate('ServiceDetail', { slug: visaService.slug });
-      return;
-    }
-
-    navigation.navigate('Services');
+  const openBanner = (banner: HomeBanner) => {
+    if (banner.cta_type === 'application') navigation.navigate('ApplicationCreate');
+    if (banner.cta_type === 'universities') navigation.navigate('Universities');
+    if (banner.cta_type === 'service') banner.linked_service_slug ? navigation.navigate('ServiceDetail', { slug: banner.linked_service_slug }) : navigation.navigate('Services');
+    if (banner.cta_type === 'university') banner.linked_university_slug ? navigation.navigate('UniversityDetail', { slug: banner.linked_university_slug }) : navigation.navigate('Universities');
+    if (banner.cta_type === 'news') banner.linked_news_slug ? navigation.navigate('NewsDetail', { slug: banner.linked_news_slug }) : navigation.navigate('News');
+    if (banner.cta_type === 'url' && banner.cta_url) Linking.openURL(banner.cta_url);
   };
 
   return (
     <Screen scroll style={styles.screen}>
       <View style={styles.topBar}>
         <View>
-          <View style={styles.logoRow}>
-            <Text style={styles.logoRed}>Student’s</Text>
-            <Text style={styles.logoBlue}> Life</Text>
-          </View>
+          <Text style={styles.logo}>Student’s Life</Text>
+          <Text style={styles.logoSubtitle}>International education agency</Text>
         </View>
-
-        <Pressable style={styles.topButton} onPress={() => navigation.navigate('Profile')}>
-          <SvgIcon name="profile" size={18} color={colors.text} />
-          <Text style={styles.topButtonText}>Профиль</Text>
-        </Pressable>
+        <AnimatedPressable style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
+          <SvgIcon name="profile" size={18} color={colors.primary} />
+          <Text style={styles.profileText}>Профиль</Text>
+        </AnimatedPressable>
       </View>
 
       <BannerSlider
         data={heroBanners}
         itemWidth={CARD_WIDTH}
         showArrows={false}
-        renderItem={item => <HeroBanner banner={item} onPress={() => handleBannerPress(item)} />}
+        renderItem={item => <PremiumHero banner={item} onPress={() => openBanner(item)} />}
       />
 
-      <View style={styles.infoGrid}>
-        <GlassInfoCard title="14+" text="стран для поступления" />
-        <GlassInfoCard title="1500+" text="студентов получили помощь" />
-        <GlassInfoCard title="24/7" text="поддержка на этапах" />
+      <View style={styles.statsRow}>
+        <StatCard value="5+" label="лет опыта" />
+        <StatCard value="1200+" label="студентов" />
+        <StatCard value="24/7" label="поддержка" />
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionKicker}>Услуги</Text>
-        <Text style={styles.sectionTitle}>Комплексная поддержка</Text>
+      <SectionHeader eyebrow="Преимущества" title="Полное сопровождение студента" />
+      <View style={styles.grid}>
+        <FeatureCard icon="search" title="Подбор университета" text="Сравниваем страны, программы, сроки и бюджет." />
+        <FeatureCard icon="document" title="Документы и заявка" text="Помогаем подготовить пакет для подачи." />
+        <FeatureCard icon="visa" title="Виза и приглашение" text="Объясняем этапы и контролируем сроки." />
+        <FeatureCard icon="chat" title="После приезда" text="Поддерживаем с адаптацией и вопросами." />
       </View>
 
-      <View style={styles.quickGrid}>
-        <QuickActionCard
-          iconName="university"
-          title="Вузы"
-          text="Каталог университетов и программ"
-          onPress={() => navigation.navigate('Universities')}
-        />
-
-        <QuickActionCard
-          iconName="application"
-          title="Поступить"
-          text="Оставить заявку менеджеру"
-          onPress={() => navigation.navigate('ApplicationCreate')}
-        />
-
-        <QuickActionCard
-          iconName="visa"
-          title="Виза"
-          text="Поддержка по приглашению и визе"
-          onPress={openVisa}
-        />
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionKicker}>Направления</Text>
-        <Text style={styles.sectionTitle}>Популярные страны</Text>
-      </View>
-
-      <View style={styles.countryRow}>
-        {(countriesQuery.data || []).slice(0, 6).map(country => (
-          <Pressable
-            key={country.id}
-            style={styles.countryPill}
-            onPress={() => navigation.navigate('Universities', { country: country.slug })}
-          >
-            <SvgIcon name="globe" size={16} color={colors.secondary} />
-            <Text style={styles.countryText}>{country.name}</Text>
-          </Pressable>
+      <SectionHeader eyebrow="Направления" title="Популярные страны" />
+      <View style={styles.directionRow}>
+        {(countriesQuery.data?.length ? countriesQuery.data.slice(0, 6).map(item => item.name) : fallbackDirections).map(name => (
+          <AnimatedPressable key={name} style={styles.directionPill} onPress={() => navigation.navigate('Universities')}>
+            <SvgIcon name="globe" size={15} color={colors.primary} />
+            <Text style={styles.directionText}>{name}</Text>
+          </AnimatedPressable>
         ))}
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionKicker}>Новости и акции</Text>
-        <Text style={styles.sectionTitle}>Актуальное</Text>
-      </View>
+      <SectionHeader eyebrow="Процесс" title="Как мы работаем" description="Понятный путь от первой консультации до приезда студента." />
+      <StepperBlock steps={workSteps} />
 
-      <BannerSlider
-        data={newsBanners}
-        itemWidth={CARD_WIDTH}
-        intervalMs={5200}
-        showArrows={false}
-        style={styles.newsSlider}
-        renderItem={item => <SmallBanner banner={item} onPress={() => handleBannerPress(item)} />}
+      <SectionHeader eyebrow="Услуги" title="Что можно оформить" />
+      <View style={styles.serviceGrid}>
+        <QuickService icon="university" title="Поступление" onPress={() => navigation.navigate('ApplicationCreate')} />
+        <QuickService icon="visa" title="Виза" onPress={() => navigation.navigate('Services')} />
+        <QuickService icon="document" title="Перевод документов" onPress={() => navigation.navigate('Services')} />
+        <QuickService icon="chat" title="Консультация" onPress={() => navigation.navigate('Chat')} />
+      </View>
+      {services.slice(0, 3).map(service => (
+        <AnimatedPressable key={service.id} style={styles.inlineService} onPress={() => navigation.navigate('ServiceDetail', { slug: service.slug })}>
+          <Text style={styles.inlineServiceTitle}>{service.title}</Text>
+          <Text style={styles.inlineServiceText} numberOfLines={2}>{service.short_description || 'Подробнее об услуге'}</Text>
+        </AnimatedPressable>
+      ))}
+
+      <AppCard style={styles.registerCard}>
+        <Badge label="Выгодно зарегистрироваться" variant="mint" icon="check" />
+        <Text style={styles.registerTitle}>Аккаунт ускоряет оформление</Text>
+        <Text style={styles.registerText}>Зарегистрированный пользователь может сохранять заявки, получать ответы менеджера, видеть историю обращений, получать персональные предложения и быстрее оформлять новые услуги.</Text>
+      </AppCard>
+
+      <CTASection
+        eyebrow="Связь с менеджером"
+        title="Напишите нам — менеджер ответит"
+        description="Расскажите, куда хотите поступить. Мы подскажем ближайшие шаги и документы."
+        primaryText="Открыть чат"
+        onPrimaryPress={() => navigation.navigate('Chat')}
+        secondaryText="Оставить заявку"
+        onSecondaryPress={() => navigation.navigate('ApplicationCreate')}
       />
 
-      <OfficialWebsiteCard />
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionKicker}>Контакты</Text>
-        <Text style={styles.sectionTitle}>Мы рядом с вами</Text>
-      </View>
-
-      <ContactsBlock contacts={contacts} socials={homeQuery.data?.socials} />
+      <SectionHeader eyebrow="Контакты" title="Офисы и связь" />
+      <ContactsBlock contacts={contacts} />
     </Screen>
   );
 }
 
-function HeroBanner({ banner, onPress }: { banner: HomeBanner; onPress: () => void }) {
-  const imageUrl = getMediaUrl(banner.image || null);
-  const gradient = banner.background_gradient || '#E53935,#1565C0';
-  const [firstColor, secondColor] = gradient.split(',');
-
-  const card = (
-    <View
-      style={[
-        styles.heroCard,
-        { backgroundColor: firstColor || colors.primary },
-        imageUrl ? styles.heroCardOnImage : null,
-      ]}
-    >
-      {!imageUrl ? (
-        <View style={[styles.heroGlow, { backgroundColor: secondColor || colors.secondary }]} />
-      ) : null}
-
-      <View style={styles.glassLayer}>
-        {banner.badge ? <Text style={styles.badge}>{banner.badge}</Text> : null}
-        {banner.subtitle ? <Text style={styles.heroSubtitle}>{banner.subtitle}</Text> : null}
-
-        <Text style={styles.heroTitle}>{banner.title}</Text>
-
-        {banner.description ? (
-          <Text style={styles.heroDescription}>{banner.description}</Text>
-        ) : null}
-
-        {banner.cta_type !== 'none' ? (
-          <Pressable style={styles.heroCta} onPress={onPress}>
-            <Text style={styles.heroCtaText}>{banner.cta_text || 'Подробнее'}</Text>
-            <SvgIcon name="chevronRight" size={18} color={colors.primary} />
-          </Pressable>
-        ) : null}
+function PremiumHero({ banner, onPress }: { banner: HomeBanner; onPress: () => void }) {
+  return (
+    <View style={styles.heroWrap}>
+      <View style={[styles.hero, shadows.premium]}>
+        <View style={styles.heroGlowBlue} />
+        <View style={styles.heroGlowCoral} />
+        <View style={styles.heroGlass}>
+          {banner.badge ? <Badge label={banner.badge} variant="mint" /> : null}
+          {banner.subtitle ? <Text style={styles.heroSubtitle}>{banner.subtitle}</Text> : null}
+          <Text style={styles.heroTitle}>{banner.title}</Text>
+          {banner.description ? <Text style={styles.heroDescription}>{banner.description}</Text> : null}
+          <View style={styles.heroActions}>
+            <AppButton title={banner.cta_text || 'Оставить заявку'} onPress={onPress} />
+            <AppButton title="Посмотреть вузы" variant="outline" onPress={() => {}} />
+          </View>
+        </View>
       </View>
     </View>
   );
+}
 
-  if (imageUrl) {
+function StatCard({ value, label }: { value: string; label: string }) {
+  return (
+    <AppCard style={styles.statCard}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </AppCard>
+  );
+}
+
+function FeatureCard({ icon, title, text }: { icon: SvgIconName; title: string; text: string }) {
+  return (
+    <AppCard style={styles.featureCard}>
+      <View style={styles.featureIcon}>
+        <SvgIcon name={icon} size={22} color={colors.primary} />
+      </View>
+      <Text style={styles.featureTitle}>{title}</Text>
+      <Text style={styles.featureText}>{text}</Text>
+    </AppCard>
+  );
+}
+
+function QuickService({ icon, title, onPress }: { icon: SvgIconName; title: string; onPress: () => void }) {
+  return (
+    <AnimatedPressable style={styles.quickService} onPress={onPress}>
+      <SvgIcon name={icon} size={22} color={colors.primary} />
+      <Text style={styles.quickServiceText}>{title}</Text>
+    </AnimatedPressable>
+  );
+}
+
+function ContactsBlock({ contacts }: { contacts: OfficeContact[] }) {
+  if (!contacts.length) {
     return (
-      <Pressable onPress={onPress} style={styles.bannerWrapper}>
-        <ImageBackground
-          source={{ uri: imageUrl }}
-          imageStyle={styles.heroImage}
-          style={styles.imageHeroCard}
-        >
-          <View style={styles.imageOverlay}>{card}</View>
-        </ImageBackground>
-      </Pressable>
+      <AppCard>
+        <Text style={styles.contactTitle}>Контакты скоро появятся</Text>
+        <Text style={styles.contactText}>Добавьте офисы, телефоны и соцсети через админ-панель.</Text>
+      </AppCard>
     );
   }
 
   return (
-    <Pressable onPress={onPress} style={styles.bannerWrapper}>
-      {card}
-    </Pressable>
-  );
-}
-
-function SmallBanner({ banner, onPress }: { banner: HomeBanner; onPress: () => void }) {
-  const imageUrl = getMediaUrl(banner.image || null);
-  const gradient = banner.background_gradient || '#101828,#1565C0';
-  const [firstColor, secondColor] = gradient.split(',');
-
-  const content = (
-    <View
-      style={[
-        styles.smallBannerInner,
-        !imageUrl ? { backgroundColor: firstColor || colors.text } : null,
-      ]}
-    >
-      {!imageUrl ? (
-        <View style={[styles.smallGlow, { backgroundColor: secondColor || colors.secondary }]} />
-      ) : null}
-
-      <View style={styles.smallGlass}>
-        {banner.badge ? <Text style={styles.smallBadge}>{banner.badge}</Text> : null}
-
-        <Text style={styles.smallTitle}>{banner.title}</Text>
-
-        {banner.description ? (
-          <Text style={styles.smallText}>{banner.description}</Text>
-        ) : null}
-
-        {banner.cta_type !== 'none' ? (
-          <View style={styles.smallLinkRow}>
-            <Text style={styles.smallLink}>{banner.cta_text || 'Подробнее'}</Text>
-            <SvgIcon name="chevronRight" size={17} color={colors.white} />
-          </View>
-        ) : null}
-      </View>
-    </View>
-  );
-
-  if (imageUrl) {
-    return (
-      <Pressable style={styles.smallBanner} onPress={onPress}>
-        <ImageBackground
-          source={{ uri: imageUrl }}
-          imageStyle={styles.smallImage}
-          style={styles.smallImageBg}
-        >
-          <View style={styles.smallImageOverlay}>{content}</View>
-        </ImageBackground>
-      </Pressable>
-    );
-  }
-
-  return (
-    <Pressable style={styles.smallBanner} onPress={onPress}>
-      {content}
-    </Pressable>
-  );
-}
-
-function GlassInfoCard({ title, text }: { title: string; text: string }) {
-  return (
-    <View style={styles.infoCard}>
-      <Text style={styles.infoNumber}>{title}</Text>
-      <Text style={styles.infoText}>{text}</Text>
-    </View>
-  );
-}
-
-function QuickActionCard({
-  iconName,
-  title,
-  text,
-  onPress,
-}: {
-  iconName: SvgIconName;
-  title: string;
-  text: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable style={styles.quickCard} onPress={onPress}>
-      <View style={styles.quickIconBox}>
-        <SvgIcon name={iconName} size={28} color={colors.primary} />
-      </View>
-
-      <Text style={styles.quickTitle}>{title}</Text>
-      <Text style={styles.quickText}>{text}</Text>
-    </Pressable>
-  );
-}
-
-function OfficialWebsiteCard() {
-  return (
-    <Pressable
-      style={styles.websiteCard}
-      onPress={() => Linking.openURL(OFFICIAL_WEBSITE_URL)}
-    >
-      <View style={styles.websiteIconBox}>
-        <SvgIcon name="globe" size={27} color={colors.white} strokeWidth={2.5} />
-      </View>
-
-      <View style={styles.websiteContent}>
-        <Text style={styles.websiteKicker}>Официальный сайт</Text>
-        <Text style={styles.websiteTitle}>students-life.ru</Text>
-        <Text style={styles.websiteText}>
-          Больше информации о Student’s Life, направлениях, услугах и партнёрах
-        </Text>
-      </View>
-
-      <SvgIcon name="chevronRight" size={22} color={colors.primary} strokeWidth={2.8} />
-    </Pressable>
-  );
-}
-
-function ContactsBlock({
-  contacts,
-  socials,
-}: {
-  contacts: OfficeContact[];
-  socials?: {
-    instagram?: string;
-    tiktok?: string;
-    telegram?: string;
-    website?: string;
-    main_email?: string;
-    partners_email?: string;
-    universities_email?: string;
-  };
-}) {
-  const hasSocials = Boolean(
-    socials?.instagram ||
-      socials?.tiktok ||
-      socials?.telegram ||
-      socials?.website ||
-      socials?.main_email ||
-      socials?.partners_email ||
-      socials?.universities_email,
-  );
-
-  return (
-    <View style={styles.contactsBox}>
-      {contacts.length ? (
-        contacts.map(contact => (
-          <View key={contact.id} style={styles.contactCard}>
-            <Text style={styles.contactCity}>
-              {contact.city}
-              {contact.country ? `, ${contact.country}` : ''}
-            </Text>
-
-            {contact.office_name ? <Text style={styles.contactName}>{contact.office_name}</Text> : null}
-
-            {contact.address ? <ContactLine icon="mapPin" text={contact.address} /> : null}
-            {contact.phone ? <ContactLine icon="phone" text={contact.phone} /> : null}
-            {contact.whatsapp ? <ContactLine icon="phone" text={`WhatsApp: ${contact.whatsapp}`} /> : null}
-            {contact.telegram ? <ContactLine icon="chat" text={`Telegram: ${contact.telegram}`} /> : null}
-            {contact.email ? <ContactLine icon="mail" text={contact.email} /> : null}
-            {contact.work_hours ? <ContactLine icon="clock" text={contact.work_hours} /> : null}
-          </View>
-        ))
-      ) : (
-        <View style={styles.contactCard}>
-          <Text style={styles.contactCity}>Контакты скоро появятся</Text>
-          <Text style={styles.contactLineText}>
-            Добавьте офисы, телефоны, почты и соцсети через админ-панель.
-          </Text>
-        </View>
-      )}
-
-      {hasSocials ? (
-        <View style={styles.socialCard}>
-          <Text style={styles.socialTitle}>Соцсети и почты</Text>
-
-          {socials?.main_email ? <ContactLine icon="mail" text={`Главная почта: ${socials.main_email}`} /> : null}
-          {socials?.partners_email ? <ContactLine icon="mail" text={`Партнёрам: ${socials.partners_email}`} /> : null}
-          {socials?.universities_email ? <ContactLine icon="mail" text={`Вузам: ${socials.universities_email}`} /> : null}
-          {socials?.instagram ? <ContactLine icon="globe" text={`Instagram: ${socials.instagram}`} /> : null}
-          {socials?.tiktok ? <ContactLine icon="globe" text={`TikTok: ${socials.tiktok}`} /> : null}
-          {socials?.telegram ? <ContactLine icon="chat" text={`Telegram: ${socials.telegram}`} /> : null}
-          {socials?.website ? <ContactLine icon="globe" text={`Сайт: ${socials.website}`} /> : null}
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
-function ContactLine({ icon, text }: { icon: SvgIconName; text: string }) {
-  return (
-    <View style={styles.contactLine}>
-      <SvgIcon name={icon} size={16} color={colors.secondary} />
-      <Text style={styles.contactLineText}>{text}</Text>
+    <View style={styles.contactsList}>
+      {contacts.slice(0, 4).map(contact => (
+        <AppCard key={contact.id}>
+          <Text style={styles.contactTitle}>{contact.city}{contact.country ? `, ${contact.country}` : ''}</Text>
+          {contact.office_name ? <Text style={styles.contactName}>{contact.office_name}</Text> : null}
+          {contact.phone ? <Text style={styles.contactText}>Телефон: {contact.phone}</Text> : null}
+          {contact.whatsapp ? <Text style={styles.contactText}>WhatsApp: {contact.whatsapp}</Text> : null}
+          {contact.email ? <Text style={styles.contactText}>Email: {contact.email}</Text> : null}
+        </AppCard>
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    padding: 20,
-    paddingBottom: 44,
-    backgroundColor: '#F4F7FB',
+    backgroundColor: colors.background,
   },
   topBar: {
-    marginTop: 8,
-    marginBottom: 18,
+    marginBottom: spacing.lg,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: spacing.md,
   },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  logo: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: typography.weights.heavy,
   },
-  logoRed: {
-    color: colors.primary,
-    fontSize: 29,
-    fontWeight: '900',
-    letterSpacing: -0.4,
+  logoSubtitle: {
+    color: colors.muted,
+    fontSize: typography.tiny,
+    fontWeight: typography.weights.heavy,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+    marginTop: 2,
   },
-  logoBlue: {
-    color: colors.secondary,
-    fontSize: 29,
-    fontWeight: '900',
-    letterSpacing: -0.4,
-  },
-  topButton: {
+  profileButton: {
+    minHeight: 42,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255,255,255,0.84)',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.96)',
   },
-  topButtonText: {
+  profileText: {
     color: colors.text,
-    fontWeight: '900',
+    fontWeight: typography.weights.heavy,
   },
-  bannerWrapper: {
+  heroWrap: {
     width: CARD_WIDTH,
-    paddingRight: 14,
+    marginRight: spacing.md,
   },
-  heroCard: {
-    minHeight: 330,
-    borderRadius: 30,
+  hero: {
+    minHeight: 368,
+    borderRadius: radius.xl,
+    backgroundColor: colors.primaryDark,
     overflow: 'hidden',
-    padding: 18,
+    padding: spacing.lg,
     justifyContent: 'flex-end',
-    shadowColor: '#101828',
-    shadowOpacity: 0.24,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 10,
   },
-  heroCardOnImage: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  imageHeroCard: {
-    minHeight: 330,
-    borderRadius: 30,
-    overflow: 'hidden',
-  },
-  heroImage: {
-    borderRadius: 30,
-  },
-  imageOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(16,24,40,0.36)',
-  },
-  heroGlow: {
+  heroGlowBlue: {
     position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    right: -70,
-    top: -70,
-    opacity: 0.75,
+    width: 310,
+    height: 310,
+    borderRadius: 155,
+    backgroundColor: colors.primary,
+    top: -120,
+    right: -115,
+    opacity: 0.72,
   },
-  glassLayer: {
-    borderRadius: 24,
-    padding: 18,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
+  heroGlowCoral: {
+    position: 'absolute',
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    backgroundColor: colors.accent,
+    bottom: -100,
+    left: -80,
+    opacity: 0.28,
   },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.22)',
+  heroGlass: {
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    color: colors.white,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    fontWeight: '900',
-    fontSize: 12,
-    overflow: 'hidden',
-    marginBottom: 12,
+    borderColor: 'rgba(255,255,255,0.22)',
   },
   heroSubtitle: {
-    color: 'rgba(255,255,255,0.88)',
-    fontSize: 14,
-    fontWeight: '900',
+    color: 'rgba(255,255,255,0.76)',
+    fontSize: typography.small,
+    fontWeight: typography.weights.heavy,
+    marginTop: spacing.md,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
+    letterSpacing: 1,
   },
   heroTitle: {
     color: colors.white,
-    fontSize: 34,
-    lineHeight: 40,
-    fontWeight: '900',
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: typography.weights.heavy,
+    marginTop: spacing.xs,
   },
   heroDescription: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 10,
+    color: 'rgba(255,255,255,0.84)',
+    fontSize: typography.body,
+    lineHeight: 23,
+    marginTop: spacing.sm,
+    fontWeight: typography.weights.medium,
   },
-  heroCta: {
-    alignSelf: 'flex-start',
-    marginTop: 18,
-    backgroundColor: colors.white,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 999,
+  heroActions: {
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
-  heroCtaText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: '900',
-  },
-  infoGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 28,
-  },
-  infoCard: {
+  statCard: {
     flex: 1,
-    minHeight: 92,
-    borderRadius: 22,
-    padding: 14,
-    backgroundColor: 'rgba(255,255,255,0.78)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-    shadowColor: '#101828',
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
+    padding: spacing.md,
   },
-  infoNumber: {
+  statValue: {
     color: colors.primary,
-    fontSize: 23,
-    fontWeight: '900',
+    fontSize: 22,
+    fontWeight: typography.weights.heavy,
   },
-  infoText: {
+  statLabel: {
     color: colors.muted,
     fontSize: 12,
-    lineHeight: 17,
+    fontWeight: typography.weights.bold,
     marginTop: 4,
-    fontWeight: '700',
   },
-  sectionHeader: {
-    marginBottom: 14,
+  grid: {
+    gap: spacing.sm,
   },
-  sectionKicker: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+  featureCard: {
+    minHeight: 132,
   },
-  sectionTitle: {
-    marginTop: 3,
-    color: colors.text,
-    fontSize: 25,
-    fontWeight: '900',
-  },
-  quickGrid: {
-    gap: 12,
-    marginBottom: 28,
-  },
-  quickCard: {
-    minHeight: 122,
-    borderRadius: 24,
-    padding: 18,
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.95)',
-    shadowColor: '#101828',
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
-  },
-  quickIconBox: {
-    width: 52,
-    height: 52,
+  featureIcon: {
+    width: 46,
+    height: 46,
     borderRadius: 18,
-    backgroundColor: 'rgba(229,57,53,0.1)',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.sm,
   },
-  quickTitle: {
+  featureTitle: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: typography.body,
+    fontWeight: typography.weights.heavy,
   },
-  quickText: {
+  featureText: {
     color: colors.muted,
     lineHeight: 20,
-    marginTop: 6,
+    marginTop: 4,
+    fontWeight: typography.weights.medium,
   },
-  countryRow: {
+  directionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 28,
+    gap: spacing.sm,
   },
-  countryPill: {
+  directionPill: {
+    minHeight: 42,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: 'rgba(21,101,192,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(21,101,192,0.18)',
   },
-  countryText: {
-    color: colors.secondary,
-    fontWeight: '900',
-  },
-  newsSlider: {
-    marginBottom: 28,
-  },
-  smallBanner: {
-    width: CARD_WIDTH - 14,
-    minHeight: 205,
-    borderRadius: 28,
-    marginRight: 14,
-    overflow: 'hidden',
-    shadowColor: '#101828',
-    shadowOpacity: 0.16,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
-  },
-  smallBannerInner: {
-    flex: 1,
-    minHeight: 205,
-    borderRadius: 28,
-    padding: 18,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  smallImageBg: {
-    minHeight: 205,
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-  smallImage: {
-    borderRadius: 28,
-  },
-  smallImageOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(16,24,40,0.38)',
-  },
-  smallGlow: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    right: -60,
-    top: -80,
-    opacity: 0.7,
-  },
-  smallGlass: {
-    borderRadius: 22,
-    padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-  },
-  smallBadge: {
-    alignSelf: 'flex-start',
-    color: colors.white,
-    fontSize: 12,
-    fontWeight: '900',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-  smallTitle: {
-    color: colors.white,
-    fontSize: 23,
-    lineHeight: 29,
-    fontWeight: '900',
-  },
-  smallText: {
-    marginTop: 8,
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  smallLinkRow: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  smallLink: {
-    color: colors.white,
-    fontWeight: '900',
-  },
-  websiteCard: {
-    marginBottom: 34,
-    borderRadius: 24,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(229,57,53,0.16)',
-    shadowColor: '#101828',
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
-  },
-  websiteIconBox: {
-    width: 54,
-    height: 54,
-    borderRadius: 19,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  websiteContent: {
-    flex: 1,
-  },
-  websiteKicker: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  websiteTitle: {
-    marginTop: 3,
+  directionText: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: '900',
+    fontWeight: typography.weights.heavy,
   },
-  websiteText: {
-    marginTop: 4,
+  serviceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  quickService: {
+    width: '48%',
+    minHeight: 92,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'space-between',
+  },
+  quickServiceText: {
+    color: colors.text,
+    fontWeight: typography.weights.heavy,
+    marginTop: spacing.sm,
+  },
+  inlineService: {
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: spacing.sm,
+    ...shadows.soft,
+  },
+  inlineServiceTitle: {
+    color: colors.text,
+    fontSize: typography.body,
+    fontWeight: typography.weights.heavy,
+  },
+  inlineServiceText: {
     color: colors.muted,
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
+    lineHeight: 20,
+    marginTop: 5,
   },
-  contactsBox: {
-    gap: 12,
+  registerCard: {
+    marginTop: spacing.xl,
   },
-  contactCard: {
-    borderRadius: 24,
-    padding: 18,
-    backgroundColor: 'rgba(255,255,255,0.82)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.95)',
-    shadowColor: '#101828',
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
-  },
-  contactCity: {
+  registerTitle: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: typography.subtitle,
+    fontWeight: typography.weights.heavy,
+    marginTop: spacing.md,
+  },
+  registerText: {
+    color: colors.muted,
+    fontSize: typography.body,
+    lineHeight: 23,
+    marginTop: spacing.xs,
+    fontWeight: typography.weights.medium,
+  },
+  contactsList: {
+    gap: spacing.sm,
+  },
+  contactTitle: {
+    color: colors.text,
+    fontSize: typography.subtitle,
+    fontWeight: typography.weights.heavy,
   },
   contactName: {
-    color: colors.secondary,
-    fontWeight: '900',
+    color: colors.primary,
+    fontWeight: typography.weights.heavy,
     marginTop: 4,
-    marginBottom: 8,
   },
-  contactLine: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginTop: 8,
-  },
-  contactLineText: {
-    flex: 1,
+  contactText: {
     color: colors.muted,
     lineHeight: 21,
-    fontWeight: '600',
-  },
-  socialCard: {
-    borderRadius: 24,
-    padding: 18,
-    backgroundColor: 'rgba(229,57,53,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(229,57,53,0.18)',
-  },
-  socialTitle: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '900',
-    marginBottom: 8,
+    marginTop: 5,
   },
 });
