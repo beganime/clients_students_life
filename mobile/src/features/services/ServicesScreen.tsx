@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Dimensions, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
@@ -15,6 +15,11 @@ import { Screen } from '../../components/Screen';
 import { SectionHeader } from '../../components/SectionHeader';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
+
+const screenWidth = Dimensions.get('window').width;
+const cardGap = spacing.md;
+const horizontalPadding = 40;
+const serviceCardWidth = Math.floor((screenWidth - horizontalPadding - cardGap) / 2);
 
 export function ServicesScreen() {
   const navigation = useNavigation<any>();
@@ -154,11 +159,11 @@ const styles = StyleSheet.create({
   mainGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: cardGap,
   },
   actionCard: {
-    width: '47.8%',
-    minHeight: 150,
+    width: serviceCardWidth,
+    minHeight: 154,
     borderRadius: 32,
     padding: spacing.md,
     backgroundColor: colors.card,
