@@ -1,53 +1,76 @@
 import React from 'react';
-import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
 
-import { colors } from '../constants/colors';
+import { colors, radius, spacing, typography } from '../constants/colors';
 
 type Props = TextInputProps & {
   label?: string;
   error?: string;
+  helper?: string;
+  right?: React.ReactNode;
+  wrapperStyle?: StyleProp<ViewStyle>;
 };
 
-export function AppInput({ label, error, style, ...props }: Props) {
+export function AppInput({ label, error, helper, right, style, wrapperStyle, ...props }: Props) {
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, wrapperStyle]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <TextInput
-        placeholderTextColor={colors.muted}
-        style={[styles.input, error && styles.inputError, style]}
-        {...props}
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <View style={[styles.inputShell, error && styles.inputError]}>
+        <TextInput
+          placeholderTextColor={colors.mutedLight}
+          style={[styles.input, style]}
+          {...props}
+        />
+        {right ? <View style={styles.right}>{right}</View> : null}
+      </View>
+      {error ? <Text style={styles.error}>{error}</Text> : helper ? <Text style={styles.helper}>{helper}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 14,
+    marginBottom: spacing.md,
   },
   label: {
-    marginBottom: 6,
+    marginBottom: spacing.xs,
     color: colors.text,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: typography.small,
+    fontWeight: typography.weights.bold,
   },
-  input: {
-    minHeight: 50,
-    borderRadius: 14,
+  inputShell: {
+    minHeight: 54,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.white,
-    paddingHorizontal: 14,
+    backgroundColor: colors.card,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    minHeight: 52,
     color: colors.text,
-    fontSize: 16,
+    fontSize: typography.body,
+  },
+  right: {
+    marginLeft: spacing.sm,
   },
   inputError: {
     borderColor: colors.danger,
+    backgroundColor: 'rgba(244, 63, 94, 0.04)',
   },
   error: {
-    marginTop: 5,
+    marginTop: spacing.xs,
     color: colors.danger,
     fontSize: 12,
+    fontWeight: typography.weights.bold,
+  },
+  helper: {
+    marginTop: spacing.xs,
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: typography.weights.medium,
   },
 });
