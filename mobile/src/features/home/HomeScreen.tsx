@@ -4,14 +4,15 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { commonApi, contentApi } from '../../api/endpoints';
+import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
-import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Badge } from '../../components/Badge';
 import { BannerSlider } from '../../components/BannerSlider';
 import { CTASection } from '../../components/CTASection';
-import { SectionHeader } from '../../components/SectionHeader';
+import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
+import { SectionHeader } from '../../components/SectionHeader';
 import { StepperBlock } from '../../components/StepperBlock';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
@@ -24,17 +25,17 @@ const fallbackHeroBanners: HomeBanner[] = [
   {
     id: -1,
     slot: 'hero',
-    title: 'Поступление за границу и в российские вузы без лишнего стресса',
+    title: 'Создай своё будущее',
     subtitle: 'Student’s Life',
-    description: 'Помогаем выбрать университет, подготовить документы, получить приглашение, визу и сопровождение после приезда.',
+    description: 'Поступление, виза, жильё и сопровождение студентов в России, Европе и Азии.',
     badge: 'Международное образование',
-    cta_text: 'Оставить заявку',
+    cta_text: 'Подать заявку',
     cta_type: 'application',
   },
   {
     id: -2,
     slot: 'hero',
-    title: 'Каталог вузов, стран и программ в одном приложении',
+    title: 'Каталог вузов, стран и программ',
     subtitle: 'Подбор под цель студента',
     description: 'Смотрите направления, стоимость, языки обучения, общежитие и партнёрские университеты.',
     badge: 'Каталог',
@@ -80,22 +81,11 @@ export function HomeScreen() {
 
   return (
     <Screen scroll style={styles.screen}>
-      <View style={styles.topBar}>
-        <View>
-          <Text style={styles.logo}>Student’s Life</Text>
-          <Text style={styles.logoSubtitle}>International education agency</Text>
-        </View>
-        <AnimatedPressable style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
-          <SvgIcon name="profile" size={18} color={colors.primary} />
-          <Text style={styles.profileText}>Профиль</Text>
-        </AnimatedPressable>
-      </View>
-
       <BannerSlider
         data={heroBanners}
         itemWidth={CARD_WIDTH}
         showArrows={false}
-        renderItem={item => <PremiumHero banner={item} onPress={() => openBanner(item)} />}
+        renderItem={item => <PremiumHero banner={item} onPress={() => openBanner(item)} onUniversitiesPress={() => navigation.navigate('Universities')} />}
       />
 
       <View style={styles.statsRow}>
@@ -116,7 +106,7 @@ export function HomeScreen() {
       <View style={styles.directionRow}>
         {(countriesQuery.data?.length ? countriesQuery.data.slice(0, 6).map(item => item.name) : fallbackDirections).map(name => (
           <AnimatedPressable key={name} style={styles.directionPill} onPress={() => navigation.navigate('Universities')}>
-            <SvgIcon name="globe" size={15} color={colors.primary} />
+            <SvgIcon name="globe" size={15} color="#B91C1C" />
             <Text style={styles.directionText}>{name}</Text>
           </AnimatedPressable>
         ))}
@@ -125,12 +115,12 @@ export function HomeScreen() {
       <SectionHeader eyebrow="Процесс" title="Как мы работаем" description="Понятный путь от первой консультации до приезда студента." />
       <StepperBlock steps={workSteps} />
 
-      <SectionHeader eyebrow="Услуги" title="Что можно оформить" />
+      <SectionHeader eyebrow="Услуги" title="Комплексная поддержка" />
       <View style={styles.serviceGrid}>
-        <QuickService icon="university" title="Поступление" onPress={() => navigation.navigate('ApplicationCreate')} />
+        <QuickService icon="university" title="Вузы" onPress={() => navigation.navigate('Universities')} />
+        <QuickService icon="application" title="Поступить" onPress={() => navigation.navigate('ApplicationCreate')} />
         <QuickService icon="visa" title="Виза" onPress={() => navigation.navigate('Services')} />
-        <QuickService icon="document" title="Перевод документов" onPress={() => navigation.navigate('Services')} />
-        <QuickService icon="chat" title="Консультация" onPress={() => navigation.navigate('Chat')} />
+        <QuickService icon="mapPin" title="Туры" onPress={() => navigation.navigate('Services')} />
       </View>
       {services.slice(0, 3).map(service => (
         <AnimatedPressable key={service.id} style={styles.inlineService} onPress={() => navigation.navigate('ServiceDetail', { slug: service.slug })}>
@@ -161,12 +151,10 @@ export function HomeScreen() {
   );
 }
 
-function PremiumHero({ banner, onPress }: { banner: HomeBanner; onPress: () => void }) {
+function PremiumHero({ banner, onPress, onUniversitiesPress }: { banner: HomeBanner; onPress: () => void; onUniversitiesPress: () => void }) {
   return (
     <View style={styles.heroWrap}>
-      <View style={[styles.hero, shadows.premium]}>
-        <View style={styles.heroGlowBlue} />
-        <View style={styles.heroGlowCoral} />
+      <RedGradientHero style={styles.hero}>
         <View style={styles.heroGlass}>
           {banner.badge ? <Badge label={banner.badge} variant="mint" /> : null}
           {banner.subtitle ? <Text style={styles.heroSubtitle}>{banner.subtitle}</Text> : null}
@@ -174,10 +162,10 @@ function PremiumHero({ banner, onPress }: { banner: HomeBanner; onPress: () => v
           {banner.description ? <Text style={styles.heroDescription}>{banner.description}</Text> : null}
           <View style={styles.heroActions}>
             <AppButton title={banner.cta_text || 'Оставить заявку'} onPress={onPress} />
-            <AppButton title="Посмотреть вузы" variant="outline" onPress={() => {}} />
+            <AppButton title="Посмотреть вузы" variant="outline" onPress={onUniversitiesPress} />
           </View>
         </View>
-      </View>
+      </RedGradientHero>
     </View>
   );
 }
@@ -195,7 +183,7 @@ function FeatureCard({ icon, title, text }: { icon: SvgIconName; title: string; 
   return (
     <AppCard style={styles.featureCard}>
       <View style={styles.featureIcon}>
-        <SvgIcon name={icon} size={22} color={colors.primary} />
+        <SvgIcon name={icon} size={22} color="#B91C1C" />
       </View>
       <Text style={styles.featureTitle}>{title}</Text>
       <Text style={styles.featureText}>{text}</Text>
@@ -206,7 +194,9 @@ function FeatureCard({ icon, title, text }: { icon: SvgIconName; title: string; 
 function QuickService({ icon, title, onPress }: { icon: SvgIconName; title: string; onPress: () => void }) {
   return (
     <AnimatedPressable style={styles.quickService} onPress={onPress}>
-      <SvgIcon name={icon} size={22} color={colors.primary} />
+      <View style={styles.quickServiceIcon}>
+        <SvgIcon name={icon} size={22} color="#B91C1C" />
+      </View>
       <Text style={styles.quickServiceText}>{title}</Text>
     </AnimatedPressable>
   );
@@ -239,84 +229,24 @@ function ContactsBlock({ contacts }: { contacts: OfficeContact[] }) {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: colors.background,
-  },
-  topBar: {
-    marginBottom: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  logo: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: typography.weights.heavy,
-  },
-  logoSubtitle: {
-    color: colors.muted,
-    fontSize: typography.tiny,
-    fontWeight: typography.weights.heavy,
-    textTransform: 'uppercase',
-    letterSpacing: 0.7,
-    marginTop: 2,
-  },
-  profileButton: {
-    minHeight: 42,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-  },
-  profileText: {
-    color: colors.text,
-    fontWeight: typography.weights.heavy,
+    backgroundColor: '#FEF7F5',
   },
   heroWrap: {
     width: CARD_WIDTH,
     marginRight: spacing.md,
   },
   hero: {
-    minHeight: 368,
-    borderRadius: radius.xl,
-    backgroundColor: colors.primaryDark,
-    overflow: 'hidden',
-    padding: spacing.lg,
-    justifyContent: 'flex-end',
-  },
-  heroGlowBlue: {
-    position: 'absolute',
-    width: 310,
-    height: 310,
-    borderRadius: 155,
-    backgroundColor: colors.primary,
-    top: -120,
-    right: -115,
-    opacity: 0.72,
-  },
-  heroGlowCoral: {
-    position: 'absolute',
-    width: 230,
-    height: 230,
-    borderRadius: 115,
-    backgroundColor: colors.accent,
-    bottom: -100,
-    left: -80,
-    opacity: 0.28,
+    minHeight: 360,
   },
   heroGlass: {
     borderRadius: radius.lg,
     padding: spacing.lg,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
+    borderColor: 'rgba(255,255,255,0.28)',
   },
   heroSubtitle: {
-    color: 'rgba(255,255,255,0.76)',
+    color: 'rgba(255,255,255,0.86)',
     fontSize: typography.small,
     fontWeight: typography.weights.heavy,
     marginTop: spacing.md,
@@ -325,13 +255,13 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.white,
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 34,
+    lineHeight: 40,
     fontWeight: typography.weights.heavy,
     marginTop: spacing.xs,
   },
   heroDescription: {
-    color: 'rgba(255,255,255,0.84)',
+    color: 'rgba(255,255,255,0.92)',
     fontSize: typography.body,
     lineHeight: 23,
     marginTop: spacing.sm,
@@ -349,9 +279,10 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     padding: spacing.md,
+    borderColor: '#FFE2E2',
   },
   statValue: {
-    color: colors.primary,
+    color: '#B91C1C',
     fontSize: 22,
     fontWeight: typography.weights.heavy,
   },
@@ -366,12 +297,13 @@ const styles = StyleSheet.create({
   },
   featureCard: {
     minHeight: 132,
+    borderColor: '#FFE2E2',
   },
   featureIcon: {
     width: 46,
     height: 46,
     borderRadius: 18,
-    backgroundColor: colors.surface,
+    backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
@@ -398,7 +330,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#FFE0E0',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
@@ -414,25 +346,36 @@ const styles = StyleSheet.create({
   },
   quickService: {
     width: '48%',
-    minHeight: 92,
-    borderRadius: radius.lg,
+    minHeight: 112,
+    borderRadius: radius.xl,
     padding: spacing.md,
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: 'space-between',
+    borderColor: '#FAD7D7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.soft,
+  },
+  quickServiceIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   quickServiceText: {
     color: colors.text,
     fontWeight: typography.weights.heavy,
-    marginTop: spacing.sm,
+    textAlign: 'center',
   },
   inlineService: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.lg,
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#FFDDDD',
     marginTop: spacing.sm,
     ...shadows.soft,
   },
@@ -448,6 +391,7 @@ const styles = StyleSheet.create({
   },
   registerCard: {
     marginTop: spacing.xl,
+    borderColor: '#FFE2E2',
   },
   registerTitle: {
     color: colors.text,
@@ -471,7 +415,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.heavy,
   },
   contactName: {
-    color: colors.primary,
+    color: '#B91C1C',
     fontWeight: typography.weights.heavy,
     marginTop: 4,
   },
