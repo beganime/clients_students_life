@@ -11,11 +11,12 @@ import { Badge } from '../../components/Badge';
 import { CTASection } from '../../components/CTASection';
 import { ErrorState } from '../../components/ErrorState';
 import { Loading } from '../../components/Loading';
+import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SectionHeader } from '../../components/SectionHeader';
 import { StepperBlock } from '../../components/StepperBlock';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
-import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
+import { colors, radius, spacing, typography } from '../../constants/colors';
 import { RootStackParamList } from '../../navigation/types';
 import { getMediaUrl } from '../../utils/media';
 
@@ -53,9 +54,7 @@ export function ServiceDetailScreen() {
 
   return (
     <Screen scroll style={styles.screen}>
-      <View style={[styles.hero, shadows.premium]}>
-        <View style={styles.glowBlue} />
-        <View style={styles.glowCoral} />
+      <RedGradientHero style={styles.hero}>
         {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.heroImage} /> : null}
         <View style={styles.iconBox}>
           <SvgIcon name="services" size={34} color={colors.white} strokeWidth={2.4} />
@@ -67,7 +66,7 @@ export function ServiceDetailScreen() {
           <AppButton title={data.button_text || 'Подать заявку'} onPress={() => navigation.navigate('ApplicationCreate', { serviceId: data.id })} />
           <AppButton title="Написать в чат" variant="outline" onPress={() => navigation.navigate('Chat')} />
         </View>
-      </View>
+      </RedGradientHero>
 
       <SectionHeader eyebrow="Что входит" title="Что входит в услугу" />
       <View style={styles.grid}>
@@ -111,7 +110,7 @@ function InfoCard({ icon, title, text }: { icon: SvgIconName; title: string; tex
   return (
     <AppCard style={styles.infoCard}>
       <View style={styles.infoIconBox}>
-        <SvgIcon name={icon} size={22} color={colors.primary} />
+        <SvgIcon name={icon} size={22} color="#B91C1C" />
       </View>
       <Text style={styles.infoTitle}>{title}</Text>
       <Text style={styles.infoText}>{text}</Text>
@@ -129,136 +128,23 @@ function DocLine({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: colors.background,
-  },
-  hero: {
-    minHeight: 350,
-    borderRadius: radius.xl,
-    backgroundColor: colors.primaryDark,
-    padding: spacing.lg,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    marginBottom: spacing.lg,
-  },
-  glowBlue: {
-    position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: colors.primary,
-    top: -105,
-    right: -95,
-    opacity: 0.68,
-  },
-  glowCoral: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: colors.accent,
-    left: -90,
-    bottom: -96,
-    opacity: 0.24,
-  },
-  heroImage: {
-    position: 'absolute',
-    right: spacing.lg,
-    top: spacing.lg,
-    width: 78,
-    height: 78,
-    borderRadius: 26,
-    opacity: 0.9,
-  },
-  iconBox: {
-    width: 66,
-    height: 66,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.26)',
-    marginBottom: spacing.md,
-  },
-  title: {
-    color: colors.white,
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: typography.weights.heavy,
-    marginTop: spacing.md,
-  },
-  description: {
-    color: 'rgba(255,255,255,0.84)',
-    fontSize: typography.body,
-    lineHeight: 23,
-    marginTop: spacing.sm,
-    fontWeight: typography.weights.medium,
-  },
-  heroActions: {
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  grid: {
-    gap: spacing.md,
-  },
-  infoCard: {
-    padding: spacing.lg,
-  },
-  infoIconBox: {
-    width: 50,
-    height: 50,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  infoTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: typography.weights.heavy,
-  },
-  infoText: {
-    color: colors.muted,
-    lineHeight: 21,
-    marginTop: spacing.xs,
-    fontWeight: typography.weights.medium,
-  },
-  documentsCard: {
-    marginTop: spacing.xl,
-  },
-  documentsTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: typography.weights.heavy,
-    marginBottom: spacing.md,
-  },
-  docLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  docText: {
-    flex: 1,
-    color: colors.muted,
-    fontWeight: typography.weights.bold,
-    lineHeight: 20,
-  },
-  documentsNote: {
-    color: colors.primary,
-    fontWeight: typography.weights.bold,
-    marginTop: spacing.md,
-    lineHeight: 20,
-  },
-  markdownBox: {
-    marginTop: spacing.xl,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: typography.weights.heavy,
-    marginBottom: spacing.md,
-  },
+  screen: { backgroundColor: '#FEF7F5' },
+  hero: { minHeight: 350, marginBottom: spacing.lg },
+  heroImage: { position: 'absolute', right: spacing.lg, top: spacing.lg, width: 78, height: 78, borderRadius: 26, opacity: 0.9 },
+  iconBox: { width: 66, height: 66, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.26)', marginBottom: spacing.md },
+  title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
+  description: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
+  heroActions: { gap: spacing.sm, marginTop: spacing.lg },
+  grid: { gap: spacing.md },
+  infoCard: { padding: spacing.lg, borderColor: '#FFDDDD' },
+  infoIconBox: { width: 50, height: 50, borderRadius: 18, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  infoTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy },
+  infoText: { color: colors.muted, lineHeight: 21, marginTop: spacing.xs, fontWeight: typography.weights.medium },
+  documentsCard: { marginTop: spacing.xl, borderColor: '#FFDDDD' },
+  documentsTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.md },
+  docLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  docText: { flex: 1, color: colors.muted, fontWeight: typography.weights.bold, lineHeight: 20 },
+  documentsNote: { color: '#B91C1C', fontWeight: typography.weights.bold, marginTop: spacing.md, lineHeight: 20 },
+  markdownBox: { marginTop: spacing.xl, borderColor: '#FFDDDD' },
+  sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.md },
 });
