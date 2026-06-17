@@ -1,19 +1,27 @@
 import React from 'react';
 import { StyleSheet, View, ViewProps } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { colors, radius, shadows, spacing } from '../constants/colors';
+import { radius, shadows, spacing } from '../constants/colors';
 
 type Props = ViewProps & {
   children: React.ReactNode;
-  from?: string;
-  to?: string;
 };
 
-export function GradientCard({ children, from = colors.primaryDark, to = colors.primary, style, ...props }: Props) {
+export function GradientCard({ children, style, ...props }: Props) {
   return (
-    <View {...props} style={[styles.card, { backgroundColor: from }, shadows.premium, style]}>
-      <View style={[styles.glowLarge, { backgroundColor: to }]} />
-      <View style={[styles.glowSmall, { backgroundColor: colors.primaryLight }]} />
+    <View {...props} style={[styles.card, shadows.premium, style]}>
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
+        <Defs>
+          <LinearGradient id="softRedCardGradient" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0%" stopColor="#FCA5A5" />
+            <Stop offset="34%" stopColor="#EF4444" />
+            <Stop offset="68%" stopColor="#DC2626" />
+            <Stop offset="100%" stopColor="#7F1D1D" />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#softRedCardGradient)" />
+      </Svg>
       <View style={styles.content}>{children}</View>
     </View>
   );
@@ -24,28 +32,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     overflow: 'hidden',
     minHeight: 210,
-  },
-  glowLarge: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    top: -92,
-    right: -88,
-    opacity: 0.66,
-  },
-  glowSmall: {
-    position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    bottom: -92,
-    left: -76,
-    opacity: 0.34,
+    backgroundColor: '#DC2626',
   },
   content: {
     flex: 1,
     padding: spacing.lg,
     justifyContent: 'flex-end',
+    zIndex: 2,
   },
 });
