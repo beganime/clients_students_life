@@ -6,6 +6,7 @@ import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
 import { CTASection } from '../../components/CTASection';
+import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
@@ -29,13 +30,11 @@ export function ProfileScreen() {
   if (!isAuthenticated || !user) {
     return (
       <Screen scroll style={styles.screen}>
-        <View style={[styles.guestHero, shadows.premium]}>
-          <View style={styles.glowBlue} />
-          <View style={styles.glowCoral} />
+        <RedGradientHero style={styles.guestHero}>
           <View style={styles.guestIconBox}><SvgIcon name="profile" size={40} color={colors.white} /></View>
           <Text style={styles.guestTitle}>Гостевой режим</Text>
           <Text style={styles.guestText}>Можно смотреть услуги, страны, университеты и новости. Для заявок, чата, избранного и персональных предложений лучше войти или зарегистрироваться.</Text>
-        </View>
+        </RedGradientHero>
 
         <AppCard style={styles.benefitCard}>
           <Badge label="Преимущества аккаунта" variant="mint" icon="check" />
@@ -56,15 +55,12 @@ export function ProfileScreen() {
 
   return (
     <Screen scroll style={styles.screen}>
-      <View style={[styles.profileHero, shadows.card]}>
-        <View style={styles.profileGlow} />
-        {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={44} color={colors.primary} /></View>}
+      <AppCard style={styles.profileHero}>
+        {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={44} color="#B91C1C" /></View>}
         <Text style={styles.name}>{fullName}</Text>
         <Text style={styles.email}>{user.email}</Text>
-        <View style={styles.roleRow}>
-          <Badge label={isManager ? 'Менеджер' : 'Пользователь'} variant={isManager ? 'orange' : 'blue'} icon="lock" />
-        </View>
-      </View>
+        <View style={styles.roleRow}><Badge label={isManager ? 'Менеджер' : 'Пользователь'} variant={isManager ? 'orange' : 'blue'} icon="lock" /></View>
+      </AppCard>
 
       <View style={styles.quickGrid}>
         <QuickAction icon="document" title="Мои заявки" onPress={() => navigation.navigate('MyApplications')} />
@@ -98,85 +94,54 @@ export function ProfileScreen() {
         <ProfileMenuItem icon="services" title="Настройки" onPress={() => Alert.alert('Настройки', 'Раздел настроек можно добавить на следующем этапе.')} />
       </View>
 
-      <CTASection
-        eyebrow="Поддержка"
-        title="Нужна помощь по заявке?"
-        description="Откройте чат — менеджер подскажет статус, документы и дальнейшие шаги."
-        primaryText="Открыть чат"
-        onPrimaryPress={() => navigation.navigate('Chat')}
-        secondaryText="Новая заявка"
-        onSecondaryPress={() => navigation.navigate('ApplicationCreate')}
-      />
-
+      <CTASection eyebrow="Поддержка" title="Нужна помощь по заявке?" description="Откройте чат — менеджер подскажет статус, документы и дальнейшие шаги." primaryText="Открыть чат" onPrimaryPress={() => navigation.navigate('Chat')} secondaryText="Новая заявка" onSecondaryPress={() => navigation.navigate('ApplicationCreate')} />
       <AppButton title="Выйти" variant="danger" onPress={confirmLogout} style={styles.logoutButton} />
     </Screen>
   );
 }
 
 function ProfileInfo({ icon, label, value }: { icon: SvgIconName; label: string; value: string }) {
-  return (
-    <View style={styles.infoRow}>
-      <View style={styles.infoIconBox}><SvgIcon name={icon} size={18} color={colors.primary} /></View>
-      <View style={styles.infoTextBox}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value}</Text>
-      </View>
-    </View>
-  );
+  return <View style={styles.infoRow}><View style={styles.infoIconBox}><SvgIcon name={icon} size={18} color="#B91C1C" /></View><View style={styles.infoTextBox}><Text style={styles.infoLabel}>{label}</Text><Text style={styles.infoValue}>{value}</Text></View></View>;
 }
 
 function QuickAction({ icon, title, onPress }: { icon: SvgIconName; title: string; onPress: () => void }) {
-  return (
-    <Pressable style={styles.quickAction} onPress={onPress}>
-      <View style={styles.quickIcon}><SvgIcon name={icon} size={21} color={colors.primary} /></View>
-      <Text style={styles.quickText}>{title}</Text>
-    </Pressable>
-  );
+  return <Pressable style={styles.quickAction} onPress={onPress}><View style={styles.quickIcon}><SvgIcon name={icon} size={21} color="#B91C1C" /></View><Text style={styles.quickText}>{title}</Text></Pressable>;
 }
 
 function ProfileMenuItem({ icon, title, onPress }: { icon: SvgIconName; title: string; onPress: () => void }) {
-  return (
-    <Pressable style={styles.menuItem} onPress={onPress}>
-      <View style={styles.menuIconBox}><SvgIcon name={icon} size={21} color={colors.primary} /></View>
-      <Text style={styles.menuTitle}>{title}</Text>
-      <SvgIcon name="chevronRight" size={19} color={colors.mutedLight} />
-    </Pressable>
-  );
+  return <Pressable style={styles.menuItem} onPress={onPress}><View style={styles.menuIconBox}><SvgIcon name={icon} size={21} color="#B91C1C" /></View><Text style={styles.menuTitle}>{title}</Text><SvgIcon name="chevronRight" size={19} color={colors.mutedLight} /></Pressable>;
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: colors.background },
-  guestHero: { minHeight: 330, borderRadius: radius.xl, padding: spacing.lg, backgroundColor: colors.primaryDark, overflow: 'hidden', justifyContent: 'flex-end', marginBottom: spacing.lg },
-  glowBlue: { position: 'absolute', width: 260, height: 260, borderRadius: 130, backgroundColor: colors.primary, top: -92, right: -84, opacity: 0.68 },
-  glowCoral: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.accent, bottom: -94, left: -78, opacity: 0.24 },
+  screen: { backgroundColor: '#FEF7F5' },
+  guestHero: { minHeight: 310, marginBottom: spacing.lg },
   guestIconBox: { width: 76, height: 76, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.26)', marginBottom: spacing.md },
   guestTitle: { color: colors.white, fontSize: 32, fontWeight: typography.weights.heavy },
-  guestText: { marginTop: spacing.sm, color: 'rgba(255,255,255,0.84)', fontSize: typography.body, lineHeight: 23, fontWeight: typography.weights.medium },
-  profileHero: { borderRadius: radius.xl, padding: spacing.lg, alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: spacing.lg },
-  profileGlow: { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: colors.surface, top: -120, right: -80 },
+  guestText: { marginTop: spacing.sm, color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, fontWeight: typography.weights.medium },
+  profileHero: { alignItems: 'center', marginBottom: spacing.lg, borderColor: '#FFDDDD' },
   avatar: { width: 110, height: 110, borderRadius: 55, marginBottom: spacing.md, backgroundColor: colors.border },
-  avatarPlaceholder: { width: 110, height: 110, borderRadius: 55, marginBottom: spacing.md, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+  avatarPlaceholder: { width: 110, height: 110, borderRadius: 55, marginBottom: spacing.md, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FFDDDD' },
   name: { color: colors.text, fontSize: typography.title, fontWeight: typography.weights.heavy, textAlign: 'center' },
-  email: { marginTop: 6, color: colors.primary, fontWeight: typography.weights.bold },
+  email: { marginTop: 6, color: '#B91C1C', fontWeight: typography.weights.bold },
   roleRow: { marginTop: spacing.md },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
-  quickAction: { width: '48%', minHeight: 104, borderRadius: radius.lg, padding: spacing.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, justifyContent: 'space-between', ...shadows.soft },
-  quickIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  quickAction: { width: '48%', minHeight: 104, borderRadius: radius.lg, padding: spacing.md, backgroundColor: colors.card, borderWidth: 1, borderColor: '#FFDDDD', justifyContent: 'space-between', ...shadows.soft },
+  quickIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center' },
   quickText: { color: colors.text, fontWeight: typography.weights.heavy, marginTop: spacing.sm },
-  infoCard: { marginBottom: spacing.lg },
+  infoCard: { marginBottom: spacing.lg, borderColor: '#FFDDDD' },
   blockTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.sm },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
-  infoIconBox: { width: 42, height: 42, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  infoIconBox: { width: 42, height: 42, borderRadius: 16, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center' },
   infoTextBox: { flex: 1 },
   infoLabel: { color: colors.muted, fontSize: typography.small, fontWeight: typography.weights.bold },
   infoValue: { color: colors.text, marginTop: 2, fontWeight: typography.weights.heavy },
-  benefitCard: { marginBottom: spacing.lg },
+  benefitCard: { marginBottom: spacing.lg, borderColor: '#FFDDDD' },
   benefitTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   benefitText: { color: colors.muted, lineHeight: 22, marginTop: spacing.xs, fontWeight: typography.weights.medium },
   actions: { gap: spacing.sm, marginTop: spacing.lg },
   menu: { gap: spacing.sm },
-  menuItem: { minHeight: 64, borderRadius: radius.lg, paddingHorizontal: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
-  menuIconBox: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  menuItem: { minHeight: 64, borderRadius: radius.lg, paddingHorizontal: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.card, borderWidth: 1, borderColor: '#FFDDDD', ...shadows.soft },
+  menuIconBox: { width: 44, height: 44, borderRadius: 16, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center' },
   menuTitle: { flex: 1, color: colors.text, fontSize: typography.body, fontWeight: typography.weights.heavy },
   logoutButton: { marginTop: spacing.lg },
 });
