@@ -7,9 +7,10 @@ import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
 import { Badge } from '../../components/Badge';
+import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
-import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
+import { colors, spacing, typography } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/apiError';
 import { getMediaUrl } from '../../utils/media';
@@ -36,14 +37,7 @@ export function EditProfileScreen() {
       Alert.alert('Нет доступа', 'Разрешите доступ к галерее, чтобы выбрать фото.');
       return;
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
     if (!result.canceled) setAvatarUri(result.assets[0].uri);
   };
 
@@ -60,11 +54,7 @@ export function EditProfileScreen() {
       formData.append('profile.city', city);
       formData.append('profile.citizenship', citizenship);
       formData.append('profile.language', user?.profile?.language || 'ru');
-
-      if (avatarUri) {
-        formData.append('profile.avatar', { uri: avatarUri, name: 'avatar.jpg', type: 'image/jpeg' } as any);
-      }
-
+      if (avatarUri) formData.append('profile.avatar', { uri: avatarUri, name: 'avatar.jpg', type: 'image/jpeg' } as any);
       await authApi.updateMeFormData(formData);
       await refreshMe();
       Alert.alert('Готово', 'Профиль обновлён.');
@@ -77,17 +67,15 @@ export function EditProfileScreen() {
 
   return (
     <Screen scroll style={styles.screen}>
-      <View style={[styles.hero, shadows.premium]}>
-        <View style={styles.glowBlue} />
-        <View style={styles.glowMint} />
+      <RedGradientHero style={styles.hero}>
         <Badge label="Профиль" variant="mint" icon="profile" />
         <Text style={styles.title}>Редактировать данные</Text>
         <Text style={styles.subtitle}>Актуальные контакты помогут менеджеру быстрее отвечать по заявкам и документам.</Text>
-      </View>
+      </RedGradientHero>
 
       <AppCard style={styles.avatarCard}>
         <Pressable style={styles.avatarBox} onPress={pickAvatar}>
-          {currentAvatar ? <Image source={{ uri: currentAvatar }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={42} color={colors.primary} /></View>}
+          {currentAvatar ? <Image source={{ uri: currentAvatar }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={42} color="#B91C1C" /></View>}
           <Text style={styles.avatarText}>Изменить фото</Text>
         </Pressable>
       </AppCard>
@@ -111,18 +99,16 @@ export function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: colors.background },
-  hero: { minHeight: 280, borderRadius: radius.xl, backgroundColor: colors.primaryDark, padding: spacing.lg, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: spacing.lg },
-  glowBlue: { position: 'absolute', width: 270, height: 270, borderRadius: 135, backgroundColor: colors.primary, top: -105, right: -95, opacity: 0.68 },
-  glowMint: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.success, left: -90, bottom: -96, opacity: 0.22 },
+  screen: { backgroundColor: '#FEF7F5' },
+  hero: { minHeight: 260, marginBottom: spacing.lg },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
-  subtitle: { color: 'rgba(255,255,255,0.84)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
-  avatarCard: { alignItems: 'center', marginBottom: spacing.lg },
+  subtitle: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
+  avatarCard: { alignItems: 'center', marginBottom: spacing.lg, borderColor: '#FFDDDD' },
   avatarBox: { alignItems: 'center' },
   avatar: { width: 112, height: 112, borderRadius: 56, backgroundColor: colors.border },
-  avatarPlaceholder: { width: 112, height: 112, borderRadius: 56, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  avatarText: { marginTop: spacing.sm, color: colors.primary, fontWeight: typography.weights.heavy },
-  formCard: { marginBottom: spacing.xl },
+  avatarPlaceholder: { width: 112, height: 112, borderRadius: 56, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FFDDDD' },
+  avatarText: { marginTop: spacing.sm, color: '#B91C1C', fontWeight: typography.weights.heavy },
+  formCard: { marginBottom: spacing.xl, borderColor: '#FFDDDD' },
   sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.md },
   nameRow: { flexDirection: 'row', gap: spacing.sm },
   nameInput: { flex: 1 },
