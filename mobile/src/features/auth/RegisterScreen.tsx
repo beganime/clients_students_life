@@ -3,31 +3,26 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
+import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
-import { colors } from '../../constants/colors';
+import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
 import { AuthStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
-
-type StatusState = {
-  type: 'success' | 'error' | 'info';
-  text: string;
-} | null;
+type StatusState = { type: 'success' | 'error' | 'info'; text: string } | null;
 
 export function RegisterScreen({ navigation }: Props) {
   const registerAndLogin = useAuthStore(state => state.registerAndLogin);
-
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
 
@@ -35,51 +30,33 @@ export function RegisterScreen({ navigation }: Props) {
   const passwordsMatch = password.length > 0 && password === passwordConfirm;
 
   const passwordMessage = useMemo(() => {
-    if (!password && !passwordConfirm) return null;
+    if (!password && !passwordConfirm) return 'Зарегистрированные пользователи видят историю заявок и получают персональные предложения.';
     if (!passwordValid) return 'Пароль должен быть минимум 6 символов.';
     if (passwordConfirm && !passwordsMatch) return 'Пароли не совпадают.';
     if (passwordsMatch) return 'Пароль подтверждён правильно.';
-    return null;
+    return 'Повторите пароль для проверки.';
   }, [password, passwordConfirm, passwordValid, passwordsMatch]);
 
-  const closeAuth = () => {
-    navigation.getParent<any>()?.navigate('App');
-  };
+  const closeAuth = () => navigation.getParent<any>()?.navigate('App');
 
   const handleRegister = async () => {
     const cleanEmail = email.trim().toLowerCase();
-
     if (!firstName.trim() || !lastName.trim() || !cleanEmail || !password) {
-      setStatus({
-        type: 'error',
-        text: 'Заполните имя, фамилию, email и пароль.',
-      });
+      setStatus({ type: 'error', text: 'Заполните имя, фамилию, email и пароль.' });
       return;
     }
-
     if (!passwordValid) {
-      setStatus({
-        type: 'error',
-        text: 'Пароль должен быть минимум 6 символов.',
-      });
+      setStatus({ type: 'error', text: 'Пароль должен быть минимум 6 символов.' });
       return;
     }
-
     if (!passwordsMatch) {
-      setStatus({
-        type: 'error',
-        text: 'Пароли не совпадают.',
-      });
+      setStatus({ type: 'error', text: 'Пароли не совпадают.' });
       return;
     }
 
     try {
       setLoading(true);
-      setStatus({
-        type: 'info',
-        text: 'Создаём аккаунт...',
-      });
-
+      setStatus({ type: 'info', text: 'Создаём аккаунт...' });
       await registerAndLogin({
         email: cleanEmail,
         first_name: firstName.trim(),
@@ -90,20 +67,10 @@ export function RegisterScreen({ navigation }: Props) {
         whatsapp: phone,
         language: 'ru',
       });
-
-      setStatus({
-        type: 'success',
-        text: 'Аккаунт создан. Вы успешно вошли в систему.',
-      });
-
-      setTimeout(() => {
-        navigation.getParent<any>()?.navigate('App');
-      }, 700);
+      setStatus({ type: 'success', text: 'Аккаунт создан. Вы успешно вошли в систему.' });
+      setTimeout(() => navigation.getParent<any>()?.navigate('App'), 500);
     } catch (error) {
-      setStatus({
-        type: 'error',
-        text: 'Не удалось зарегистрироваться. Проверьте данные или попробуйте другой email.',
-      });
+      setStatus({ type: 'error', text: 'Не удалось зарегистрироваться. Проверьте данные или попробуйте другой email.' });
     } finally {
       setLoading(false);
     }
@@ -117,186 +84,94 @@ export function RegisterScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
-      <View style={styles.heroCard}>
-        <View style={styles.glowRed} />
+      <View style={[styles.heroCard, shadows.premium]}>
         <View style={styles.glowBlue} />
-
-        <View style={styles.iconBox}>
-          <SvgIcon name="userPlus" size={36} color={colors.white} strokeWidth={2.4} />
-        </View>
-
-        <Text style={styles.title}>Регистрация</Text>
-        <Text style={styles.subtitle}>
-          Создайте аккаунт, чтобы отслеживать заявки и общаться с менеджером.
-        </Text>
+        <View style={styles.glowMint} />
+        <View style={styles.iconBox}><SvgIcon name="userPlus" size={36} color={colors.white} strokeWidth={2.4} /></View>
+        <Text style={styles.title}>Создайте аккаунт</Text>
+        <Text style={styles.subtitle}>Так менеджеру проще отвечать, а вам — видеть историю заявок, чатов и персональные предложения.</Text>
       </View>
 
-      <View style={styles.formCard}>
-        <AppInput
-          label="Имя"
-          value={firstName}
-          onChangeText={text => {
-            setFirstName(text);
-            setStatus(null);
-          }}
-          placeholder="Ali"
-        />
-
-        <AppInput
-          label="Фамилия"
-          value={lastName}
-          onChangeText={text => {
-            setLastName(text);
-            setStatus(null);
-          }}
-          placeholder="Myradov"
-        />
-
-        <AppInput
-          label="Email"
-          value={email}
-          onChangeText={text => {
-            setEmail(text);
-            setStatus(null);
-          }}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="student@example.com"
-        />
-
-        <AppInput
-          label="Телефон / WhatsApp"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          placeholder="+993..."
-        />
-
+      <AppCard style={styles.formCard}>
+        <View style={styles.nameRow}>
+          <AppInput wrapperStyle={styles.nameInput} label="Имя" value={firstName} onChangeText={text => { setFirstName(text); setStatus(null); }} placeholder="Ali" />
+          <AppInput wrapperStyle={styles.nameInput} label="Фамилия" value={lastName} onChangeText={text => { setLastName(text); setStatus(null); }} placeholder="Myradov" />
+        </View>
+        <AppInput label="Email" value={email} onChangeText={text => { setEmail(text); setStatus(null); }} autoCapitalize="none" keyboardType="email-address" placeholder="student@example.com" />
+        <AppInput label="Телефон / WhatsApp" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+993..." />
         <AppInput
           label="Пароль"
           value={password}
-          onChangeText={text => {
-            setPassword(text);
-            setStatus(null);
-          }}
-          secureTextEntry
+          onChangeText={text => { setPassword(text); setStatus(null); }}
+          secureTextEntry={!showPassword}
           placeholder="Минимум 6 символов"
+          right={<Pressable onPress={() => setShowPassword(!showPassword)}><Text style={styles.toggleText}>{showPassword ? 'Скрыть' : 'Показать'}</Text></Pressable>}
         />
+        <AppInput label="Повторите пароль" value={passwordConfirm} onChangeText={text => { setPasswordConfirm(text); setStatus(null); }} secureTextEntry={!showPassword} placeholder="Повторите пароль" helper={passwordMessage} />
 
-        <AppInput
-          label="Повторите пароль"
-          value={passwordConfirm}
-          onChangeText={text => {
-            setPasswordConfirm(text);
-            setStatus(null);
-          }}
-          secureTextEntry
-          placeholder="Повторите пароль"
-        />
-
-        {passwordMessage ? (
-          <View style={[styles.passwordHint, passwordsMatch ? styles.hintSuccess : styles.hintError]}>
-            <SvgIcon
-              name={passwordsMatch ? 'check' : 'warning'}
-              size={16}
-              color={passwordsMatch ? colors.success : colors.danger}
-            />
-            <Text style={[styles.passwordHintText, passwordsMatch ? styles.hintSuccessText : styles.hintErrorText]}>
-              {passwordMessage}
-            </Text>
-          </View>
-        ) : null}
-
-        {status ? (
-          <View
-            style={[
-              styles.statusBox,
-              status.type === 'success' && styles.statusSuccess,
-              status.type === 'error' && styles.statusError,
-              status.type === 'info' && styles.statusInfo,
-            ]}
-          >
-            <SvgIcon
-              name={status.type === 'success' ? 'check' : status.type === 'error' ? 'warning' : 'lock'}
-              size={18}
-              color={
-                status.type === 'success'
-                  ? colors.success
-                  : status.type === 'error'
-                    ? colors.danger
-                    : colors.secondary
-              }
-            />
-            <Text
-              style={[
-                styles.statusText,
-                status.type === 'success' && styles.statusSuccessText,
-                status.type === 'error' && styles.statusErrorText,
-                status.type === 'info' && styles.statusInfoText,
-              ]}
-            >
-              {status.text}
-            </Text>
-          </View>
-        ) : null}
+        {status ? <StatusBox type={status.type} text={status.text} /> : null}
 
         <AppButton title="Создать аккаунт" onPress={handleRegister} loading={loading} />
-
         <Pressable style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
           <Text style={styles.loginText}>Уже есть аккаунт? Войти</Text>
         </Pressable>
-      </View>
+      </AppCard>
     </Screen>
   );
 }
 
+function StatusBox({ type, text }: { type: 'success' | 'error' | 'info'; text: string }) {
+  const icon = type === 'success' ? 'check' : type === 'error' ? 'warning' : 'lock';
+  const color = type === 'success' ? colors.success : type === 'error' ? colors.danger : colors.primary;
+  return (
+    <View style={[styles.statusBox, { borderColor: `${color}33`, backgroundColor: `${color}12` }]}>
+      <SvgIcon name={icon} size={18} color={color} />
+      <Text style={[styles.statusText, { color }]}>{text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  screen: {
-    backgroundColor: '#F4F7FB',
-    paddingBottom: 36,
-  },
-  topBar: {
-    alignItems: 'flex-end',
-    marginBottom: 12,
-  },
+  screen: { backgroundColor: colors.background, paddingBottom: 36 },
+  topBar: { alignItems: 'flex-end', marginBottom: spacing.md },
   closeButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.96)',
+    borderColor: colors.border,
   },
   heroCard: {
-    minHeight: 230,
-    borderRadius: 30,
-    padding: 22,
-    backgroundColor: '#101828',
+    minHeight: 270,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    backgroundColor: colors.primaryDark,
     overflow: 'hidden',
     justifyContent: 'flex-end',
-    marginBottom: 18,
-  },
-  glowRed: {
-    position: 'absolute',
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    backgroundColor: colors.primary,
-    top: -75,
-    right: -70,
-    opacity: 0.7,
+    marginBottom: spacing.lg,
   },
   glowBlue: {
+    position: 'absolute',
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    backgroundColor: colors.primary,
+    top: -80,
+    right: -70,
+    opacity: 0.68,
+  },
+  glowMint: {
     position: 'absolute',
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.success,
     bottom: -90,
     left: -70,
-    opacity: 0.65,
+    opacity: 0.24,
   },
   iconBox: {
     width: 68,
@@ -306,104 +181,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-    marginBottom: 16,
+    borderColor: 'rgba(255,255,255,0.26)',
+    marginBottom: spacing.md,
   },
-  title: {
-    color: colors.white,
-    fontSize: 34,
-    fontWeight: '900',
-  },
-  subtitle: {
-    color: 'rgba(255,255,255,0.86)',
-    marginTop: 8,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  formCard: {
-    borderRadius: 28,
-    padding: 18,
-    backgroundColor: 'rgba(255,255,255,0.86)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.96)',
-    shadowColor: '#101828',
-    shadowOpacity: 0.08,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 5,
-  },
-  passwordHint: {
-    minHeight: 42,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    marginTop: -4,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-  },
-  hintSuccess: {
-    backgroundColor: 'rgba(18,183,106,0.08)',
-    borderColor: 'rgba(18,183,106,0.2)',
-  },
-  hintError: {
-    backgroundColor: 'rgba(240,68,56,0.08)',
-    borderColor: 'rgba(240,68,56,0.2)',
-  },
-  passwordHintText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  hintSuccessText: {
-    color: colors.success,
-  },
-  hintErrorText: {
-    color: colors.danger,
-  },
+  title: { color: colors.white, fontSize: 34, lineHeight: 39, fontWeight: typography.weights.heavy },
+  subtitle: { color: 'rgba(255,255,255,0.84)', marginTop: spacing.sm, fontSize: typography.body, lineHeight: 23 },
+  formCard: { padding: spacing.lg },
+  nameRow: { flexDirection: 'row', gap: spacing.sm },
+  nameInput: { flex: 1 },
+  toggleText: { color: colors.primary, fontWeight: typography.weights.heavy },
   statusBox: {
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 14,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
+    gap: spacing.sm,
     borderWidth: 1,
   },
-  statusSuccess: {
-    backgroundColor: 'rgba(18,183,106,0.08)',
-    borderColor: 'rgba(18,183,106,0.2)',
-  },
-  statusError: {
-    backgroundColor: 'rgba(240,68,56,0.08)',
-    borderColor: 'rgba(240,68,56,0.2)',
-  },
-  statusInfo: {
-    backgroundColor: 'rgba(21,101,192,0.08)',
-    borderColor: 'rgba(21,101,192,0.2)',
-  },
-  statusText: {
-    flex: 1,
-    fontWeight: '800',
-    lineHeight: 20,
-  },
-  statusSuccessText: {
-    color: colors.success,
-  },
-  statusErrorText: {
-    color: colors.danger,
-  },
-  statusInfoText: {
-    color: colors.secondary,
-  },
-  loginLink: {
-    marginTop: 18,
-    alignItems: 'center',
-  },
-  loginText: {
-    color: colors.secondary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
+  statusText: { flex: 1, fontWeight: typography.weights.bold, lineHeight: 20 },
+  loginLink: { marginTop: spacing.lg, alignItems: 'center' },
+  loginText: { color: colors.primary, fontSize: typography.body, fontWeight: typography.weights.bold },
 });
