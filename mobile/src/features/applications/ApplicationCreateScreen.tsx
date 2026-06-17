@@ -1,33 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { applicationsApi, contentApi } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
+import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
+import { Badge } from '../../components/Badge';
+import { CTASection } from '../../components/CTASection';
 import { Loading } from '../../components/Loading';
 import { LoginRequired } from '../../components/LoginRequired';
 import { Screen } from '../../components/Screen';
+import { SectionHeader } from '../../components/SectionHeader';
 import { SvgIcon } from '../../components/SvgIcon';
-import { colors } from '../../constants/colors';
-import { RootStackParamList } from '../../navigation/types';
+import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/apiError';
 
-type R = RouteProp<RootStackParamList, 'ApplicationCreate'>;
-
-type SelectedFile = {
-  uri: string;
-  name: string;
-  type: string;
-};
-
-type SubmitStatus = {
-  type: 'success' | 'error' | 'info';
-  text: string;
-} | null;
+type SelectedFile = { uri: string; name: string; type: string };
+type SubmitStatus = { type: 'success' | 'error' | 'info'; text: string } | null;
 
 function makeIdempotencyKey() {
   return `mobile-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
@@ -40,7 +33,7 @@ export function ApplicationCreateScreen() {
     return (
       <LoginRequired
         title="Чтобы отправить заявку, войдите в аккаунт"
-        description="Смотреть услуги, страны, университеты и новости можно без регистрации. Отправка заявки доступна только после входа."
+        description="Зарегистрированные пользователи видят историю заявок, ответы менеджера и персональные предложения."
       />
     );
   }
@@ -49,22 +42,13 @@ export function ApplicationCreateScreen() {
 }
 
 function ApplicationCreateForm() {
-  const route = useRoute<R>();
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
+  const user = useAuthStore(state => state.user);
 
-  const servicesQuery = useQuery({
-    queryKey: ['services'],
-    queryFn: contentApi.getServices,
-  });
-
-  const countriesQuery = useQuery({
-    queryKey: ['countries'],
-    queryFn: contentApi.getCountries,
-  });
-
-  const universitiesQuery = useQuery({
-    queryKey: ['universities'],
-    queryFn: () => contentApi.getUniversities(),
-  });
+  const servicesQuery = useQuery({ queryKey: ['services'], queryFn: contentApi.getServices });
+  const countriesQuery = useQuery({ queryKey: ['countries'], queryFn: contentApi.getCountries });
+  const universitiesQuery = useQuery({ queryKey: ['universities'], queryFn: () => contentApi.getUniversities() });
 
   const [serviceId, setServiceId] = useState<number | null>(route.params?.serviceId || null);
   const [targetCountryId, setTargetCountryId] = useState<number | null>(null);
@@ -83,30 +67,45 @@ function ApplicationCreateForm() {
   const [startYear, setStartYear] = useState('2026');
   const [comment, setComment] = useState('');
   const [files, setFiles] = useState<SelectedFile[]>([]);
-
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<SubmitStatus>(null);
+  const [successNumber, setSuccessNumber] = useState('');
 
   const isInitialLoading = servicesQuery.isLoading || countriesQuery.isLoading || universitiesQuery.isLoading;
 
   useEffect(() => {
-    if (route.params?.serviceId) {
-      setServiceId(route.params.serviceId);
-    }
-
-    if (route.params?.universityId) {
-      setTargetUniversityId(route.params.universityId);
-    }
+    if (route.params?.serviceId) setServiceId(route.params.serviceId);
+    if (route.params?.universityId) setTargetUniversityId(route.params.universityId);
   }, [route.params?.serviceId, route.params?.universityId]);
+
+  useEffect(() => {
+    if (!user) return;
+    setFullName(prev => prev || [user.first_name, user.last_name].filter(Boolean).join(' '));
+    setEmail(prev => prev || user.email || '');
+    setPhone(prev => prev || user.profile?.phone || '');
+    setWhatsapp(prev => prev || user.profile?.whatsapp || user.profile?.phone || '');
+    setTelegram(prev => prev || user.profile?.telegram || '');
+    setCountry(prev => prev || user.profile?.country || '');
+    setCitizenship(prev => prev || user.profile?.citizenship || '');
+  }, [user]);
+
+  const resetForm = () => {
+    setServiceId(null);
+    setTargetCountryId(null);
+    setTargetUniversityId(null);
+    setEducationLevel('');
+    setSpecialty('');
+    setStudyLanguage('');
+    setStartYear('2026');
+    setComment('');
+    setFiles([]);
+  };
 
   const handlePickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       multiple: true,
       copyToCacheDirectory: true,
-      type: [
-        'application/pdf',
-        'image/*',
-      ],
+      type: ['application/pdf', 'image/*'],
     });
 
     if (result.canceled) return;
@@ -120,50 +119,23 @@ function ApplicationCreateForm() {
     setFiles(prev => [...prev, ...pickedFiles]);
   };
 
-  const resetForm = () => {
-    setServiceId(null);
-    setTargetCountryId(null);
-    setTargetUniversityId(null);
-    setFullName('');
-    setPhone('');
-    setWhatsapp('');
-    setTelegram('');
-    setEmail('');
-    setCountry('');
-    setCitizenship('');
-    setEducationLevel('');
-    setSpecialty('');
-    setStudyLanguage('');
-    setStartYear('2026');
-    setComment('');
-    setFiles([]);
-  };
-
   const handleSubmit = async () => {
     setStatus(null);
+    setSuccessNumber('');
 
     if (!fullName.trim()) {
-      setStatus({
-        type: 'error',
-        text: 'Введите ФИО студента.',
-      });
+      setStatus({ type: 'error', text: 'Введите ФИО студента.' });
       return;
     }
 
     if (!phone && !whatsapp && !telegram && !email) {
-      setStatus({
-        type: 'error',
-        text: 'Укажите хотя бы один способ связи.',
-      });
+      setStatus({ type: 'error', text: 'Укажите хотя бы один способ связи.' });
       return;
     }
 
     try {
       setLoading(true);
-      setStatus({
-        type: 'info',
-        text: 'Отправляем заявку...',
-      });
+      setStatus({ type: 'info', text: 'Отправляем заявку...' });
 
       const application = await applicationsApi.createApplication({
         service: serviceId,
@@ -191,27 +163,11 @@ function ApplicationCreateForm() {
         await applicationsApi.uploadFile(application.id, file, 'other');
       }
 
-      const syncWarning =
-        application.manager_sl_sync_status === 'failed'
-          ? ' Заявка сохранена в приложении; менеджер получит ее после восстановления связи с основной CRM.'
-          : '';
-
-      setStatus({
-        type: 'success',
-        text: `Заявка отправлена. Номер заявки: ${application.application_number}`,
-      });
-
-      Alert.alert('Заявка отправлена', `Номер заявки: ${application.application_number}`);
-      if (syncWarning) {
-        setStatus(prev => (prev ? { ...prev, text: `${prev.text}.${syncWarning}` } : prev));
-      }
-
+      setSuccessNumber(application.application_number);
+      setStatus({ type: 'success', text: `Заявка отправлена. Номер: ${application.application_number}` });
       resetForm();
     } catch (error) {
-      setStatus({
-        type: 'error',
-        text: getApiErrorMessage(error, 'Не удалось отправить заявку'),
-      });
+      setStatus({ type: 'error', text: getApiErrorMessage(error, 'Заявка не отправилась. Попробуйте ещё раз или напишите нам в чат.') });
     } finally {
       setLoading(false);
     }
@@ -219,347 +175,170 @@ function ApplicationCreateForm() {
 
   if (isInitialLoading) return <Loading />;
 
+  if (successNumber) {
+    return (
+      <Screen scroll style={styles.screen}>
+        <AppCard style={styles.successCard}>
+          <View style={styles.successIcon}><SvgIcon name="check" size={34} color={colors.success} /></View>
+          <Text style={styles.successTitle}>Заявка отправлена</Text>
+          <Text style={styles.successText}>Номер заявки: {successNumber}. Менеджер свяжется с вами и объяснит следующие шаги.</Text>
+          <View style={styles.successActions}>
+            <AppButton title="Мои заявки" onPress={() => navigation.navigate('MyApplications')} />
+            <AppButton title="Открыть чат" variant="outline" onPress={() => navigation.navigate('Chat')} />
+            <AppButton title="Создать ещё заявку" variant="ghost" onPress={() => { setSuccessNumber(''); setStatus(null); }} />
+          </View>
+        </AppCard>
+      </Screen>
+    );
+  }
+
   return (
     <Screen scroll style={styles.screen}>
-      <View style={styles.hero}>
-        <View style={styles.glowRed} />
+      <View style={[styles.hero, shadows.premium]}>
         <View style={styles.glowBlue} />
-
-        <View style={styles.heroGlass}>
-          <View style={styles.heroIconBox}>
-            <SvgIcon name="application" size={34} color={colors.white} />
-          </View>
-
-          <Text style={styles.kicker}>Заявка</Text>
-          <Text style={styles.title}>Подать заявку</Text>
-          <Text style={styles.subtitle}>
-            Заполните данные, и менеджер Student’s Life свяжется с вами.
-          </Text>
-        </View>
+        <View style={styles.glowMint} />
+        <Badge label="Заявка ни к чему не обязывает" variant="mint" icon="check" />
+        <Text style={styles.title}>Расскажите, куда хотите поступить</Text>
+        <Text style={styles.subtitle}>Менеджер свяжется с вами, проверит данные и объяснит следующие шаги.</Text>
       </View>
 
-      <View style={styles.formCard}>
+      <FormSection step="1" title="Услуга и направление" description="Выберите услугу, страну и университет, если уже знаете желаемый вариант.">
         <Text style={styles.label}>Выберите услугу</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-          {(servicesQuery.data || []).map(service => {
-            const active = serviceId === service.id;
+        <ChipScroll items={servicesQuery.data || []} activeId={serviceId} getLabel={item => item.title} onPress={item => setServiceId(serviceId === item.id ? null : item.id)} />
 
-            return (
-              <Pressable
-                key={service.id}
-                style={[styles.chip, active && styles.chipActive]}
-                onPress={() => setServiceId(active ? null : service.id)}
-              >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{service.title}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <Text style={styles.label}>Желаемая страна обучения</Text>
+        <ChipScroll items={countriesQuery.data || []} activeId={targetCountryId} getLabel={item => item.name} onPress={item => setTargetCountryId(targetCountryId === item.id ? null : item.id)} />
 
+        <Text style={styles.label}>Желаемый университет</Text>
+        <ChipScroll items={(universitiesQuery.data || []).slice(0, 20)} activeId={targetUniversityId} getLabel={item => item.name} onPress={item => setTargetUniversityId(targetUniversityId === item.id ? null : item.id)} />
+      </FormSection>
+
+      <FormSection step="2" title="Контакты студента" description="Достаточно одного способа связи, но лучше оставить WhatsApp или Telegram.">
         <AppInput label="ФИО" value={fullName} onChangeText={setFullName} placeholder="Ali Myradov" />
         <AppInput label="Телефон" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+993..." />
         <AppInput label="WhatsApp" value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" placeholder="+993..." />
         <AppInput label="Telegram" value={telegram} onChangeText={setTelegram} placeholder="@username" />
         <AppInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="student@example.com" />
+      </FormSection>
+
+      <FormSection step="3" title="Образование и пожелания" description="Эти поля помогают менеджеру подобрать программу точнее.">
         <AppInput label="Гражданство" value={citizenship} onChangeText={setCitizenship} placeholder="Turkmenistan" />
         <AppInput label="Страна проживания" value={country} onChangeText={setCountry} placeholder="Turkmenistan" />
-
-        <Text style={styles.label}>Желаемая страна обучения</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-          {(countriesQuery.data || []).map(item => {
-            const active = targetCountryId === item.id;
-
-            return (
-              <Pressable
-                key={item.id}
-                style={[styles.chip, active && styles.chipActive]}
-                onPress={() => setTargetCountryId(active ? null : item.id)}
-              >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        <Text style={styles.label}>Желаемый университет</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-          {(universitiesQuery.data || []).slice(0, 20).map(item => {
-            const active = targetUniversityId === item.id;
-
-            return (
-              <Pressable
-                key={item.id}
-                style={[styles.chip, active && styles.chipActive]}
-                onPress={() => setTargetUniversityId(active ? null : item.id)}
-              >
-                <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
-                  {item.name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
         <AppInput label="Текущий уровень образования" value={educationLevel} onChangeText={setEducationLevel} placeholder="Среднее образование / бакалавр" />
-        <AppInput label="Желаемая специальность" value={specialty} onChangeText={setSpecialty} placeholder="Medicine" />
-        <AppInput label="Язык обучения" value={studyLanguage} onChangeText={setStudyLanguage} placeholder="English / Russian / Chinese" />
+        <AppInput label="Желаемая специальность" value={specialty} onChangeText={setSpecialty} placeholder="Medicine / IT / Business" />
+        <AppInput label="Язык обучения" value={studyLanguage} onChangeText={setStudyLanguage} placeholder="English / Russian / Turkish" />
         <AppInput label="Год начала обучения" value={startYear} onChangeText={setStartYear} keyboardType="number-pad" placeholder="2026" />
+        <AppInput label="Комментарий" value={comment} onChangeText={setComment} placeholder="Например: хочу поступить на подкурс в Китай" multiline style={styles.textarea} />
+      </FormSection>
 
-        <AppInput
-          label="Комментарий"
-          value={comment}
-          onChangeText={setComment}
-          placeholder="Например: хочу поступить на подкурс в Китай"
-          multiline
-          style={styles.textarea}
-        />
-
+      <FormSection step="4" title="Документы" description="Можно прикрепить PDF или фото. Если документов пока нет — заявку всё равно можно отправить.">
         <Pressable style={styles.fileButton} onPress={handlePickFile}>
-          <SvgIcon name="file" size={20} color={colors.secondary} />
+          <SvgIcon name="file" size={20} color={colors.primary} />
           <Text style={styles.fileButtonText}>Прикрепить документы</Text>
         </Pressable>
-
         {files.map((file, index) => (
           <View key={`${file.uri}-${index}`} style={styles.fileItem}>
-            <SvgIcon name="document" size={17} color={colors.secondary} />
+            <SvgIcon name="document" size={17} color={colors.primary} />
             <Text style={styles.fileName}>{file.name}</Text>
+            <Pressable onPress={() => setFiles(prev => prev.filter((_, itemIndex) => itemIndex !== index))}>
+              <SvgIcon name="close" size={17} color={colors.mutedLight} />
+            </Pressable>
           </View>
         ))}
+      </FormSection>
 
-        {status ? (
-          <View
-            style={[
-              styles.statusBox,
-              status.type === 'success' && styles.statusSuccess,
-              status.type === 'error' && styles.statusError,
-              status.type === 'info' && styles.statusInfo,
-            ]}
-          >
-            <SvgIcon
-              name={status.type === 'success' ? 'check' : status.type === 'error' ? 'warning' : 'application'}
-              size={18}
-              color={
-                status.type === 'success'
-                  ? colors.success
-                  : status.type === 'error'
-                    ? colors.danger
-                    : colors.secondary
-              }
-            />
-            <Text
-              style={[
-                styles.statusText,
-                status.type === 'success' && styles.statusSuccessText,
-                status.type === 'error' && styles.statusErrorText,
-                status.type === 'info' && styles.statusInfoText,
-              ]}
-            >
-              {status.text}
-            </Text>
-          </View>
-        ) : null}
+      {status ? <StatusBox type={status.type} text={status.text} /> : null}
 
-        <AppButton title="Отправить заявку" onPress={handleSubmit} loading={loading} style={styles.submitButton} />
-      </View>
+      <AppButton title="Отправить заявку" onPress={handleSubmit} loading={loading} style={styles.submitButton} />
+
+      <CTASection
+        eyebrow="Важно"
+        title="Зарегистрированные пользователи получают больше"
+        description="История заявок, ответы менеджера, персональные предложения и скидки остаются в вашем аккаунте."
+        primaryText="Открыть чат"
+        onPrimaryPress={() => navigation.navigate('Chat')}
+        secondaryText="Мои заявки"
+        onSecondaryPress={() => navigation.navigate('MyApplications')}
+      />
     </Screen>
   );
 }
 
+function FormSection({ step, title, description, children }: { step: string; title: string; description: string; children: React.ReactNode }) {
+  return (
+    <AppCard style={styles.sectionCard}>
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.stepCircle}><Text style={styles.stepText}>{step}</Text></View>
+        <View style={styles.sectionTitleBox}>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          <Text style={styles.sectionDescription}>{description}</Text>
+        </View>
+      </View>
+      <View style={styles.sectionContent}>{children}</View>
+    </AppCard>
+  );
+}
+
+function ChipScroll<T extends { id: number }>({ items, activeId, getLabel, onPress }: { items: T[]; activeId: number | null; getLabel: (item: T) => string; onPress: (item: T) => void }) {
+  if (!items.length) return <Text style={styles.emptyHint}>Пока нет вариантов. Можно отправить заявку без выбора.</Text>;
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
+      {items.map(item => {
+        const active = activeId === item.id;
+        return (
+          <Pressable key={item.id} style={[styles.chip, active && styles.chipActive]} onPress={() => onPress(item)}>
+            <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>{getLabel(item)}</Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+function StatusBox({ type, text }: { type: 'success' | 'error' | 'info'; text: string }) {
+  const color = type === 'success' ? colors.success : type === 'error' ? colors.danger : colors.primary;
+  const icon = type === 'success' ? 'check' : type === 'error' ? 'warning' : 'application';
+  return (
+    <View style={[styles.statusBox, { borderColor: `${color}33`, backgroundColor: `${color}12` }]}>
+      <SvgIcon name={icon} size={18} color={color} />
+      <Text style={[styles.statusText, { color }]}>{text}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  screen: {
-    padding: 20,
-    paddingBottom: 42,
-    backgroundColor: '#F4F7FB',
-  },
-  hero: {
-    minHeight: 270,
-    borderRadius: 34,
-    backgroundColor: '#101828',
-    padding: 18,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-    marginBottom: 18,
-    shadowColor: '#101828',
-    shadowOpacity: 0.24,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 18 },
-    elevation: 12,
-  },
-  glowRed: {
-    position: 'absolute',
-    width: 250,
-    height: 250,
-    borderRadius: 125,
-    backgroundColor: colors.primary,
-    top: -90,
-    right: -80,
-    opacity: 0.68,
-  },
-  glowBlue: {
-    position: 'absolute',
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    backgroundColor: colors.secondary,
-    bottom: -110,
-    left: -85,
-    opacity: 0.7,
-  },
-  heroGlass: {
-    borderRadius: 28,
-    padding: 20,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-  },
-  heroIconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-    marginBottom: 12,
-  },
-  kicker: {
-    color: 'rgba(255,255,255,0.78)',
-    fontSize: 12,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  title: {
-    color: colors.white,
-    fontSize: 32,
-    fontWeight: '900',
-  },
-  subtitle: {
-    color: 'rgba(255,255,255,0.88)',
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: 8,
-    fontWeight: '600',
-  },
-  formCard: {
-    borderRadius: 30,
-    padding: 18,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.96)',
-    shadowColor: '#101828',
-    shadowOpacity: 0.08,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 5,
-  },
-  label: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '900',
-    marginBottom: 8,
-  },
-  chipsRow: {
-    marginBottom: 16,
-  },
-  chip: {
-    maxWidth: 230,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(234,236,240,0.95)',
-    marginRight: 8,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    color: colors.muted,
-    fontWeight: '800',
-  },
-  chipTextActive: {
-    color: colors.white,
-  },
-  textarea: {
-    minHeight: 110,
-    textAlignVertical: 'top',
-    paddingTop: 14,
-  },
-  fileButton: {
-    minHeight: 54,
-    borderRadius: 18,
-    backgroundColor: 'rgba(21,101,192,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(21,101,192,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  fileButtonText: {
-    color: colors.secondary,
-    fontWeight: '900',
-  },
-  fileItem: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  fileName: {
-    flex: 1,
-    color: colors.text,
-    fontWeight: '800',
-  },
-  statusBox: {
-    borderRadius: 16,
-    padding: 12,
-    marginTop: 8,
-    marginBottom: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    borderWidth: 1,
-  },
-  statusSuccess: {
-    backgroundColor: 'rgba(18,183,106,0.08)',
-    borderColor: 'rgba(18,183,106,0.2)',
-  },
-  statusError: {
-    backgroundColor: 'rgba(240,68,56,0.08)',
-    borderColor: 'rgba(240,68,56,0.2)',
-  },
-  statusInfo: {
-    backgroundColor: 'rgba(21,101,192,0.08)',
-    borderColor: 'rgba(21,101,192,0.2)',
-  },
-  statusText: {
-    flex: 1,
-    fontWeight: '800',
-    lineHeight: 20,
-  },
-  statusSuccessText: {
-    color: colors.success,
-  },
-  statusErrorText: {
-    color: colors.danger,
-  },
-  statusInfoText: {
-    color: colors.secondary,
-  },
-  submitButton: {
-    marginTop: 4,
-    marginBottom: 6,
-  },
+  screen: { backgroundColor: colors.background },
+  hero: { minHeight: 300, borderRadius: radius.xl, backgroundColor: colors.primaryDark, padding: spacing.lg, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: spacing.lg },
+  glowBlue: { position: 'absolute', width: 280, height: 280, borderRadius: 140, backgroundColor: colors.primary, top: -105, right: -95, opacity: 0.68 },
+  glowMint: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.success, left: -90, bottom: -96, opacity: 0.22 },
+  title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
+  subtitle: { color: 'rgba(255,255,255,0.84)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
+  sectionCard: { marginBottom: spacing.lg },
+  sectionHeaderRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+  stepCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  stepText: { color: colors.white, fontWeight: typography.weights.heavy },
+  sectionTitleBox: { flex: 1 },
+  sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy },
+  sectionDescription: { color: colors.muted, lineHeight: 20, marginTop: 4, fontWeight: typography.weights.medium },
+  sectionContent: { marginTop: spacing.lg },
+  label: { color: colors.text, fontSize: typography.small, fontWeight: typography.weights.heavy, marginBottom: spacing.sm },
+  chipsRow: { marginBottom: spacing.md },
+  chip: { maxWidth: 240, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.card, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, marginRight: spacing.sm },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.muted, fontWeight: typography.weights.bold },
+  chipTextActive: { color: colors.white },
+  emptyHint: { color: colors.mutedLight, fontWeight: typography.weights.bold, marginBottom: spacing.md },
+  textarea: { minHeight: 110, textAlignVertical: 'top', paddingTop: spacing.md },
+  fileButton: { minHeight: 56, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.sm },
+  fileButtonText: { color: colors.primary, fontWeight: typography.weights.heavy },
+  fileItem: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.sm, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  fileName: { flex: 1, color: colors.text, fontWeight: typography.weights.bold },
+  statusBox: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1 },
+  statusText: { flex: 1, fontWeight: typography.weights.bold, lineHeight: 20 },
+  submitButton: { marginBottom: spacing.sm },
+  successCard: { alignItems: 'center', marginTop: spacing.xl },
+  successIcon: { width: 76, height: 76, borderRadius: 28, backgroundColor: 'rgba(16,185,129,0.10)', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
+  successTitle: { color: colors.text, fontSize: typography.title, fontWeight: typography.weights.heavy, textAlign: 'center' },
+  successText: { color: colors.muted, fontSize: typography.body, lineHeight: 23, textAlign: 'center', marginTop: spacing.sm },
+  successActions: { alignSelf: 'stretch', gap: spacing.sm, marginTop: spacing.lg },
 });
