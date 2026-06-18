@@ -8,7 +8,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Services: undefined;
-  Universities: { country?: string } | undefined;
+  Universities: { country?: string | number; city?: string | number } | undefined;
   News: undefined;
   Profile: undefined;
 };
@@ -19,7 +19,10 @@ export type RootStackParamList = {
   Onboarding: undefined;
 
   ServiceDetail: { slug: string };
-  UniversityDetail: { slug: string };
+  CountryDetail: { id: number | string };
+  CityDetail: { id: number | string; countryId?: number | string };
+  UniversityDetail: { id: number | string };
+  ProgramDetail: { id: number | string };
   NewsDetail: { slug: string };
   KnowledgeList: undefined;
   KnowledgeDetail: { slug: string };
@@ -35,6 +38,7 @@ export type RootStackParamList = {
     | {
         serviceId?: number;
         universityId?: number;
+        programId?: number;
       }
     | undefined;
 
