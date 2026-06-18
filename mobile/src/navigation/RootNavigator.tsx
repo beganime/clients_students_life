@@ -17,7 +17,10 @@ import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
 import { EditProfileScreen } from '../features/profile/EditProfileScreen';
 import { ServiceDetailScreen } from '../features/services/ServiceDetailScreen';
 import { StaffScreen } from '../features/staff/StaffScreen';
+import { CityDetailScreen } from '../features/universities/CityDetailScreen';
+import { CountryDetailScreen } from '../features/universities/CountryDetailScreen';
 import { FavoriteUniversitiesScreen } from '../features/universities/FavoriteUniversitiesScreen';
+import { ProgramDetailScreen } from '../features/universities/ProgramDetailScreen';
 import { UniversityDetailScreen } from '../features/universities/UniversityDetailScreen';
 
 import { AppNavigator } from './AppNavigator';
@@ -29,112 +32,32 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export function RootNavigator() {
   const { bootstrap, isLoading } = useAuthStore();
 
-  useEffect(() => {
-    bootstrap();
-  }, [bootstrap]);
+  useEffect(() => { bootstrap(); }, [bootstrap]);
 
-  if (isLoading) {
-    return <Loading />;
-  }
+  if (isLoading) return <Loading />;
 
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="App">
-        <Stack.Screen
-          name="App"
-          component={AppNavigator}
-          options={{ headerShown: false }}
-        />
-
-        <Stack.Screen
-          name="Auth"
-          component={AuthNavigator}
-          options={{ headerShown: false, presentation: 'modal' }}
-        />
-
-        <Stack.Screen
-          name="Onboarding"
-          component={OnboardingScreen}
-          options={{ headerShown: false }}
-        />
-
-        <Stack.Screen
-          name="ServiceDetail"
-          component={ServiceDetailScreen}
-          options={{ title: 'Услуга' }}
-        />
-
-        <Stack.Screen
-          name="UniversityDetail"
-          component={UniversityDetailScreen}
-          options={{ title: 'Университет' }}
-        />
-
-        <Stack.Screen
-          name="NewsDetail"
-          component={NewsDetailScreen}
-          options={{ title: 'Новость' }}
-        />
-
-        <Stack.Screen
-          name="KnowledgeList"
-          component={KnowledgeListScreen}
-          options={{ title: 'База знаний' }}
-        />
-
-        <Stack.Screen
-          name="KnowledgeDetail"
-          component={KnowledgeDetailScreen}
-          options={{ title: 'Материал' }}
-        />
-
-        <Stack.Screen
-          name="Staff"
-          component={StaffScreen}
-          options={{ title: 'Команда' }}
-        />
-
-        <Stack.Screen
-          name="ApplicationCreate"
-          component={ApplicationCreateScreen}
-          options={{ title: 'Подать заявку' }}
-        />
-
-        <Stack.Screen
-          name="Chat"
-          component={ChatListScreen}
-          options={{ title: 'Чат с менеджером' }}
-        />
-
-        <Stack.Screen
-          name="MyApplications"
-          component={MyApplicationsScreen}
-          options={{ title: 'Мои заявки' }}
-        />
-
-        <Stack.Screen
-          name="FavoriteUniversities"
-          component={FavoriteUniversitiesScreen}
-          options={{ title: 'Избранные вузы' }}
-        />
-
-        <Stack.Screen
-          name="Notifications"
-          component={NotificationsScreen}
-          options={{ title: 'Уведомления' }}
-        />
-
-        <Stack.Screen
-          name="EditProfile"
-          component={EditProfileScreen}
-          options={{ title: 'Редактировать профиль' }}
-        />
-
-        <Stack.Screen
-          name="ChatRoom"
-          component={ChatRoomScreen}
-          options={{ title: 'Чат' }}
-        />
+        <Stack.Screen name="App" component={AppNavigator} options={{ headerShown: false }} />
+        <Stack.Screen name="Auth" component={AuthNavigator} options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ServiceDetail" component={ServiceDetailScreen} options={{ title: 'Услуга' }} />
+        <Stack.Screen name="CountryDetail" component={CountryDetailScreen} options={{ title: 'Страна' }} />
+        <Stack.Screen name="CityDetail" component={CityDetailScreen} options={{ title: 'Город' }} />
+        <Stack.Screen name="UniversityDetail" component={UniversityDetailScreen} options={{ title: 'Университет' }} />
+        <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} options={{ title: 'Программа' }} />
+        <Stack.Screen name="NewsDetail" component={NewsDetailScreen} options={{ title: 'Новость' }} />
+        <Stack.Screen name="KnowledgeList" component={KnowledgeListScreen} options={{ title: 'База знаний' }} />
+        <Stack.Screen name="KnowledgeDetail" component={KnowledgeDetailScreen} options={{ title: 'Материал' }} />
+        <Stack.Screen name="Staff" component={StaffScreen} options={{ title: 'Команда' }} />
+        <Stack.Screen name="ApplicationCreate" component={ApplicationCreateScreen} options={{ title: 'Подать заявку' }} />
+        <Stack.Screen name="Chat" component={ChatListScreen} options={{ title: 'Чат с менеджером' }} />
+        <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'Мои заявки' }} />
+        <Stack.Screen name="FavoriteUniversities" component={FavoriteUniversitiesScreen} options={{ title: 'Избранные вузы' }} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Уведомления' }} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Редактировать профиль' }} />
+        <Stack.Screen name="ChatRoom" component={ChatRoomScreen} options={{ title: 'Чат' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
