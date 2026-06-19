@@ -51,8 +51,7 @@ export function HomeScreen() {
       <RedGradientHero backgroundImage={bannerImages.home} style={styles.hero}>
         <Text style={styles.heroTitle}>Поступление за границу начинается с понятного выбора</Text>
         <Text style={styles.heroText}>
-          Сравните страны, города, вузы и программы из актуального каталога manager-sl.ru, а затем
-          оставьте заявку менеджеру Student's Life.
+          Сравните страны, города, вузы и программы из актуального каталога и оставьте заявку менеджеру Student's Life.
         </Text>
         <View style={styles.heroActions}>
           <AppButton title="Посмотреть вузы" onPress={() => navigation.navigate('Universities')} />

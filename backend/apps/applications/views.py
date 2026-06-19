@@ -1,3 +1,5 @@
+import django_filters
+from django.db.models import Q
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -16,11 +18,65 @@ from .serializers import (
 )
 
 
+class ApplicationFilter(django_filters.FilterSet):
+    country = django_filters.CharFilter(method='filter_country')
+    city = django_filters.CharFilter(method='filter_city')
+    university = django_filters.CharFilter(method='filter_university')
+    program = django_filters.CharFilter(method='filter_program')
+    target_country = django_filters.CharFilter(method='filter_country')
+    target_city = django_filters.CharFilter(method='filter_city')
+    target_university = django_filters.CharFilter(method='filter_university')
+    target_program = django_filters.CharFilter(method='filter_program')
+
+    class Meta:
+        model = Application
+        fields = ('status', 'service')
+
+    def filter_country(self, queryset, name, value):
+        return self.filter_target(
+            queryset,
+            value,
+            'target_country',
+            'target_country_external_id',
+            'target_country_snapshot',
+            'name',
+        )
+
+    def filter_city(self, queryset, name, value):
+        return self.filter_target(queryset, value, 'target_city', 'target_city_external_id', 'target_city_snapshot', 'name')
+
+    def filter_university(self, queryset, name, value):
+        return self.filter_target(
+            queryset,
+            value,
+            'target_university',
+            'target_university_external_id',
+            'target_university_snapshot',
+            'name',
+        )
+
+    def filter_program(self, queryset, name, value):
+        return self.filter_target(queryset, value, 'target_program', 'target_program_external_id', 'target_program_snapshot', 'title')
+
+    def filter_target(self, queryset, value, relation_name, external_field, snapshot_field, related_text_field):
+        value = str(value or '').strip()
+        if not value:
+            return queryset
+
+        criteria = Q(**{f'{snapshot_field}__icontains': value})
+        if value.isdigit():
+            criteria |= Q(**{f'{relation_name}_id': int(value)}) | Q(**{external_field: int(value)})
+        else:
+            criteria |= Q(**{f'{relation_name}__{related_text_field}__icontains': value})
+
+        return queryset.filter(criteria)
+
+
 class ApplicationViewSet(mixins.CreateModelMixin,
                          mixins.ListModelMixin,
                          mixins.RetrieveModelMixin,
                          viewsets.GenericViewSet):
-    filterset_fields = ('status', 'service', 'target_country', 'target_university')
+    filterset_class = ApplicationFilter
     search_fields = ('application_number', 'full_name', 'phone', 'whatsapp', 'telegram', 'email')
     ordering_fields = ('created_at', 'updated_at')
     ordering = ('-created_at',)
@@ -32,7 +88,7 @@ class ApplicationViewSet(mixins.CreateModelMixin,
 
     def get_permissions(self):
         if self.action == 'create':
-            return [permissions.AllowAny()]
+            return [permissions.IsAuthenticated()]
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
@@ -57,7 +113,7 @@ class ApplicationViewSet(mixins.CreateModelMixin,
         if idempotency_key:
             existing = Application.objects.filter(idempotency_key=idempotency_key).first()
             if existing:
-                if existing.user_id and existing.user_id != getattr(request.user, 'id', None) and not is_manager_user(request.user):
+                if existing.user_id != getattr(request.user, 'id', None) and not is_manager_user(request.user):
                     return Response({'detail': 'Duplicate idempotency key.'}, status=status.HTTP_409_CONFLICT)
                 serializer = ApplicationDetailSerializer(existing, context={'request': request})
                 return Response(serializer.data, status=status.HTTP_200_OK)

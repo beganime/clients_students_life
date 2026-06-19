@@ -20,7 +20,7 @@ class DeviceTokenViewSet(mixins.CreateModelMixin,
 
     def get_permissions(self):
         if self.action == 'create':
-            return [permissions.AllowAny()]
+            return [permissions.IsAuthenticated()]
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):

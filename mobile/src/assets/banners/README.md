@@ -1,22 +1,22 @@
 # Banner image slots
 
-Put production banner photos in this folder. Use `.webp` when possible, `.jpg` is acceptable.
+Put production banner photos in this folder. Use `.webp` when possible, `.jpg` is acceptable, and `.png` is supported for prepared artwork.
 
 Recommended image size: `1600x1000 px` or `1600x900 px`; minimum `1200x750 px`; target file size `300-500 KB`.
 
 Required names:
 
-- `hero-home.webp`
-- `hero-services.webp`
-- `hero-universities.webp`
-- `hero-country.webp`
-- `hero-city.webp`
-- `hero-university.webp`
+- `hero-home.png`
+- `hero-services.png`
+- `hero-universities.png`
+- `hero-country.jpg`
+- `hero-city.jpg`
+- `hero-university.jpg`
 - `hero-program.webp`
-- `hero-application.webp`
-- `hero-visa.webp`
-- `hero-tours.webp`
-- `hero-admission.webp`
+- `hero-application.jpg`
+- `hero-visa.png`
+- `hero-tours.jpg`
+- `hero-admission.png`
 - `hero-settings.webp`
 - `hero-profile.webp`
 

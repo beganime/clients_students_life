@@ -166,10 +166,17 @@ export type Application = {
   whatsapp?: string;
   telegram?: string;
   email?: string;
+  country?: string;
+  city?: string;
   target_country?: number | null;
   target_country_name?: string;
+  target_city?: number | null;
+  target_city_name?: string;
   target_university?: number | null;
   target_university_name?: string;
+  target_program?: number | null;
+  target_program_title?: string;
+  comment?: string;
   created_at: string;
   updated_at?: string;
 };

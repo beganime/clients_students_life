@@ -178,22 +178,38 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
 class ApplicationListSerializer(serializers.ModelSerializer):
     service_title = serializers.CharField(source='service.title', read_only=True)
     target_country = serializers.SerializerMethodField()
+    target_city = serializers.SerializerMethodField()
     target_university = serializers.SerializerMethodField()
+    target_program = serializers.SerializerMethodField()
     target_country_name = serializers.SerializerMethodField()
+    target_city_name = serializers.SerializerMethodField()
     target_university_name = serializers.SerializerMethodField()
+    target_program_title = serializers.SerializerMethodField()
     assigned_manager_name = serializers.CharField(source='assigned_manager.full_name', read_only=True)
 
     def get_target_country(self, obj):
         return obj.target_country_id or obj.target_country_external_id
 
+    def get_target_city(self, obj):
+        return obj.target_city_id or obj.target_city_external_id
+
     def get_target_university(self, obj):
         return obj.target_university_id or obj.target_university_external_id
+
+    def get_target_program(self, obj):
+        return obj.target_program_id or obj.target_program_external_id
 
     def get_target_country_name(self, obj):
         return getattr(obj.target_country, 'name', '') or obj.target_country_snapshot
 
+    def get_target_city_name(self, obj):
+        return getattr(obj.target_city, 'name', '') or obj.target_city_snapshot
+
     def get_target_university_name(self, obj):
         return getattr(obj.target_university, 'name', '') or obj.target_university_snapshot
+
+    def get_target_program_title(self, obj):
+        return getattr(obj.target_program, 'title', '') or obj.target_program_snapshot
 
     class Meta:
         model = Application
@@ -207,10 +223,21 @@ class ApplicationListSerializer(serializers.ModelSerializer):
             'manager_sl_sync_status',
             'assigned_manager_name',
             'full_name',
+            'phone',
+            'whatsapp',
+            'telegram',
+            'email',
+            'country',
+            'city',
             'target_country',
             'target_country_name',
+            'target_city',
+            'target_city_name',
             'target_university',
             'target_university_name',
+            'target_program',
+            'target_program_title',
+            'comment',
             'created_at',
             'updated_at',
         )

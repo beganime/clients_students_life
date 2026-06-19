@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 
+from apps.accounts.models import is_manager_user
 from apps.notifications.services import send_push_to_user
 from apps.staff.models import StaffProfile
 
@@ -28,7 +29,7 @@ def manager_recipients(room):
 
 def notify_chat_message(message):
     room = message.room
-    if message.sender_staff_id:
+    if message.sender_staff_id or is_manager_user(message.sender_user):
         recipients = [room.user]
         title = 'Новое сообщение от менеджера'
         body = message.text or 'Менеджер отправил фото.'

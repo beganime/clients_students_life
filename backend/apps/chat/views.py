@@ -4,6 +4,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from apps.accounts.models import is_manager_user
+from apps.applications.models import Application
 
 from .services import notify_chat_message, staff_profile_for
 from .models import ChatMessage, ChatRoom
@@ -44,15 +45,28 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        application = self.get_user_application(application_id)
+        if application_id not in (None, '') and application is None:
+            return Response({'detail': 'Р—Р°СЏРІРєР° РЅРµ РЅР°Р№РґРµРЅР°.'}, status=status.HTTP_404_NOT_FOUND)
+
         filters = {'user': request.user, 'status': ChatRoom.Status.OPEN}
-        filters['application_id'] = application_id or None
+        filters['application'] = application
         room = ChatRoom.objects.filter(**filters).order_by('-updated_at').first()
         if not room:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            room = serializer.save(user=request.user)
+            room = serializer.save(user=request.user, application=application)
         response_serializer = self.get_serializer(room)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    def get_user_application(self, application_id):
+        if application_id in (None, ''):
+            return None
+        try:
+            application_id = int(application_id)
+        except (TypeError, ValueError):
+            return None
+        return Application.objects.filter(id=application_id, user=self.request.user).first()
 
     @action(detail=True, methods=['get'])
     def messages(self, request, pk=None):
