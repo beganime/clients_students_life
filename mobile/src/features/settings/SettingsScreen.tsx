@@ -7,7 +7,6 @@ import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
-import { BrandLogo } from '../../components/BrandLogo';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
@@ -36,9 +35,6 @@ export function SettingsScreen() {
   return (
     <Screen scroll style={styles.screen}>
       <RedGradientHero backgroundImage={bannerImages.settings} style={styles.hero}>
-        <View style={styles.logoPill}>
-          <BrandLogo width={166} />
-        </View>
         <Text style={styles.title}>Настройки приложения</Text>
         <Text style={styles.subtitle}>Кэш, язык, тема и полезные ссылки в одном месте.</Text>
       </RedGradientHero>
@@ -119,16 +115,6 @@ function SettingsBlock({
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.background },
   hero: { minHeight: 250, marginBottom: spacing.lg },
-  logoPill: {
-    alignSelf: 'flex-start',
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.42)',
-    marginBottom: spacing.lg,
-  },
   title: {
     color: colors.white,
     fontSize: 32,

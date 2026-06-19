@@ -10,7 +10,6 @@ import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
 import { BannerSlider } from '../../components/BannerSlider';
-import { BrandLogo } from '../../components/BrandLogo';
 import { CTASection } from '../../components/CTASection';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -50,9 +49,6 @@ export function HomeScreen() {
       onRefresh={() => countriesQuery.refetch()}
     >
       <RedGradientHero backgroundImage={bannerImages.home} style={styles.hero}>
-        <View style={styles.logoPill}>
-          <BrandLogo width={172} />
-        </View>
         <Text style={styles.heroTitle}>Поступление за границу начинается с понятного выбора</Text>
         <Text style={styles.heroText}>
           Сравните страны, города, вузы и программы из актуального каталога manager-sl.ru, а затем
@@ -218,15 +214,6 @@ function QuickService({ icon, title, onPress }: { icon: SvgIconName; title: stri
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.background },
   hero: { minHeight: 350, marginBottom: spacing.lg },
-  logoPill: {
-    alignSelf: 'flex-start',
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.42)',
-  },
   heroTitle: {
     color: colors.white,
     fontSize: 31,

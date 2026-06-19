@@ -6,7 +6,6 @@ import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
-import { BrandLogo } from '../../components/BrandLogo';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
@@ -79,9 +78,6 @@ export function RegisterScreen({ navigation }: Props) {
       </View>
 
       <RedGradientHero backgroundImage={bannerImages.profile} style={styles.heroCard}>
-        <View style={styles.logoPill}>
-          <BrandLogo width={168} />
-        </View>
         <Text style={styles.title}>Создайте аккаунт</Text>
         <Text style={styles.subtitle}>
           Так менеджеру проще отвечать, а вам — видеть историю заявок, чатов и персональные предложения.
@@ -123,16 +119,6 @@ const styles = StyleSheet.create({
   topBar: { alignItems: 'flex-end', marginBottom: spacing.md },
   closeButton: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   heroCard: { minHeight: 270, marginBottom: spacing.lg },
-  logoPill: {
-    alignSelf: 'flex-start',
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.42)',
-    marginBottom: spacing.lg,
-  },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy },
   subtitle: { color: 'rgba(255,255,255,0.92)', marginTop: spacing.sm, fontSize: typography.body, lineHeight: 23 },
   formCard: { padding: spacing.lg },

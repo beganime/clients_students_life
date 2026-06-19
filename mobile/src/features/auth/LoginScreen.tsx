@@ -6,7 +6,6 @@ import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
-import { BrandLogo } from '../../components/BrandLogo';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
@@ -60,9 +59,6 @@ export function LoginScreen({ navigation }: Props) {
       </View>
 
       <RedGradientHero backgroundImage={bannerImages.profile} style={styles.heroCard}>
-        <View style={styles.logoPill}>
-          <BrandLogo width={168} />
-        </View>
         <Text style={styles.title}>Вход в Student's Life</Text>
         <Text style={styles.subtitle}>
           Войдите, чтобы сохранять заявки, писать менеджеру и быстрее оформлять новые услуги.
@@ -131,16 +127,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   heroCard: { minHeight: 270, marginBottom: spacing.lg },
-  logoPill: {
-    alignSelf: 'flex-start',
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.42)',
-    marginBottom: spacing.lg,
-  },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy },
   subtitle: { color: 'rgba(255,255,255,0.92)', marginTop: spacing.sm, fontSize: typography.body, lineHeight: 23 },
   formCard: { padding: spacing.lg },

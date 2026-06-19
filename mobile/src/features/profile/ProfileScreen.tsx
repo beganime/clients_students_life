@@ -6,7 +6,6 @@ import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
-import { BrandLogo } from '../../components/BrandLogo';
 import { CTASection } from '../../components/CTASection';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
@@ -39,9 +38,6 @@ export function ProfileScreen() {
     return (
       <Screen scroll style={styles.screen}>
         <RedGradientHero backgroundImage={bannerImages.profile} style={styles.guestHero}>
-          <View style={styles.logoPill}>
-            <BrandLogo width={168} />
-          </View>
           <Text style={styles.guestTitle}>Гостевой режим</Text>
           <Text style={styles.guestText}>
             Можно смотреть услуги, страны, университеты и новости. Для заявок, чата, избранного и
@@ -175,16 +171,6 @@ function ProfileMenuItem({ icon, title, onPress }: { icon: SvgIconName; title: s
 
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.background },
-  logoPill: {
-    alignSelf: 'flex-start',
-    borderRadius: radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.42)',
-    marginBottom: spacing.lg,
-  },
   guestHero: { minHeight: 310, marginBottom: spacing.lg },
   guestTitle: { color: colors.white, fontSize: 32, fontWeight: typography.weights.heavy },
   guestText: { marginTop: spacing.sm, color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, fontWeight: typography.weights.medium },

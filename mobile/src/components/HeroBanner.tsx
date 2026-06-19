@@ -18,7 +18,7 @@ const gradientStops = [
   ['100%', '#7F1D1D', 0.96],
 ] as const;
 
-export function HeroBanner({ children, backgroundImage, showWatermark = true, style, contentStyle }: HeroBannerProps) {
+export function HeroBanner({ children, backgroundImage, showWatermark = false, style, contentStyle }: HeroBannerProps) {
   const content = (
     <>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
