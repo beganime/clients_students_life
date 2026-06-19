@@ -18,20 +18,28 @@ const gradientStops = [
   ['100%', '#7F1D1D', 0.96],
 ] as const;
 
+const imageGradientStops = [
+  ['0%', '#B8201A', 0.42],
+  ['50%', '#B71D17', 0.34],
+  ['100%', '#7F1D1D', 0.54],
+] as const;
+
 export function HeroBanner({ children, backgroundImage, showWatermark = false, style, contentStyle }: HeroBannerProps) {
+  const stops = backgroundImage ? imageGradientStops : gradientStops;
+
   const content = (
     <>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
           <LinearGradient id="heroBannerRedGradient" x1="0" y1="0" x2="1" y2="1">
-            {gradientStops.map(([offset, color, opacity]) => (
+            {stops.map(([offset, color, opacity]) => (
               <Stop key={`${offset}-${color}`} offset={offset} stopColor={color} stopOpacity={opacity} />
             ))}
           </LinearGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#heroBannerRedGradient)" />
       </Svg>
-      <View style={styles.darkOverlay} />
+      <View style={backgroundImage ? styles.imageOverlay : styles.darkOverlay} />
       {showWatermark ? (
         <View style={styles.watermark}>
           <BrandMark size={120} onDark />
@@ -66,6 +74,10 @@ const styles = StyleSheet.create({
   darkOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(20,0,0,0.35)',
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(20,0,0,0.14)',
   },
   watermark: {
     position: 'absolute',
