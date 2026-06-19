@@ -43,7 +43,7 @@ export function HeroBanner({ children, backgroundImage, showWatermark = false, s
 
   if (backgroundImage) {
     return (
-      <ImageBackground source={backgroundImage} imageStyle={styles.image} style={[styles.root, shadows.premium, style]} resizeMode="cover">
+      <ImageBackground source={backgroundImage} imageStyle={styles.image} style={[styles.root, shadows.premium, style]} resizeMode="contain">
         {content}
       </ImageBackground>
     );
