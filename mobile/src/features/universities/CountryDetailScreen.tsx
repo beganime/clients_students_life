@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -67,7 +68,7 @@ export function CountryDetailScreen() {
       refreshing={countryQuery.isRefetching || citiesQuery.isRefetching || universitiesQuery.isRefetching}
       onRefresh={refetchAll}
     >
-      <RedGradientHero style={styles.hero}>
+      <RedGradientHero backgroundImage={bannerImages.country} style={styles.hero}>
         <View style={styles.heroTop}>
           <View style={styles.heroTextBox}>
             <Text style={styles.kicker}>Страна</Text>

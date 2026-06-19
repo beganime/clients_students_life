@@ -4,11 +4,13 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { bannerImages } from '../../assets/banners';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
 import { BannerSlider } from '../../components/BannerSlider';
+import { BrandLogo } from '../../components/BrandLogo';
 import { CTASection } from '../../components/CTASection';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -21,7 +23,14 @@ import { colors, radius, shadows, spacing, typography } from '../../constants/co
 import { Country } from '../../types/api';
 
 const { width } = Dimensions.get('window');
-const COUNTRY_CARD_WIDTH = Math.min(width - 36, 420);
+const SCREEN_PADDING = 18;
+const QUICK_GAP = spacing.sm;
+const COUNTRY_CARD_WIDTH = Math.min(width - SCREEN_PADDING * 2, 420);
+const QUICK_COLUMNS = width < 360 ? 1 : 2;
+const QUICK_CARD_WIDTH =
+  QUICK_COLUMNS === 1
+    ? width - SCREEN_PADDING * 2
+    : Math.floor((width - SCREEN_PADDING * 2 - QUICK_GAP) / 2);
 
 export function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -40,12 +49,14 @@ export function HomeScreen() {
       refreshing={countriesQuery.isRefetching}
       onRefresh={() => countriesQuery.refetch()}
     >
-      <RedGradientHero style={styles.hero}>
-        <Badge label="Student's Life" variant="mint" />
+      <RedGradientHero backgroundImage={bannerImages.home} style={styles.hero}>
+        <View style={styles.logoPill}>
+          <BrandLogo width={172} />
+        </View>
         <Text style={styles.heroTitle}>Поступление за границу начинается с понятного выбора</Text>
         <Text style={styles.heroText}>
-          Сравните страны, города, вузы и программы из актуального каталога manager-sl.ru, а
-          затем оставьте заявку менеджеру.
+          Сравните страны, города, вузы и программы из актуального каталога manager-sl.ru, а затем
+          оставьте заявку менеджеру Student's Life.
         </Text>
         <View style={styles.heroActions}>
           <AppButton title="Посмотреть вузы" onPress={() => navigation.navigate('Universities')} />
@@ -84,7 +95,7 @@ export function HomeScreen() {
           data={countries.slice(0, 6)}
           itemWidth={COUNTRY_CARD_WIDTH}
           itemSpacing={16}
-          renderItem={(country) => (
+          renderItem={country => (
             <CountryBanner
               country={country}
               onPress={() => navigation.navigate('CountryDetail', { id: country.id })}
@@ -118,7 +129,7 @@ export function HomeScreen() {
         <QuickService icon="university" title="Вузы" onPress={() => navigation.navigate('Universities')} />
         <QuickService
           icon="application"
-          title="Поступление"
+          title="Поступить"
           onPress={() => navigation.navigate('AdmissionInfo')}
         />
         <QuickService icon="visa" title="Виза" onPress={() => navigation.navigate('VisaInfo')} />
@@ -129,8 +140,8 @@ export function HomeScreen() {
         <Badge label="Личный кабинет" variant="mint" icon="check" />
         <Text style={styles.registerTitle}>Аккаунт ускоряет оформление</Text>
         <Text style={styles.registerText}>
-          Зарегистрированные клиенты видят историю заявок, чаты, персональные предложения и
-          скидки в одном месте.
+          Зарегистрированные клиенты видят историю заявок, чаты, персональные предложения и скидки
+          в одном месте.
         </Text>
       </AppCard>
 
@@ -185,7 +196,7 @@ function FeatureCard({ icon, title, text }: { icon: SvgIconName; title: string; 
   return (
     <AppCard style={styles.featureCard}>
       <View style={styles.featureIcon}>
-        <SvgIcon name={icon} size={22} color={colors.primary} />
+        <SvgIcon name={icon} size={22} color={colors.secondary} />
       </View>
       <Text style={styles.featureTitle}>{title}</Text>
       <Text style={styles.featureText}>{text}</Text>
@@ -195,9 +206,9 @@ function FeatureCard({ icon, title, text }: { icon: SvgIconName; title: string; 
 
 function QuickService({ icon, title, onPress }: { icon: SvgIconName; title: string; onPress: () => void }) {
   return (
-    <AnimatedPressable style={styles.quickService} onPress={onPress}>
+    <AnimatedPressable style={[styles.quickService, { width: QUICK_CARD_WIDTH }]} onPress={onPress}>
       <View style={styles.quickServiceIcon}>
-        <SvgIcon name={icon} size={22} color={colors.primary} />
+        <SvgIcon name={icon} size={22} color={colors.secondary} />
       </View>
       <Text style={styles.quickServiceText}>{title}</Text>
     </AnimatedPressable>
@@ -206,13 +217,22 @@ function QuickService({ icon, title, onPress }: { icon: SvgIconName; title: stri
 
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.background },
-  hero: { minHeight: 330, marginBottom: spacing.lg },
+  hero: { minHeight: 350, marginBottom: spacing.lg },
+  logoPill: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.42)',
+  },
   heroTitle: {
     color: colors.white,
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 31,
+    lineHeight: 37,
     fontWeight: typography.weights.heavy,
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
   heroText: {
     color: 'rgba(255,255,255,0.92)',
@@ -224,7 +244,7 @@ const styles = StyleSheet.create({
   heroActions: { gap: spacing.sm, marginTop: spacing.lg },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   statCard: { flex: 1, padding: spacing.md },
-  statValue: { color: colors.primary, fontSize: 22, fontWeight: typography.weights.heavy },
+  statValue: { color: colors.secondary, fontSize: 22, fontWeight: typography.weights.heavy },
   statLabel: { color: colors.muted, fontSize: 12, fontWeight: typography.weights.bold, marginTop: 4 },
   countryCard: {
     width: COUNTRY_CARD_WIDTH,
@@ -257,17 +277,16 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(13,65,109,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
   },
   featureTitle: { color: colors.text, fontSize: typography.body, fontWeight: typography.weights.heavy },
   featureText: { color: colors.muted, lineHeight: 20, marginTop: 4, fontWeight: typography.weights.medium },
-  serviceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  serviceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: QUICK_GAP },
   quickService: {
-    width: '48%',
-    minHeight: 106,
+    minHeight: 124,
     borderRadius: radius.lg,
     padding: spacing.md,
     backgroundColor: colors.card,
@@ -281,7 +300,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(13,65,109,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,

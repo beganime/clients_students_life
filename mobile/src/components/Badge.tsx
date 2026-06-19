@@ -23,7 +23,7 @@ function getVariant(variant: Variant) {
     case 'neutral':
       return { bg: colors.surface, border: colors.border, text: colors.muted };
     default:
-      return { bg: 'rgba(37, 99, 235, 0.10)', border: 'rgba(37, 99, 235, 0.18)', text: colors.primary };
+      return { bg: 'rgba(13, 65, 109, 0.10)', border: 'rgba(13, 65, 109, 0.18)', text: colors.secondary };
   }
 }
 

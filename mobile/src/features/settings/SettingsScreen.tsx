@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
 import { QUERY_CACHE_STORAGE_KEY, queryClient } from '../../api/queryClient';
+import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
+import { BrandLogo } from '../../components/BrandLogo';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
@@ -33,9 +35,11 @@ export function SettingsScreen() {
 
   return (
     <Screen scroll style={styles.screen}>
-      <RedGradientHero style={styles.hero}>
-        <Badge label="Настройки" variant="mint" icon="check" />
-        <Text style={styles.title}>Управление приложением</Text>
+      <RedGradientHero backgroundImage={bannerImages.settings} style={styles.hero}>
+        <View style={styles.logoPill}>
+          <BrandLogo width={166} />
+        </View>
+        <Text style={styles.title}>Настройки приложения</Text>
         <Text style={styles.subtitle}>Кэш, язык, тема и полезные ссылки в одном месте.</Text>
       </RedGradientHero>
 
@@ -68,7 +72,11 @@ export function SettingsScreen() {
         <Badge label="Светлая" variant="neutral" icon="check" />
       </SettingsBlock>
 
-      <SettingsBlock icon="lock" title="Конфиденциальность" text="Политика описывает регистрацию, заявки, чат, push-уведомления и улучшение сервиса.">
+      <SettingsBlock
+        icon="lock"
+        title="Конфиденциальность"
+        text="Политика описывает регистрацию, заявки, чат, push-уведомления и улучшение сервиса."
+      >
         <AppButton title="Открыть политику" variant="outline" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
       </SettingsBlock>
 
@@ -96,7 +104,7 @@ function SettingsBlock({
     <AppCard style={styles.block}>
       <View style={styles.blockHeader}>
         <View style={styles.iconBox}>
-          <SvgIcon name={icon} size={22} color={colors.primary} />
+          <SvgIcon name={icon} size={22} color={colors.secondary} />
         </View>
         <View style={styles.blockTextBox}>
           <Text style={styles.blockTitle}>{title}</Text>
@@ -110,13 +118,22 @@ function SettingsBlock({
 
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.background },
-  hero: { minHeight: 230, marginBottom: spacing.lg },
+  hero: { minHeight: 250, marginBottom: spacing.lg },
+  logoPill: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.42)',
+    marginBottom: spacing.lg,
+  },
   title: {
     color: colors.white,
     fontSize: 32,
     lineHeight: 38,
     fontWeight: typography.weights.heavy,
-    marginTop: spacing.md,
   },
   subtitle: { color: 'rgba(255,255,255,0.92)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm },
   block: { marginBottom: spacing.md },
@@ -125,7 +142,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(13,65,109,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },

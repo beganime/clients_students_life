@@ -33,6 +33,18 @@ The Expo app reads public education catalog data directly from manager-sl client
 
 Catalog screens use React Query persistence for countries, cities, universities, programs, and detail pages. Users can clear the persisted catalog cache from the mobile settings screen.
 
+### Mobile banner images
+
+Put compressed hero background images in `mobile/src/assets/banners/`. The app is safe when images are missing: banners fall back to the brand red/dark-red gradient.
+
+- Preferred format: `.webp`; `.jpg` is acceptable for photos.
+- Do not use `.png` for photographic banners.
+- Recommended size: `1600x1000 px` or `1600x900 px`; minimum `1200x750 px`.
+- Target weight: `300-500 KB` per file.
+- Avoid small text, important objects near edges, and overly bright photos because text is rendered above the image.
+
+Expected names: `hero-home.webp`, `hero-services.webp`, `hero-universities.webp`, `hero-country.webp`, `hero-city.webp`, `hero-university.webp`, `hero-program.webp`, `hero-application.webp`, `hero-visa.webp`, `hero-tours.webp`, `hero-admission.webp`, `hero-settings.webp`, `hero-profile.webp`.
+
 ### Added/updated endpoints
 
 - `POST /api/v1/accounts/register/` - register app user with default `user` role.

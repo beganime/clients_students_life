@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { bannerImages } from '../../assets/banners';
 import { AppCard } from '../../components/AppCard';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -70,7 +71,7 @@ export function UniversitiesScreen() {
         onRefresh={refreshAll}
         ListHeaderComponent={
           <View>
-            <RedGradientHero style={styles.hero}>
+            <RedGradientHero backgroundImage={bannerImages.universities} style={styles.hero}>
               <Text style={styles.kicker}>Каталог вузов</Text>
               <Text style={styles.title}>Страны, города, вузы и программы</Text>
               <Text style={styles.subtitle}>

@@ -2,9 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
+import { BrandLogo } from '../../components/BrandLogo';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
@@ -71,13 +73,19 @@ export function RegisterScreen({ navigation }: Props) {
   return (
     <Screen scroll style={styles.screen}>
       <View style={styles.topBar}>
-        <Pressable style={styles.closeButton} onPress={closeAuth}><SvgIcon name="close" size={22} color={colors.text} /></Pressable>
+        <Pressable style={styles.closeButton} onPress={closeAuth}>
+          <SvgIcon name="close" size={22} color={colors.text} />
+        </Pressable>
       </View>
 
-      <RedGradientHero style={styles.heroCard}>
-        <View style={styles.iconBox}><SvgIcon name="userPlus" size={36} color={colors.white} strokeWidth={2.4} /></View>
+      <RedGradientHero backgroundImage={bannerImages.profile} style={styles.heroCard}>
+        <View style={styles.logoPill}>
+          <BrandLogo width={168} />
+        </View>
         <Text style={styles.title}>Создайте аккаунт</Text>
-        <Text style={styles.subtitle}>Так менеджеру проще отвечать, а вам — видеть историю заявок, чатов и персональные предложения.</Text>
+        <Text style={styles.subtitle}>
+          Так менеджеру проще отвечать, а вам — видеть историю заявок, чатов и персональные предложения.
+        </Text>
       </RedGradientHero>
 
       <AppCard style={styles.formCard}>
@@ -91,7 +99,9 @@ export function RegisterScreen({ navigation }: Props) {
         <AppInput label="Повторите пароль" value={passwordConfirm} onChangeText={text => { setPasswordConfirm(text); setStatus(null); }} secureTextEntry={!showPassword} placeholder="Повторите пароль" helper={passwordMessage} />
         {status ? <StatusBox type={status.type} text={status.text} /> : null}
         <AppButton title="Создать аккаунт" onPress={handleRegister} loading={loading} />
-        <Pressable style={styles.loginLink} onPress={() => navigation.navigate('Login')}><Text style={styles.loginText}>Уже есть аккаунт? Войти</Text></Pressable>
+        <Pressable style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.loginText}>Уже есть аккаунт? Войти</Text>
+        </Pressable>
       </AppCard>
     </Screen>
   );
@@ -99,24 +109,38 @@ export function RegisterScreen({ navigation }: Props) {
 
 function StatusBox({ type, text }: { type: 'success' | 'error' | 'info'; text: string }) {
   const icon = type === 'success' ? 'check' : type === 'error' ? 'warning' : 'lock';
-  const color = type === 'success' ? colors.success : type === 'error' ? colors.danger : '#B91C1C';
-  return <View style={[styles.statusBox, { borderColor: `${color}33`, backgroundColor: `${color}12` }]}><SvgIcon name={icon} size={18} color={color} /><Text style={[styles.statusText, { color }]}>{text}</Text></View>;
+  const color = type === 'success' ? colors.success : type === 'error' ? colors.danger : colors.secondary;
+  return (
+    <View style={[styles.statusBox, { borderColor: `${color}33`, backgroundColor: `${color}12` }]}>
+      <SvgIcon name={icon} size={18} color={color} />
+      <Text style={[styles.statusText, { color }]}>{text}</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: '#FEF7F5', paddingBottom: 36 },
+  screen: { backgroundColor: colors.background, paddingBottom: 36 },
   topBar: { alignItems: 'flex-end', marginBottom: spacing.md },
-  closeButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FFDDDD' },
-  heroCard: { minHeight: 260, marginBottom: spacing.lg },
-  iconBox: { width: 68, height: 68, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.26)', marginBottom: spacing.md },
-  title: { color: colors.white, fontSize: 34, lineHeight: 39, fontWeight: typography.weights.heavy },
-  subtitle: { color: 'rgba(255,255,255,0.9)', marginTop: spacing.sm, fontSize: typography.body, lineHeight: 23 },
-  formCard: { padding: spacing.lg, borderColor: '#FFDDDD' },
+  closeButton: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+  heroCard: { minHeight: 270, marginBottom: spacing.lg },
+  logoPill: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.42)',
+    marginBottom: spacing.lg,
+  },
+  title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy },
+  subtitle: { color: 'rgba(255,255,255,0.92)', marginTop: spacing.sm, fontSize: typography.body, lineHeight: 23 },
+  formCard: { padding: spacing.lg },
   nameRow: { flexDirection: 'row', gap: spacing.sm },
   nameInput: { flex: 1 },
-  toggleText: { color: '#B91C1C', fontWeight: typography.weights.heavy },
+  toggleText: { color: colors.secondary, fontWeight: typography.weights.heavy },
   statusBox: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1 },
   statusText: { flex: 1, fontWeight: typography.weights.bold, lineHeight: 20 },
   loginLink: { marginTop: spacing.lg, alignItems: 'center' },
-  loginText: { color: '#B91C1C', fontSize: typography.body, fontWeight: typography.weights.bold },
+  loginText: { color: colors.secondary, fontSize: typography.body, fontWeight: typography.weights.bold },
 });

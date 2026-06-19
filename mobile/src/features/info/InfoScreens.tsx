@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
+import { bannerImages, BannerImageKey } from '../../assets/banners';
 import { AppCard } from '../../components/AppCard';
 import { CTASection } from '../../components/CTASection';
 import { RedGradientHero } from '../../components/RedGradientHero';
@@ -14,6 +15,7 @@ type InfoData = {
   eyebrow: string;
   title: string;
   subtitle: string;
+  imageKey: BannerImageKey;
   sections: Array<{ title: string; text: string; icon: SvgIconName }>;
 };
 
@@ -22,6 +24,7 @@ const VISA_INFO: InfoData = {
   eyebrow: 'Виза',
   title: 'Визовая поддержка',
   subtitle: 'Помогаем понять этапы, сроки и документы для студенческой визы.',
+  imageKey: 'visa',
   sections: [
     { icon: 'document', title: 'Документы', text: 'Паспорт, приглашение, анкеты, фото, подтверждение оплаты и дополнительные справки по стране.' },
     { icon: 'clock', title: 'Сроки', text: 'Менеджер поможет проверить дедлайны и заранее подготовить пакет без лишней спешки.' },
@@ -34,6 +37,7 @@ const TOURS_INFO: InfoData = {
   eyebrow: 'Туры',
   title: 'Ознакомительные туры',
   subtitle: 'Подбираем поездки для знакомства со страной, городом и университетом до поступления.',
+  imageKey: 'tours',
   sections: [
     { icon: 'globe', title: 'Маршрут', text: 'Можно обсудить страну, город, кампус, проживание и важные бытовые вопросы.' },
     { icon: 'building', title: 'Университеты', text: 'Тур помогает увидеть инфраструктуру, общежитие и окружение вуза до финального решения.' },
@@ -46,6 +50,7 @@ const ADMISSION_INFO: InfoData = {
   eyebrow: 'Поступление',
   title: 'Поступление в университет',
   subtitle: 'От подбора программы до подачи документов и связи с университетом.',
+  imageKey: 'admission',
   sections: [
     { icon: 'search', title: 'Подбор', text: 'Сравниваем страну, город, вуз, программу, язык, стоимость и требования.' },
     { icon: 'document', title: 'Пакет документов', text: 'Помогаем понять, какие документы нужны для конкретной программы.' },
@@ -70,7 +75,7 @@ function InfoScreen({ data }: { data: InfoData }) {
 
   return (
     <Screen scroll style={styles.screen}>
-      <RedGradientHero style={styles.hero}>
+      <RedGradientHero backgroundImage={bannerImages[data.imageKey]} style={styles.hero}>
         <View style={styles.heroIcon}>
           <SvgIcon name={data.icon} size={30} color={colors.white} />
         </View>
@@ -83,7 +88,7 @@ function InfoScreen({ data }: { data: InfoData }) {
         {data.sections.map(section => (
           <AppCard key={section.title} style={styles.card}>
             <View style={styles.iconBox}>
-              <SvgIcon name={section.icon} size={22} color={colors.primary} />
+              <SvgIcon name={section.icon} size={22} color={colors.secondary} />
             </View>
             <Text style={styles.cardTitle}>{section.title}</Text>
             <Text style={styles.cardText}>{section.text}</Text>
@@ -126,7 +131,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(13,65,109,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,

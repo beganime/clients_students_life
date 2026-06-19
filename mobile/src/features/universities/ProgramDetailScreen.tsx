@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
@@ -46,7 +47,7 @@ export function ProgramDetailScreen() {
 
   return (
     <Screen scroll style={styles.screen} refreshing={query.isRefetching} onRefresh={() => query.refetch()}>
-      <RedGradientHero style={styles.hero}>
+      <RedGradientHero backgroundImage={bannerImages.program} style={styles.hero}>
         {program.university_logo ? (
           <Image source={{ uri: program.university_logo }} style={styles.logo} resizeMode="cover" />
         ) : null}

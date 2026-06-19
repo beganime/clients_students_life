@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eyebrow: {
-    color: colors.primary,
+    color: colors.secondary,
     fontSize: typography.tiny,
     fontWeight: typography.weights.heavy,
     letterSpacing: 1.1,

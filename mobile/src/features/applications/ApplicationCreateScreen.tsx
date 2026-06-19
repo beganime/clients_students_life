@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
 import { applicationsApi, contentApi } from '../../api/endpoints';
+import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
@@ -283,7 +284,7 @@ function ApplicationCreateForm() {
 
   return (
     <Screen scroll style={styles.screen}>
-      <RedGradientHero style={styles.hero}>
+      <RedGradientHero backgroundImage={bannerImages.application} style={styles.hero}>
         <Badge label="Заявка ни к чему не обязывает" variant="mint" icon="check" />
         <Text style={styles.title}>Расскажите, куда хотите поступить</Text>
         <Text style={styles.subtitle}>

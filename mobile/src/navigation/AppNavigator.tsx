@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SideMenu } from '../components/SideMenu';
 import { SvgIcon, SvgIconName } from '../components/SvgIcon';
-import { APP_NAME } from '../constants/config';
-import { colors, shadows, spacing, typography } from '../constants/colors';
+import { BrandLogo } from '../components/BrandLogo';
+import { colors, shadows, spacing } from '../constants/colors';
 import { HomeScreen } from '../features/home/HomeScreen';
 import { NewsListScreen } from '../features/news/NewsListScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
@@ -31,10 +31,7 @@ export function AppNavigator() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={[styles.header, shadows.soft]}>
-        <View style={styles.logoBox}>
-          <Text style={styles.logo}>{APP_NAME}</Text>
-          <Text style={styles.logoSub}>International Education</Text>
-        </View>
+        <BrandLogo width={174} style={styles.logoBox} />
         <Pressable
           style={styles.menuButton}
           onPress={() => setMenuOpen(true)}
@@ -103,18 +100,6 @@ const styles = StyleSheet.create({
   logoBox: {
     flex: 1,
     paddingRight: spacing.md,
-  },
-  logo: {
-    color: colors.primary,
-    fontSize: 22,
-    fontWeight: typography.weights.heavy,
-  },
-  logoSub: {
-    color: colors.muted,
-    fontSize: typography.tiny,
-    fontWeight: typography.weights.bold,
-    textTransform: 'uppercase',
-    marginTop: 2,
   },
   menuButton: {
     width: 44,
