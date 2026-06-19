@@ -3,6 +3,7 @@ import { MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/confi
 export const EDUCATION_CATALOG_BASE_URL = MANAGER_SL_API_BASE_URL;
 
 type ListResponse<T> = { results?: T[] } | T[];
+type CatalogParams = Record<string, string | number | boolean | undefined>;
 
 function list<T>(data: ListResponse<T>): T[] {
   return Array.isArray(data) ? data : data.results || [];
@@ -49,9 +50,35 @@ function unique(values: Array<string | undefined | null>) {
   ).join(', ');
 }
 
-function normalizeText(value?: string | null) {
-  const text = value?.trim();
+function normalizeText(value?: unknown) {
+  if (Array.isArray(value)) {
+    const text = value
+      .map(item => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          const row = item as Record<string, unknown>;
+          return [row.title, row.name, row.description].filter(Boolean).join(' - ');
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+    return text || undefined;
+  }
+
+  if (value && typeof value === 'object') {
+    const row = value as Record<string, unknown>;
+    const text = [row.website, row.email, row.phone, row.address].filter(Boolean).join('\n');
+    return text || undefined;
+  }
+
+  const text = typeof value === 'string' ? value.trim() : value === null || value === undefined ? '' : String(value).trim();
   return text || undefined;
+}
+
+function withLimit(params: CatalogParams | undefined, limit: number): CatalogParams {
+  if (params?.limit || params?.offset) return params || {};
+  return { limit, ...(params || {}) };
 }
 
 function toProgram(item: any): any {
@@ -119,51 +146,57 @@ function toUniversity(item: any): any {
     cover_image: resolveCatalogMediaUrl(item.cover_image || item.cover_image_url || item.cover),
     description_markdown: normalizeText(item.description_markdown || item.description),
     official_website: item.official_website || item.website,
+    admission_requirements: normalizeText(item.admission_requirements),
+    invitation_info: normalizeText(item.invitation_info),
+    expenses_info: normalizeText(item.expenses_info),
     has_dormitory: Boolean(item.has_dormitory || item.dormitory_info),
-    dormitory_cost: item.dormitory_cost || item.dormitory_info,
+    dormitory_cost: normalizeText(item.dormitory_cost || item.dormitory_info),
     tuition_from: item.tuition_from || money(firstFee?.tuition_fee, firstFee?.currency),
     languages: item.languages || unique(programs.map((row: any) => row.language)),
     education_levels: item.education_levels || unique(programs.map((row: any) => row.level || row.degree_display || row.degree)),
-    public_contacts: item.public_contacts || item.contacts,
+    public_contacts: normalizeText(item.public_contacts || item.contacts),
+    contacts: normalizeText(item.contacts),
+    contact_people: item.contact_people || [],
     programs_count: item.programs_count || programs.length,
     programs,
+    required_documents: normalizeText(item.required_documents),
   };
 }
 
 export const educationCatalogApi = {
-  async getCountries(params?: Record<string, string | number | boolean>) {
-    return list(await request<ListResponse<any>>('/countries/', params)).map(toCountry);
+  async getCountries(params?: CatalogParams) {
+    return list(await request<ListResponse<any>>('/countries/', withLimit(params, 50))).map(toCountry);
   },
 
   async getCountry(id: number | string) {
     return toCountry(await request<any>(`/countries/${id}/`));
   },
 
-  async getCities(params?: Record<string, string | number | boolean>) {
-    return list(await request<ListResponse<any>>('/cities/', params)).map(toCity);
+  async getCities(params?: CatalogParams) {
+    return list(await request<ListResponse<any>>('/cities/', withLimit(params, 100))).map(toCity);
   },
 
   async getCity(id: number | string) {
     return toCity(await request<any>(`/cities/${id}/`));
   },
 
-  async getUniversities(params?: Record<string, string | number | boolean | undefined>) {
-    return list(await request<ListResponse<any>>('/universities/', params)).map(toUniversity);
+  async getUniversities(params?: CatalogParams) {
+    return list(await request<ListResponse<any>>('/universities/', withLimit(params, 12))).map(toUniversity);
   },
 
   async getUniversity(id: number | string) {
     return toUniversity(await request<any>(`/universities/${id}/`));
   },
 
-  async getPrograms(params?: Record<string, string | number | boolean | undefined>) {
-    return list(await request<ListResponse<any>>('/programs/', params)).map(toProgram);
+  async getPrograms(params?: CatalogParams) {
+    return list(await request<ListResponse<any>>('/programs/', withLimit(params, 50))).map(toProgram);
   },
 
   async getProgram(id: number | string) {
     return toProgram(await request<any>(`/programs/${id}/`));
   },
 
-  async getServices(params?: Record<string, string | number | boolean | undefined>) {
-    return list(await request<ListResponse<any>>('/services/', params));
+  async getServices(params?: CatalogParams) {
+    return list(await request<ListResponse<any>>('/services/', withLimit(params, 50)));
   },
 };
