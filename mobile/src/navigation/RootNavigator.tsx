@@ -9,6 +9,7 @@ import { ApplicationCreateScreen } from '../features/applications/ApplicationCre
 import { MyApplicationsScreen } from '../features/applications/MyApplicationsScreen';
 import { ChatListScreen } from '../features/chat/ChatListScreen';
 import { ChatRoomScreen } from '../features/chat/ChatRoomScreen';
+import { AdmissionInfoScreen, ToursInfoScreen, VisaInfoScreen } from '../features/info/InfoScreens';
 import { KnowledgeDetailScreen } from '../features/knowledge/KnowledgeDetailScreen';
 import { KnowledgeListScreen } from '../features/knowledge/KnowledgeListScreen';
 import { NewsDetailScreen } from '../features/news/NewsDetailScreen';
@@ -16,6 +17,7 @@ import { NotificationsScreen } from '../features/notifications/NotificationsScre
 import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
 import { EditProfileScreen } from '../features/profile/EditProfileScreen';
 import { ServiceDetailScreen } from '../features/services/ServiceDetailScreen';
+import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { StaffScreen } from '../features/staff/StaffScreen';
 import { CityDetailScreen } from '../features/universities/CityDetailScreen';
 import { CountryDetailScreen } from '../features/universities/CountryDetailScreen';
@@ -32,7 +34,9 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export function RootNavigator() {
   const { bootstrap, isLoading } = useAuthStore();
 
-  useEffect(() => { bootstrap(); }, [bootstrap]);
+  useEffect(() => {
+    bootstrap();
+  }, [bootstrap]);
 
   if (isLoading) return <Loading />;
 
@@ -51,6 +55,10 @@ export function RootNavigator() {
         <Stack.Screen name="KnowledgeList" component={KnowledgeListScreen} options={{ title: 'База знаний' }} />
         <Stack.Screen name="KnowledgeDetail" component={KnowledgeDetailScreen} options={{ title: 'Материал' }} />
         <Stack.Screen name="Staff" component={StaffScreen} options={{ title: 'Команда' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Настройки' }} />
+        <Stack.Screen name="VisaInfo" component={VisaInfoScreen} options={{ title: 'Виза' }} />
+        <Stack.Screen name="ToursInfo" component={ToursInfoScreen} options={{ title: 'Туры' }} />
+        <Stack.Screen name="AdmissionInfo" component={AdmissionInfoScreen} options={{ title: 'Поступление' }} />
         <Stack.Screen name="ApplicationCreate" component={ApplicationCreateScreen} options={{ title: 'Подать заявку' }} />
         <Stack.Screen name="Chat" component={ChatListScreen} options={{ title: 'Чат с менеджером' }} />
         <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'Мои заявки' }} />

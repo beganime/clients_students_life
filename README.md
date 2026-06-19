@@ -24,6 +24,15 @@ Copy `backend/.env.example` and set:
 
 No manager-sl keys are stored in the mobile app.
 
+### Mobile catalog configuration
+
+The Expo app reads public education catalog data directly from manager-sl client API:
+
+- `EXPO_PUBLIC_MANAGER_SL_API_BASE_URL` - optional mobile catalog API base URL. Defaults to `https://manager-sl.ru/api/client/v1`.
+- `EXPO_PUBLIC_API_BASE_URL` - mobile app backend API base URL. Defaults to `https://stud-life.com/api/v1`.
+
+Catalog screens use React Query persistence for countries, cities, universities, programs, and detail pages. Users can clear the persisted catalog cache from the mobile settings screen.
+
 ### Added/updated endpoints
 
 - `POST /api/v1/accounts/register/` - register app user with default `user` role.

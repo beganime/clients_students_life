@@ -21,6 +21,7 @@ type Props<T> = {
   itemWidth?: number;
   autoplay?: boolean;
   intervalMs?: number;
+  itemSpacing?: number;
   style?: ViewStyle;
   showArrows?: boolean;
 };
@@ -31,6 +32,7 @@ export function BannerSlider<T>({
   itemWidth = Math.min(width - 40, 760),
   autoplay = true,
   intervalMs = 4500,
+  itemSpacing = 14,
   style,
   showArrows = false,
 }: Props<T>) {
@@ -60,7 +62,7 @@ export function BannerSlider<T>({
   }, [autoplay, canSlide, intervalMs, safeData.length]);
 
   const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / itemWidth);
+    const index = Math.round(event.nativeEvent.contentOffset.x / (itemWidth + itemSpacing));
     setActiveIndex(Math.max(0, Math.min(index, safeData.length - 1)));
   };
 
@@ -89,16 +91,18 @@ export function BannerSlider<T>({
         data={safeData}
         keyExtractor={(_, index) => String(index)}
         showsHorizontalScrollIndicator={false}
-        snapToInterval={itemWidth}
+        snapToInterval={itemWidth + itemSpacing}
         decelerationRate="fast"
         onMomentumScrollEnd={handleScrollEnd}
         getItemLayout={(_, index) => ({
-          length: itemWidth,
-          offset: itemWidth * index,
+          length: itemWidth + itemSpacing,
+          offset: (itemWidth + itemSpacing) * index,
           index,
         })}
         renderItem={({ item, index }) => (
-          <View style={{ width: itemWidth }}>{renderItem(item, index)}</View>
+          <View style={{ width: itemWidth + itemSpacing, paddingRight: itemSpacing }}>
+            {renderItem(item, index)}
+          </View>
         )}
       />
 

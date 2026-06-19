@@ -11,8 +11,6 @@ type Props = {
   navigation: any;
 };
 
-const MENU_RED = '#B91C1C';
-
 export function SideMenu({ visible, onClose, navigation }: Props) {
   const navigate = (route: string, params?: object) => {
     onClose();
@@ -22,7 +20,7 @@ export function SideMenu({ visible, onClose, navigation }: Props) {
   const openUrl = async (url: string) => {
     onClose();
     if (!url) {
-      Alert.alert('Ссылка появится позже', 'Сюда можно добавить ссылку на Google Play аккаунт компании.');
+      Alert.alert('Ссылка появится позже', 'Этот раздел можно подключить после публикации приложения.');
       return;
     }
     await Linking.openURL(url);
@@ -38,18 +36,22 @@ export function SideMenu({ visible, onClose, navigation }: Props) {
               <Text style={styles.logo}>{APP_NAME}</Text>
               <Text style={styles.logoSub}>Меню приложения</Text>
             </View>
-            <Pressable style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeText}>×</Text>
+            <Pressable style={styles.closeButton} onPress={onClose} accessibilityRole="button" accessibilityLabel="Закрыть меню">
+              <SvgIcon name="close" size={22} color={colors.primary} strokeWidth={2.5} />
             </Pressable>
           </View>
 
           <View style={styles.menuList}>
             <MenuItem icon="chat" title="Чат" onPress={() => navigate('Chat')} />
             <MenuItem icon="application" title="Мои заявки" onPress={() => navigate('MyApplications')} />
+            <MenuItem icon="university" title="Каталог вузов" onPress={() => navigate('App', { screen: 'Universities' })} />
+            <MenuItem icon="application" title="Поступление" onPress={() => navigate('AdmissionInfo')} />
+            <MenuItem icon="visa" title="Виза" onPress={() => navigate('VisaInfo')} />
+            <MenuItem icon="mapPin" title="Туры" onPress={() => navigate('ToursInfo')} />
             <MenuItem icon="bell" title="Уведомления" onPress={() => navigate('Notifications')} />
             <MenuItem icon="heart" title="Избранные вузы" onPress={() => navigate('FavoriteUniversities')} />
             <MenuItem icon="globe" title="Открыть сайт" onPress={() => openUrl(OFFICIAL_SITE_URL)} />
-            <MenuItem icon="services" title="Настройки" onPress={() => Alert.alert('Настройки', 'Раздел настроек можно расширить на следующем этапе.')} />
+            <MenuItem icon="services" title="Настройки" onPress={() => navigate('Settings')} />
           </View>
 
           <View style={styles.footer}>
@@ -59,7 +61,7 @@ export function SideMenu({ visible, onClose, navigation }: Props) {
               <Text style={styles.footerLink}>Политика конфиденциальности</Text>
             </Pressable>
             <Pressable onPress={() => openUrl(COMPANY_APPS_URL)}>
-              <Text style={styles.footerLink}>Ещё приложения от компании</Text>
+              <Text style={styles.footerLink}>Ещё приложения компании</Text>
             </Pressable>
           </View>
         </View>
@@ -72,7 +74,7 @@ function MenuItem({ icon, title, onPress }: { icon: SvgIconName; title: string; 
   return (
     <Pressable style={styles.item} onPress={onPress}>
       <View style={styles.itemIcon}>
-        <SvgIcon name={icon} size={22} color={MENU_RED} />
+        <SvgIcon name={icon} size={22} color={colors.primary} />
       </View>
       <Text style={styles.itemText}>{title}</Text>
       <SvgIcon name="chevronRight" size={18} color={colors.mutedLight} />
@@ -91,14 +93,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.38)',
   },
   panel: {
-    width: 300,
+    width: 312,
     height: '100%',
     backgroundColor: colors.white,
     paddingTop: 26,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     borderLeftWidth: 1,
-    borderLeftColor: '#FFCECE',
+    borderLeftColor: colors.border,
   },
   topRow: {
     flexDirection: 'row',
@@ -107,7 +109,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   logo: {
-    color: MENU_RED,
+    color: colors.primary,
     fontSize: 22,
     fontWeight: typography.weights.heavy,
   },
@@ -120,46 +122,42 @@ const styles = StyleSheet.create({
   closeButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeText: {
-    color: MENU_RED,
-    fontSize: 28,
-    lineHeight: 30,
-    fontWeight: typography.weights.bold,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   menuList: {
     gap: spacing.xs,
   },
   item: {
-    minHeight: 58,
+    minHeight: 54,
     borderBottomWidth: 1,
-    borderBottomColor: '#F6DFDF',
+    borderBottomColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
   itemIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 17,
-    backgroundColor: '#FEF2F2',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   itemText: {
     flex: 1,
-    color: '#2D1A1A',
-    fontSize: 17,
+    color: colors.text,
+    fontSize: 16,
     fontWeight: typography.weights.bold,
   },
   footer: {
     marginTop: 'auto',
     borderTopWidth: 1,
-    borderTopColor: '#F6DFDF',
+    borderTopColor: colors.border,
     paddingTop: spacing.lg,
     gap: spacing.sm,
   },
@@ -174,7 +172,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.bold,
   },
   footerLink: {
-    color: MENU_RED,
+    color: colors.primary,
     fontWeight: typography.weights.heavy,
   },
 });

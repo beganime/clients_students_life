@@ -12,7 +12,9 @@ export const queryClient = new QueryClient({
   },
 });
 
+export const QUERY_CACHE_STORAGE_KEY = 'STUDENTS_LIFE_QUERY_CACHE';
+
 export const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
-  key: 'STUDENTS_LIFE_QUERY_CACHE',
+  key: QUERY_CACHE_STORAGE_KEY,
 });

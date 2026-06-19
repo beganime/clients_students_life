@@ -2,6 +2,7 @@ import React from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -15,14 +16,21 @@ type Props = {
   children: React.ReactNode;
   scroll?: boolean;
   style?: ViewStyle;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 };
 
-export function Screen({ children, scroll = false, style }: Props) {
+export function Screen({ children, scroll = false, style, refreshing = false, onRefresh }: Props) {
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={[styles.scrollContent, style]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        ) : undefined
+      }
     >
       {children}
     </ScrollView>
@@ -33,7 +41,7 @@ export function Screen({ children, scroll = false, style }: Props) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -57,7 +65,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    padding: 20,
+    padding: 18,
     paddingBottom: 44,
     backgroundColor: colors.background,
   },

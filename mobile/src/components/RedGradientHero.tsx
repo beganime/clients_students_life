@@ -10,10 +10,10 @@ type Props = React.PropsWithChildren<{
 }>;
 
 const stops = [
-  ['0%', '#FCA5A5'],
-  ['18%', '#F87171'],
-  ['44%', '#EF4444'],
-  ['70%', '#DC2626'],
+  ['0%', '#E53935'],
+  ['28%', '#D92D20'],
+  ['58%', '#B42318'],
+  ['82%', '#991B1B'],
   ['100%', '#7F1D1D'],
 ] as const;
 
@@ -39,7 +39,7 @@ export function RedGradientHero({ children, style, contentStyle }: Props) {
 const styles = StyleSheet.create({
   root: {
     borderRadius: radius.xl,
-    backgroundColor: '#DC2626',
+    backgroundColor: '#B42318',
     overflow: 'hidden',
     padding: spacing.lg,
     justifyContent: 'flex-end',

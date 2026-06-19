@@ -3,12 +3,15 @@ export const palette = {
   navySurface: '#111827',
   royalBlue: '#2563EB',
   electricBlue: '#3B82F6',
-  coralRed: '#F43F5E',
+  brandRed: '#D92D20',
+  brandRedDark: '#7F1D1D',
+  brandRedDeep: '#4C1111',
+  coralRed: '#E11D48',
   warmOrange: '#F97316',
   mintGreen: '#10B981',
   softIce: '#F8FAFC',
   cardWhite: '#FFFFFF',
-  lightBlueSurface: '#EEF6FF',
+  softRedSurface: '#FFF5F5',
   mainText: '#0F172A',
   secondaryText: '#475569',
   mutedText: '#94A3B8',
@@ -16,16 +19,16 @@ export const palette = {
 };
 
 export const colors = {
-  primary: palette.royalBlue,
-  primaryDark: palette.deepNavy,
-  primaryLight: palette.electricBlue,
+  primary: palette.brandRed,
+  primaryDark: palette.brandRedDark,
+  primaryLight: '#EF4444',
   secondary: palette.electricBlue,
   secondaryDark: '#1D4ED8',
   accent: palette.coralRed,
   orange: palette.warmOrange,
   mint: palette.mintGreen,
   background: palette.softIce,
-  surface: palette.lightBlueSurface,
+  surface: palette.softRedSurface,
   card: palette.cardWhite,
   text: palette.mainText,
   muted: palette.secondaryText,
@@ -63,10 +66,10 @@ export const spacing = {
 };
 
 export const radius = {
-  sm: 12,
-  md: 18,
-  lg: 24,
-  xl: 30,
+  sm: 8,
+  md: 10,
+  lg: 12,
+  xl: 16,
   pill: 999,
 };
 
@@ -95,11 +98,11 @@ export const shadows = {
 };
 
 export const gradients = {
-  premiumHero: [palette.deepNavy, '#172554', palette.royalBlue] as const,
+  premiumHero: [palette.brandRed, '#B42318', palette.brandRedDark] as const,
   blue: [palette.royalBlue, palette.electricBlue] as const,
-  warm: [palette.coralRed, palette.warmOrange] as const,
+  warm: [palette.brandRed, palette.brandRedDark] as const,
   mint: [palette.mintGreen, '#34D399'] as const,
-  surface: [palette.softIce, palette.lightBlueSurface] as const,
+  surface: [palette.softIce, palette.softRedSurface] as const,
 };
 
 export const animation = {

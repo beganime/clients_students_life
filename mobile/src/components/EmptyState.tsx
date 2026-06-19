@@ -3,13 +3,16 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, shadows, spacing, typography } from '../constants/colors';
 import { SvgIcon } from './SvgIcon';
+import { AppButton } from './AppButton';
 
 type Props = {
   title: string;
   description?: string;
+  actionText?: string;
+  onAction?: () => void;
 };
 
-export function EmptyState({ title, description }: Props) {
+export function EmptyState({ title, description, actionText, onAction }: Props) {
   return (
     <View style={[styles.container, shadows.soft]}>
       <View style={styles.iconBox}>
@@ -17,6 +20,9 @@ export function EmptyState({ title, description }: Props) {
       </View>
       <Text style={styles.title}>{title}</Text>
       {description ? <Text style={styles.description}>{description}</Text> : null}
+      {onAction && actionText ? (
+        <AppButton title={actionText} onPress={onAction} variant="outline" style={styles.button} />
+      ) : null}
     </View>
   );
 }
@@ -54,5 +60,9 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     textAlign: 'center',
     fontWeight: typography.weights.medium,
+  },
+  button: {
+    alignSelf: 'stretch',
+    marginTop: spacing.lg,
   },
 });

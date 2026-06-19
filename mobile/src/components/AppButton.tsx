@@ -38,11 +38,11 @@ export function AppButton({ title, onPress, loading, disabled, variant = 'primar
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 54,
+    minHeight: 48,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     borderWidth: 1,
   },
   primary: {
@@ -66,8 +66,8 @@ const styles = StyleSheet.create({
     borderColor: colors.danger,
   },
   text: {
-    fontSize: typography.body,
-    fontWeight: typography.weights.heavy,
+    fontSize: 15,
+    fontWeight: typography.weights.bold,
   },
   pressed: {
     opacity: 0.9,

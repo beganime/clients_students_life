@@ -4,15 +4,16 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SideMenu } from '../components/SideMenu';
+import { SvgIcon, SvgIconName } from '../components/SvgIcon';
+import { APP_NAME } from '../constants/config';
+import { colors, shadows, spacing, typography } from '../constants/colors';
 import { HomeScreen } from '../features/home/HomeScreen';
 import { NewsListScreen } from '../features/news/NewsListScreen';
 import { ProfileScreen } from '../features/profile/ProfileScreen';
 import { ServicesScreen } from '../features/services/ServicesScreen';
 import { UniversitiesScreen } from '../features/universities/UniversitiesScreen';
-import { APP_NAME } from '../constants/config';
-import { colors, shadows, spacing, typography } from '../constants/colors';
-import { SideMenu } from '../components/SideMenu';
-import { SvgIcon, SvgIconName } from '../components/SvgIcon';
+
 import { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -30,12 +31,17 @@ export function AppNavigator() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={[styles.header, shadows.soft]}>
-        <View>
+        <View style={styles.logoBox}>
           <Text style={styles.logo}>{APP_NAME}</Text>
           <Text style={styles.logoSub}>International Education</Text>
         </View>
-        <Pressable style={styles.menuButton} onPress={() => setMenuOpen(true)}>
-          <Text style={styles.menuText}>☰</Text>
+        <Pressable
+          style={styles.menuButton}
+          onPress={() => setMenuOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Открыть меню"
+        >
+          <SvgIcon name="menu" size={24} color={colors.primary} strokeWidth={2.6} />
         </Pressable>
       </View>
 
@@ -43,7 +49,7 @@ export function AppNavigator() {
         <Tab.Navigator
           screenOptions={{
             headerShown: false,
-            tabBarActiveTintColor: '#B91C1C',
+            tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.muted,
             tabBarLabelStyle: {
               fontSize: 10,
@@ -51,7 +57,7 @@ export function AppNavigator() {
               marginTop: 1,
             },
             tabBarItemStyle: {
-              borderRadius: 18,
+              borderRadius: 12,
             },
             tabBarStyle: {
               height: 78,
@@ -59,7 +65,7 @@ export function AppNavigator() {
               paddingTop: 8,
               paddingHorizontal: 10,
               borderTopWidth: 1,
-              borderTopColor: '#FAD7D7',
+              borderTopColor: colors.border,
               backgroundColor: 'rgba(255,255,255,0.98)',
               ...shadows.soft,
             },
@@ -81,48 +87,44 @@ export function AppNavigator() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FEF7F5',
+    backgroundColor: colors.background,
   },
   header: {
-    minHeight: 68,
+    minHeight: 66,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#FFDDDD',
+    borderBottomColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  logoBox: {
+    flex: 1,
+    paddingRight: spacing.md,
+  },
   logo: {
-    color: '#B91C1C',
+    color: colors.primary,
     fontSize: 22,
     fontWeight: typography.weights.heavy,
-    letterSpacing: -0.4,
   },
   logoSub: {
     color: colors.muted,
     fontSize: typography.tiny,
     fontWeight: typography.weights.bold,
     textTransform: 'uppercase',
-    letterSpacing: 0.7,
     marginTop: 2,
   },
   menuButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: '#FEF2F2',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#FFDADA',
-  },
-  menuText: {
-    color: '#B91C1C',
-    fontSize: 26,
-    lineHeight: 28,
-    fontWeight: typography.weights.heavy,
+    borderColor: colors.border,
   },
   navigatorWrap: {
     flex: 1,

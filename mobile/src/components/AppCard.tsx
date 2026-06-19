@@ -27,7 +27,7 @@ export function AppCard({ children, padded = true, elevated = true, style, ...pr
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,

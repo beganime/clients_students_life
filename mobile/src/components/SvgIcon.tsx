@@ -36,7 +36,8 @@ export type SvgIconName =
   | 'edit'
   | 'bell'
   | 'logout'
-  | 'file';
+  | 'file'
+  | 'menu';
 
 type Props = {
   name: SvgIconName;
@@ -309,6 +310,14 @@ export function SvgIcon({
         <>
           <Path {...p} d="M7 3h7l4 4v14H7V3Z" />
           <Path {...p} d="M14 3v5h4" />
+        </>
+      )}
+
+      {name === 'menu' && (
+        <>
+          <Path {...p} d="M4 7h16" />
+          <Path {...p} d="M4 12h16" />
+          <Path {...p} d="M4 17h16" />
         </>
       )}
     </Svg>

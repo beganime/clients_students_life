@@ -26,6 +26,8 @@ export type Country = {
   cover_image?: string | null;
   short_description?: string;
   description_markdown?: string;
+  cities_count?: number;
+  universities_count?: number;
   visa_info?: string;
   work_info?: string;
   average_tuition?: string;
@@ -40,6 +42,9 @@ export type City = {
   name: string;
   slug: string;
   image?: string | null;
+  cover_image?: string | null;
+  description_markdown?: string;
+  universities_count?: number;
 };
 
 export type Program = {
@@ -58,6 +63,11 @@ export type Program = {
   currency?: string;
   application_deadline?: string;
   start_date?: string;
+  description_markdown?: string;
+  intakes?: Array<Record<string, any>>;
+  fees?: Array<Record<string, any>>;
+  university_logo?: string | null;
+  university_cover?: string | null;
   required_documents?: string;
   requirements?: string;
 };
@@ -87,6 +97,14 @@ export type University = {
   tuition_from?: string;
   application_deadline?: string;
   required_documents?: string;
+  admission_requirements?: string;
+  invitation_info?: string;
+  dormitory_info?: string;
+  expenses_info?: string;
+  public_contacts?: string;
+  contacts?: string;
+  contact_people?: unknown[];
+  programs_count?: number;
   programs?: Program[];
   is_favorite?: boolean;
 };

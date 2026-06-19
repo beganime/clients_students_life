@@ -31,6 +31,7 @@
       "expo-secure-store"
     ],
     "extra": {
+      "managerSlApiBaseUrl": "https://manager-sl.ru/api/client/v1",
       "eas": {
         "projectId": "7787dd53-8b3a-404a-ab14-10ee7bc45df2"
       }
