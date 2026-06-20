@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { contentApi } from '../../api/endpoints';
+import { bannerImages } from '../../assets/banners';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
@@ -35,7 +36,7 @@ export function NewsListScreen() {
         onRefresh={newsQuery.refetch}
         ListHeaderComponent={
           <View>
-            <RedGradientHero style={styles.hero}>
+            <RedGradientHero backgroundImage={bannerImages.home} style={styles.hero}>
               <Badge label="Новости" variant="mint" icon="news" />
               <Text style={styles.title}>Актуальное для студентов</Text>
               <Text style={styles.description}>Новости, гайды, объявления, дедлайны и важная информация от Student’s Life.</Text>
