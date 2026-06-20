@@ -1,5 +1,13 @@
 import React from 'react';
-import { ImageBackground, ImageSourcePropType, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import {
+  ImageBackground,
+  ImageResizeMode,
+  ImageSourcePropType,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { radius, shadows, spacing } from '../constants/colors';
@@ -7,10 +15,13 @@ import { BrandMark } from './BrandLogo';
 
 export type HeroBannerProps = React.PropsWithChildren<{
   backgroundImage?: ImageSourcePropType;
+  backgroundResizeMode?: ImageResizeMode;
   showWatermark?: boolean;
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
 }>;
+
+const DEFAULT_BACKGROUND_RESIZE_MODE: ImageResizeMode = 'contain';
 
 const gradientStops = [
   ['0%', '#B8201A', 0.94],
@@ -24,7 +35,14 @@ const imageGradientStops = [
   ['100%', '#7F1D1D', 0.54],
 ] as const;
 
-export function HeroBanner({ children, backgroundImage, showWatermark = false, style, contentStyle }: HeroBannerProps) {
+export function HeroBanner({
+  children,
+  backgroundImage,
+  backgroundResizeMode = DEFAULT_BACKGROUND_RESIZE_MODE,
+  showWatermark = false,
+  style,
+  contentStyle,
+}: HeroBannerProps) {
   const stops = backgroundImage ? imageGradientStops : gradientStops;
 
   const content = (
@@ -51,7 +69,12 @@ export function HeroBanner({ children, backgroundImage, showWatermark = false, s
 
   if (backgroundImage) {
     return (
-      <ImageBackground source={backgroundImage} imageStyle={styles.image} style={[styles.root, shadows.premium, style]} resizeMode="cover">
+      <ImageBackground
+        source={backgroundImage}
+        imageStyle={styles.image}
+        style={[styles.root, styles.imageRoot, shadows.premium, style]}
+        resizeMode={backgroundResizeMode}
+      >
         {content}
       </ImageBackground>
     );
@@ -68,7 +91,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     justifyContent: 'flex-end',
   },
+  imageRoot: {
+    backgroundColor: '#8F1515',
+  },
   image: {
+    width: '100%',
+    height: '100%',
     borderRadius: radius.xl,
   },
   darkOverlay: {
