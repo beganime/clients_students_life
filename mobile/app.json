@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.students.life"
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +29,8 @@
       "favicon": "./src/assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-notifications"
     ],
     "extra": {
       "managerSlApiBaseUrl": "https://manager-sl.ru/api/client/v1",
