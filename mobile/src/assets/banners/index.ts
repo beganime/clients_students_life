@@ -13,7 +13,8 @@ export type BannerImageKey =
   | 'tours'
   | 'admission'
   | 'settings'
-  | 'profile';
+  | 'profile'
+  | 'news';
 
 export const bannerImages: Record<BannerImageKey, ImageSourcePropType> = {
   home: require('./hero-home.jpg'),
@@ -28,5 +29,6 @@ export const bannerImages: Record<BannerImageKey, ImageSourcePropType> = {
   tours: require('./hero-tours.jpg'),
   admission: require('./hero-admission.jpg'),
   settings: require('./hero-settings.webp'),
-  profile: require('./hero-profile.webp'),
+  profile: require('./hero-profile.jpg'),
+  news: require('./hero-news.jpg')
 };

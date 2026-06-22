@@ -77,7 +77,7 @@ export function CountryDetailScreen() {
           {country.flag ? <Image source={{ uri: country.flag }} style={styles.flag} resizeMode="cover" /> : null}
         </View>
         <Text style={styles.subtitle}>
-          {country.short_description || 'Информация о стране загружается из каталога manager-sl.ru.'}
+          '{country.universities_count || 0} вузов, {country.cities_count || 0} городов'
         </Text>
       </RedGradientHero>
 

@@ -38,7 +38,7 @@ export function NewsListScreen() {
         onRefresh={newsQuery.refetch}
         ListHeaderComponent={
           <View>
-            <RedGradientHero backgroundImage={bannerImages.home} style={styles.hero}>
+            <RedGradientHero backgroundImage={bannerImages.news} style={styles.hero}>
               <Badge label="Новости" variant="mint" icon="news" />
               <Text style={styles.title}>Актуальное для студентов</Text>
               <Text style={styles.description}>Новости, гайды, объявления, дедлайны и важная информация от Student’s Life.</Text>
