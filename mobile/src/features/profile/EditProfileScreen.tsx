@@ -75,7 +75,7 @@ export function EditProfileScreen() {
 
       <AppCard style={styles.avatarCard}>
         <Pressable style={styles.avatarBox} onPress={pickAvatar}>
-          {currentAvatar ? <Image source={{ uri: currentAvatar }} style={styles.avatar} resizeMode="cover" /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={42} color="#B91C1C" /></View>}
+          {currentAvatar ? <Image source={{ uri: currentAvatar }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={42} color="#B91C1C" /></View>}
           <Text style={styles.avatarText}>Изменить фото</Text>
         </Pressable>
       </AppCard>

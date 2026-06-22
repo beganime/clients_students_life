@@ -61,7 +61,7 @@ function NewsCard({ item, onPress }: { item: NewsPost; onPress: () => void }) {
     <AnimatedPressable style={styles.cardWrap} onPress={onPress}>
       <AppCard padded={false} style={styles.card}>
         <View style={styles.imageBox}>
-          {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" /> : <View style={styles.imagePlaceholder}><SvgIcon name="news" size={38} color="#B91C1C" /></View>}
+          {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} /> : <View style={styles.imagePlaceholder}><SvgIcon name="news" size={38} color="#B91C1C" /></View>}
           <View style={styles.badgeRow}>
             {item.category_title ? <Badge label={item.category_title} variant="blue" /> : null}
             {item.is_important ? <Badge label="Важно" variant="coral" /> : null}

@@ -42,7 +42,7 @@ export function StaffScreen() {
           return (
             <AppCard style={styles.card}>
               <View style={styles.row}>
-                {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatar} resizeMode="cover" /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={26} color="#B91C1C" /></View>}
+                {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={26} color="#B91C1C" /></View>}
                 <View style={styles.textBox}>
                   <Text style={styles.name}>{item.full_name}</Text>
                   {item.position ? <Text style={styles.position}>{item.position}</Text> : null}
