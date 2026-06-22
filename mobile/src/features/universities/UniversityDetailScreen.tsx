@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
@@ -55,7 +56,7 @@ export function UniversityDetailScreen() {
       refreshing={universityQuery.isRefetching}
       onRefresh={() => universityQuery.refetch()}
     >
-      <RedGradientHero style={styles.hero}>
+      <RedGradientHero backgroundImage={imageUrl ? { uri: imageUrl } : bannerImages.university} style={styles.hero}>
         {data.logo ? <Image source={{ uri: data.logo }} style={styles.logoImage} resizeMode="cover" /> : null}
         <View style={styles.badgeRow}>
           <Badge label="manager-sl.ru" variant="mint" icon="check" />
@@ -67,8 +68,6 @@ export function UniversityDetailScreen() {
           <Text style={styles.location}>{location}</Text>
         </View>
       </RedGradientHero>
-
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.coverImage} resizeMode="cover" /> : null}
 
       <View style={styles.actions}>
         <AppButton title="Подать заявку в этот вуз" onPress={handleApplyPress} />
@@ -201,7 +200,6 @@ function ProgramMeta({ icon, text }: { icon: SvgIconName; text: string }) {
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.background },
   hero: { minHeight: 300, marginBottom: spacing.lg },
-  coverImage: { width: '100%', height: 190, borderRadius: radius.lg, marginBottom: spacing.lg },
   logoImage: { width: 78, height: 78, borderRadius: radius.md, backgroundColor: colors.white, marginBottom: spacing.md },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy },

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
 
 import { contentApi } from '../../api/endpoints';
+import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
@@ -54,8 +55,7 @@ export function ServiceDetailScreen() {
 
   return (
     <Screen scroll style={styles.screen}>
-      <RedGradientHero style={styles.hero}>
-        {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.heroImage} /> : null}
+      <RedGradientHero backgroundImage={imageUrl ? { uri: imageUrl } : bannerImages.services} style={styles.hero}>
         <View style={styles.iconBox}>
           <SvgIcon name="services" size={34} color={colors.white} strokeWidth={2.4} />
         </View>
@@ -130,7 +130,6 @@ function DocLine({ text }: { text: string }) {
 const styles = StyleSheet.create({
   screen: { backgroundColor: '#FEF7F5' },
   hero: { minHeight: 350, marginBottom: spacing.lg },
-  heroImage: { position: 'absolute', right: spacing.lg, top: spacing.lg, width: 78, height: 78, borderRadius: 26, opacity: 0.9 },
   iconBox: { width: 66, height: 66, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.26)', marginBottom: spacing.md },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   description: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },

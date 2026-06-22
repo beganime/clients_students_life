@@ -43,7 +43,7 @@ export function NewsDetailScreen() {
   return (
     <Screen scroll style={styles.screen}>
       <View style={[styles.hero, shadows.premium]}>
-        {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.heroImage} /> : <View style={styles.heroPlaceholder}><SvgIcon name="news" size={46} color={colors.white} /></View>}
+        {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.heroImage} resizeMode="cover" /> : <View style={styles.heroPlaceholder}><SvgIcon name="news" size={46} color={colors.white} /></View>}
         <View style={styles.heroOverlay} />
         <View style={styles.heroContent}>
           <View style={styles.badgeRow}>

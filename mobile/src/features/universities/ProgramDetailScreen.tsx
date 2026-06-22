@@ -47,7 +47,7 @@ export function ProgramDetailScreen() {
 
   return (
     <Screen scroll style={styles.screen} refreshing={query.isRefetching} onRefresh={() => query.refetch()}>
-      <RedGradientHero backgroundImage={bannerImages.program} style={styles.hero}>
+      <RedGradientHero backgroundImage={imageUrl ? { uri: imageUrl } : bannerImages.program} style={styles.hero}>
         {program.university_logo ? (
           <Image source={{ uri: program.university_logo }} style={styles.logo} resizeMode="cover" />
         ) : null}
@@ -55,8 +55,6 @@ export function ProgramDetailScreen() {
         <Text style={styles.title}>{program.title}</Text>
         <Text style={styles.subtitle}>{program.university_name || 'Университет уточняется'}</Text>
       </RedGradientHero>
-
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.coverImage} resizeMode="cover" /> : null}
 
       <View style={styles.grid}>
         <Info icon="document" label="Уровень" value={program.level || 'уточняется'} />
@@ -151,7 +149,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   subtitle: { color: 'rgba(255,255,255,0.92)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm },
-  coverImage: { width: '100%', height: 180, borderRadius: radius.lg, marginBottom: spacing.lg },
   grid: { gap: spacing.md },
   info: { borderColor: colors.border },
   iconBox: {

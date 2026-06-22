@@ -18,7 +18,7 @@ export function ArticleCard({ title, description, image, category, author, onPre
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} /> : null}
+      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" /> : null}
       <View style={styles.content}>
         {category ? <Text style={styles.category}>{category}</Text> : null}
         <Text style={styles.title}>{title}</Text>

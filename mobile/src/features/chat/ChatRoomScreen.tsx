@@ -3,6 +3,7 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chatApi } from '../../api/endpoints';
 import { AppCard } from '../../components/AppCard';
@@ -20,6 +21,7 @@ type R = RouteProp<RootStackParamList, 'ChatRoom'>;
 
 export function ChatRoomScreen() {
   const route = useRoute<R>();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList<ChatMessage> | null>(null);
   const [text, setText] = useState('');
@@ -130,7 +132,7 @@ export function ChatRoomScreen() {
       ) : (
         <FlatList
           ref={listRef}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + spacing.xl, spacing.xl) }]}
           data={messages}
           keyExtractor={item => String(item.id)}
           refreshing={messagesQuery.isRefetching}
@@ -148,7 +150,7 @@ export function ChatRoomScreen() {
         </View>
       ) : null}
 
-      <AppCard style={styles.inputCard}>
+      <AppCard style={[styles.inputCard, { marginBottom: Math.max(insets.bottom, spacing.md) }]}>
         <Pressable style={styles.iconButton} onPress={handlePickImage} disabled={sendingText || sendingImage}>
           <SvgIcon name="file" size={22} color={colors.primary} />
         </Pressable>

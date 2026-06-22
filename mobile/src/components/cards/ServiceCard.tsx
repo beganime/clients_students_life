@@ -15,7 +15,7 @@ export function ServiceCard({ item, onPress }: Props) {
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} /> : <View style={styles.placeholder} />}
+      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" /> : <View style={styles.placeholder} />}
       <View style={styles.content}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description} numberOfLines={3}>{item.short_description}</Text>

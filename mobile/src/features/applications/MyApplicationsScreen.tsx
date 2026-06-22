@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { applicationsApi } from '../../api/endpoints';
 import { AppCard } from '../../components/AppCard';
@@ -34,6 +35,7 @@ export function MyApplicationsScreen() {
 
 function MyApplicationsContent() {
   const user = useAuthStore(state => state.user);
+  const insets = useSafeAreaInsets();
   const isManager = Boolean(user?.is_manager);
 
   const applicationsQuery = useQuery({
@@ -45,7 +47,7 @@ function MyApplicationsContent() {
   return (
     <Screen>
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
         data={applicationsQuery.isLoading || applicationsQuery.isError ? [] : applicationsQuery.data || []}
         refreshing={applicationsQuery.isRefetching}
         onRefresh={applicationsQuery.refetch}
@@ -86,7 +88,7 @@ function InfoLine({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 20, paddingBottom: 44, backgroundColor: '#FEF7F5' },
+  list: { padding: 20, backgroundColor: '#FEF7F5' },
   hero: { minHeight: 260, marginBottom: spacing.lg },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   subtitle: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },

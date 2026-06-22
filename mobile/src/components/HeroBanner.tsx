@@ -5,6 +5,7 @@ import {
   ImageSourcePropType,
   StyleProp,
   StyleSheet,
+  useWindowDimensions,
   View,
   ViewStyle,
 } from 'react-native';
@@ -21,7 +22,9 @@ export type HeroBannerProps = React.PropsWithChildren<{
   contentStyle?: StyleProp<ViewStyle>;
 }>;
 
-const DEFAULT_BACKGROUND_RESIZE_MODE: ImageResizeMode = 'contain';
+const DEFAULT_BACKGROUND_RESIZE_MODE: ImageResizeMode = 'cover';
+const MIN_HERO_HEIGHT = 220;
+const MAX_HERO_HEIGHT = 360;
 
 const gradientStops = [
   ['0%', '#B8201A', 0.94],
@@ -43,6 +46,8 @@ export function HeroBanner({
   style,
   contentStyle,
 }: HeroBannerProps) {
+  const { width } = useWindowDimensions();
+  const responsiveHeight = Math.min(Math.max(width * 0.58, MIN_HERO_HEIGHT), MAX_HERO_HEIGHT);
   const stops = backgroundImage ? imageGradientStops : gradientStops;
 
   const content = (
@@ -72,7 +77,7 @@ export function HeroBanner({
       <ImageBackground
         source={backgroundImage}
         imageStyle={styles.image}
-        style={[styles.root, styles.imageRoot, shadows.premium, style]}
+        style={[styles.root, styles.imageRoot, { minHeight: responsiveHeight }, shadows.premium, style]}
         resizeMode={backgroundResizeMode}
       >
         {content}
@@ -80,7 +85,7 @@ export function HeroBanner({
     );
   }
 
-  return <View style={[styles.root, shadows.premium, style]}>{content}</View>;
+  return <View style={[styles.root, { minHeight: responsiveHeight }, shadows.premium, style]}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -95,8 +100,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#8F1515',
   },
   image: {
-    width: '100%',
-    height: '100%',
     borderRadius: radius.xl,
   },
   darkOverlay: {

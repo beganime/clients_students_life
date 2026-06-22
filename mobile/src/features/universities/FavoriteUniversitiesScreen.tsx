@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { contentApi } from '../../api/endpoints';
 import { Badge } from '../../components/Badge';
@@ -15,6 +16,7 @@ import { colors, spacing, typography } from '../../constants/colors';
 
 export function FavoriteUniversitiesScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const favoritesQuery = useQuery({
     queryKey: ['favorite-universities'],
@@ -24,7 +26,7 @@ export function FavoriteUniversitiesScreen() {
   return (
     <Screen>
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
         data={favoritesQuery.isLoading || favoritesQuery.isError ? [] : favoritesQuery.data || []}
         refreshing={favoritesQuery.isRefetching}
         onRefresh={favoritesQuery.refetch}
@@ -54,7 +56,7 @@ export function FavoriteUniversitiesScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 20, paddingBottom: 44, backgroundColor: '#FEF7F5' },
+  list: { padding: 20, backgroundColor: '#FEF7F5' },
   hero: { minHeight: 260, marginBottom: spacing.lg },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   subtitle: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },

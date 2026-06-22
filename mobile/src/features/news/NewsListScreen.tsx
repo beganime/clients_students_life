@@ -2,6 +2,7 @@ import React from 'react';
 import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { contentApi } from '../../api/endpoints';
 import { bannerImages } from '../../assets/banners';
@@ -20,6 +21,7 @@ import { getMediaUrl } from '../../utils/media';
 
 export function NewsListScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const newsQuery = useQuery({
     queryKey: ['news'],
@@ -29,7 +31,7 @@ export function NewsListScreen() {
   return (
     <Screen>
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
         data={newsQuery.isLoading || newsQuery.isError ? [] : newsQuery.data || []}
         keyExtractor={item => String(item.id)}
         refreshing={newsQuery.isRefetching}
@@ -59,7 +61,7 @@ function NewsCard({ item, onPress }: { item: NewsPost; onPress: () => void }) {
     <AnimatedPressable style={styles.cardWrap} onPress={onPress}>
       <AppCard padded={false} style={styles.card}>
         <View style={styles.imageBox}>
-          {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} /> : <View style={styles.imagePlaceholder}><SvgIcon name="news" size={38} color="#B91C1C" /></View>}
+          {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" /> : <View style={styles.imagePlaceholder}><SvgIcon name="news" size={38} color="#B91C1C" /></View>}
           <View style={styles.badgeRow}>
             {item.category_title ? <Badge label={item.category_title} variant="blue" /> : null}
             {item.is_important ? <Badge label="Важно" variant="coral" /> : null}
@@ -76,7 +78,7 @@ function NewsCard({ item, onPress }: { item: NewsPost; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 20, paddingBottom: 44, backgroundColor: '#FEF7F5' },
+  list: { padding: 20, backgroundColor: '#FEF7F5' },
   hero: { minHeight: 260, marginBottom: spacing.lg },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   description: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },

@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../constants/colors';
 
@@ -21,9 +21,12 @@ type Props = {
 };
 
 export function Screen({ children, scroll = false, style, refreshing = false, onRefresh }: Props) {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom + 28, 44);
+
   const content = scroll ? (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, style]}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }, style]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -41,7 +44,7 @@ export function Screen({ children, scroll = false, style, refreshing = false, on
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -66,7 +69,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 18,
-    paddingBottom: 44,
     backgroundColor: colors.background,
   },
 });

@@ -15,7 +15,7 @@ export function UniversityCard({ item, onPress }: Props) {
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} /> : <View style={styles.placeholder} />}
+      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" /> : <View style={styles.placeholder} />}
 
       <View style={styles.content}>
         <View style={styles.badgeRow}>

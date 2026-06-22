@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chatApi } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
@@ -27,6 +28,7 @@ export function ChatListScreen() {
 
 function ChatListContent() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore(state => state.user);
   const [creating, setCreating] = useState(false);
   const isManager = Boolean(user?.is_manager);
@@ -49,7 +51,7 @@ function ChatListContent() {
   return (
     <Screen>
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
         data={roomsQuery.isLoading || roomsQuery.isError ? [] : roomsQuery.data || []}
         refreshing={roomsQuery.isRefetching}
         onRefresh={roomsQuery.refetch}
@@ -100,7 +102,7 @@ function ChatListContent() {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 20, paddingBottom: 44, backgroundColor: colors.background },
+  list: { padding: 20, backgroundColor: colors.background },
   hero: { minHeight: 300, borderRadius: radius.xl, backgroundColor: colors.primaryDark, padding: spacing.lg, justifyContent: 'flex-end', overflow: 'hidden', marginBottom: spacing.lg },
   glowBlue: { position: 'absolute', width: 270, height: 270, borderRadius: 135, backgroundColor: colors.primary, top: -105, right: -95, opacity: 0.68 },
   glowMint: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: colors.success, left: -90, bottom: -96, opacity: 0.22 },

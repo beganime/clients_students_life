@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { contentApi } from '../../api/endpoints';
 import { AppCard } from '../../components/AppCard';
@@ -15,12 +16,13 @@ import { colors, spacing, typography } from '../../constants/colors';
 import { getMediaUrl } from '../../utils/media';
 
 export function StaffScreen() {
+  const insets = useSafeAreaInsets();
   const staffQuery = useQuery({ queryKey: ['staff'], queryFn: contentApi.getStaff });
 
   return (
     <Screen>
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
         data={staffQuery.isLoading || staffQuery.isError ? [] : staffQuery.data || []}
         keyExtractor={item => String(item.id)}
         ListHeaderComponent={
@@ -40,7 +42,7 @@ export function StaffScreen() {
           return (
             <AppCard style={styles.card}>
               <View style={styles.row}>
-                {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatar} /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={26} color="#B91C1C" /></View>}
+                {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatar} resizeMode="cover" /> : <View style={styles.avatarPlaceholder}><SvgIcon name="profile" size={26} color="#B91C1C" /></View>}
                 <View style={styles.textBox}>
                   <Text style={styles.name}>{item.full_name}</Text>
                   {item.position ? <Text style={styles.position}>{item.position}</Text> : null}
@@ -58,7 +60,7 @@ export function StaffScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 20, paddingBottom: 44, backgroundColor: '#FEF7F5' },
+  list: { padding: 20, backgroundColor: '#FEF7F5' },
   hero: { minHeight: 260, marginBottom: spacing.lg },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   subtitle: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },

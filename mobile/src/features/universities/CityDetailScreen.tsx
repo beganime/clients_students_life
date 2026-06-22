@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -60,13 +61,11 @@ export function CityDetailScreen() {
       refreshing={cityQuery.isRefetching || universitiesQuery.isRefetching}
       onRefresh={refetchAll}
     >
-      <RedGradientHero style={styles.hero}>
+      <RedGradientHero backgroundImage={imageUrl ? { uri: imageUrl } : bannerImages.city} style={styles.hero}>
         <Text style={styles.kicker}>Город</Text>
         <Text style={styles.title}>{city.name}</Text>
         <Text style={styles.subtitle}>{city.country_name || 'Страна уточняется'}</Text>
       </RedGradientHero>
-
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.coverImage} resizeMode="cover" /> : null}
 
       <AppButton
         title="Все вузы города"
@@ -131,7 +130,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   subtitle: { color: 'rgba(255,255,255,0.92)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm },
-  coverImage: { width: '100%', height: 180, borderRadius: radius.lg, marginBottom: spacing.lg },
   primaryAction: { marginBottom: spacing.lg },
   markdownBox: { marginBottom: spacing.lg },
   sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.md },

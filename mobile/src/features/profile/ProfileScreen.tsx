@@ -70,7 +70,7 @@ export function ProfileScreen() {
       <RedGradientHero backgroundImage={bannerImages.profile} style={styles.profileHero}>
         <View style={styles.profileTopRow}>
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} resizeMode="cover" />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <SvgIcon name="profile" size={42} color={colors.secondary} />

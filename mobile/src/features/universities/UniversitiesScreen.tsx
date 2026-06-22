@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
 import { bannerImages } from '../../assets/banners';
@@ -21,6 +22,7 @@ type R = RouteProp<MainTabParamList, 'Universities'>;
 export function UniversitiesScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<R>();
+  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [countryId, setCountryId] = useState<string | number | undefined>(route.params?.country);
   const [cityId, setCityId] = useState<string | number | undefined>(route.params?.city);
@@ -64,7 +66,7 @@ export function UniversitiesScreen() {
   return (
     <Screen>
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
         data={universitiesQuery.isLoading || universitiesQuery.isError ? [] : universitiesQuery.data || []}
         keyExtractor={item => String(item.id)}
         refreshing={countriesQuery.isRefetching || citiesQuery.isRefetching || universitiesQuery.isRefetching}
@@ -180,7 +182,7 @@ function FilterChip({
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 18, paddingBottom: 44, backgroundColor: colors.background },
+  list: { padding: 18, backgroundColor: colors.background },
   hero: { minHeight: 270, marginBottom: spacing.lg },
   kicker: {
     color: 'rgba(255,255,255,0.78)',

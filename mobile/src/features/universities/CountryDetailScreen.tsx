@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { EmptyState } from '../../components/EmptyState';
@@ -67,7 +68,7 @@ export function CountryDetailScreen() {
       refreshing={countryQuery.isRefetching || citiesQuery.isRefetching || universitiesQuery.isRefetching}
       onRefresh={refetchAll}
     >
-      <RedGradientHero style={styles.hero}>
+      <RedGradientHero backgroundImage={heroImage ? { uri: heroImage } : bannerImages.country} style={styles.hero}>
         <View style={styles.heroTop}>
           <View style={styles.heroTextBox}>
             <Text style={styles.kicker}>Страна</Text>
@@ -79,8 +80,6 @@ export function CountryDetailScreen() {
           {country.short_description || 'Информация о стране загружается из каталога manager-sl.ru.'}
         </Text>
       </RedGradientHero>
-
-      {heroImage ? <Image source={{ uri: heroImage }} style={styles.coverImage} resizeMode="cover" /> : null}
 
       <AppButton
         title="Показать все вузы страны"
@@ -167,7 +166,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   subtitle: { color: 'rgba(255,255,255,0.92)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm },
-  coverImage: { width: '100%', height: 180, borderRadius: radius.lg, marginBottom: spacing.lg },
   primaryAction: { marginBottom: spacing.lg },
   markdownBox: { marginBottom: spacing.lg },
   sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.md },

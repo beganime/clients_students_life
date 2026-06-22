@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SideMenu } from '../components/SideMenu';
 import { SvgIcon, SvgIconName } from '../components/SvgIcon';
@@ -26,11 +26,21 @@ function tabIcon(name: SvgIconName) {
 
 export function AppNavigator() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={[styles.header, shadows.soft]}>
+    <View style={styles.safeArea}>
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top + spacing.sm,
+            minHeight: insets.top + 66,
+          },
+          shadows.soft,
+        ]}
+      >
         <BrandLogo width={174} style={styles.logoBox} />
         <Pressable
           style={styles.menuButton}
@@ -57,8 +67,8 @@ export function AppNavigator() {
               borderRadius: 12,
             },
             tabBarStyle: {
-              height: 78,
-              paddingBottom: 10,
+              height: 66 + Math.max(insets.bottom, 8),
+              paddingBottom: Math.max(insets.bottom, 8),
               paddingTop: 8,
               paddingHorizontal: 10,
               borderTopWidth: 1,
@@ -77,7 +87,7 @@ export function AppNavigator() {
       </View>
 
       <SideMenu visible={menuOpen} onClose={() => setMenuOpen(false)} navigation={navigation} />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -87,9 +97,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    minHeight: 66,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,

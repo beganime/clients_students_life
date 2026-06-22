@@ -10,6 +10,7 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { useAppActivity } from './src/hooks/useAppActivity';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
 import { asyncStoragePersister, queryClient } from './src/api/queryClient';
+import { colors } from './src/constants/colors';
 
 function AppContent() {
   useAppActivity();
@@ -27,7 +28,7 @@ export default function App() {
           maxAge: 1000 * 60 * 60 * 24,
         }}
       >
-        <StatusBar style="dark" />
+        <StatusBar style="dark" backgroundColor={colors.white} />
         <AppContent />
       </PersistQueryClientProvider>
     </SafeAreaProvider>

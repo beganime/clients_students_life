@@ -1,6 +1,7 @@
 import React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { notificationsApi } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
@@ -16,6 +17,7 @@ import { colors, spacing, typography } from '../../constants/colors';
 
 export function NotificationsScreen() {
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const notificationsQuery = useQuery({
     queryKey: ['my-notifications'],
@@ -37,7 +39,7 @@ export function NotificationsScreen() {
   return (
     <Screen>
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
         data={notificationsQuery.isLoading || notificationsQuery.isError ? [] : notificationsQuery.data || []}
         refreshing={notificationsQuery.isRefetching}
         onRefresh={notificationsQuery.refetch}
@@ -76,7 +78,7 @@ export function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 20, paddingBottom: 44, backgroundColor: '#FEF7F5' },
+  list: { padding: 20, backgroundColor: '#FEF7F5' },
   hero: { minHeight: 260, marginBottom: spacing.lg },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   subtitle: { color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
