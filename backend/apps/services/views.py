@@ -1,12 +1,13 @@
 from rest_framework import viewsets
 
 from apps.common.manager_sl_catalog import map_service, proxy_manager_sl_resource
+from apps.common.viewsets import IdOrSlugLookupMixin
 
 from .models import Service
 from .serializers import ServiceDetailSerializer, ServiceListSerializer
 
 
-class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
+class ServiceViewSet(IdOrSlugLookupMixin, viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     search_fields = ('title', 'short_description', 'description_markdown')
     ordering_fields = ('sort_order', 'title', 'created_at')

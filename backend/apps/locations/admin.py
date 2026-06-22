@@ -23,7 +23,8 @@ class CityAdmin(admin.ModelAdmin):
 
 @admin.register(Office)
 class OfficeAdmin(admin.ModelAdmin):
-    list_display = ('title', 'country', 'city', 'phone', 'whatsapp', 'is_active', 'sort_order')
+    list_display = ('title', 'country', 'city', 'phone', 'whatsapp', 'email', 'is_active', 'sort_order')
     list_filter = ('country', 'city', 'is_active')
-    search_fields = ('title', 'address', 'phone', 'whatsapp', 'telegram')
+    search_fields = ('title', 'address', 'phone', 'whatsapp', 'telegram', 'email')
     ordering = ('sort_order', 'title')
+    list_editable = ('is_active', 'sort_order')

@@ -6,8 +6,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 
-from .models import AppUserActivity
-from .serializers import RegisterSerializer, UserMeSerializer
+from .models import AppUserActivity, ensure_client_profile
+from .serializers import LoginSerializer, RegisterSerializer, UserMeSerializer
 
 
 def clean_device_value(value, max_length=255):
@@ -16,6 +16,7 @@ def clean_device_value(value, max_length=255):
 
 class LoginView(TokenObtainPairView):
     throttle_scope = 'login'
+    serializer_class = LoginSerializer
 
 
 class RegisterView(generics.CreateAPIView):
@@ -23,12 +24,20 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     throttle_scope = 'register'
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        response_serializer = UserMeSerializer(user, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
 
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [JSONParser, FormParser, MultiPartParser]
 
     def get(self, request):
+        ensure_client_profile(request.user)
         serializer = UserMeSerializer(request.user, context={'request': request})
         return Response(serializer.data)
 

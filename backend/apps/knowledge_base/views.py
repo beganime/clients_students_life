@@ -1,17 +1,19 @@
 from rest_framework import viewsets
 
+from apps.common.viewsets import IdOrSlugLookupMixin
+
 from .models import KnowledgeArticle, KnowledgeCategory
 from .serializers import KnowledgeCategorySerializer, KnowledgeDetailSerializer, KnowledgeListSerializer
 
 
-class KnowledgeCategoryViewSet(viewsets.ReadOnlyModelViewSet):
+class KnowledgeCategoryViewSet(IdOrSlugLookupMixin, viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     serializer_class = KnowledgeCategorySerializer
     queryset = KnowledgeCategory.objects.all().order_by('title')
     search_fields = ('title',)
 
 
-class KnowledgeArticleViewSet(viewsets.ReadOnlyModelViewSet):
+class KnowledgeArticleViewSet(IdOrSlugLookupMixin, viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     filterset_fields = ('category', 'category__slug')
     search_fields = ('title', 'short_description', 'content_markdown', 'tags')

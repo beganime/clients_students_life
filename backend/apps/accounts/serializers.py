@@ -1,10 +1,18 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import AppRole, AppUserActivity, ClientProfile, get_app_role_code, is_manager_user
+from .models import AppRole, AppUserActivity, ClientProfile, ensure_client_profile, get_app_role_code, is_manager_user
 
 User = get_user_model()
+
+
+class LoginSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        ensure_client_profile(self.user)
+        return data
 
 
 class AppUserActivitySerializer(serializers.ModelSerializer):
@@ -55,6 +63,10 @@ class UserMeSerializer(serializers.ModelSerializer):
             'activity',
         )
         read_only_fields = ('id', 'username', 'role', 'is_manager', 'activity')
+
+    def to_representation(self, instance):
+        ensure_client_profile(instance)
+        return super().to_representation(instance)
 
     def get_role(self, obj):
         return get_app_role_code(obj)
@@ -123,6 +135,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def validate_email(self, value):
+        if not value:
+            raise serializers.ValidationError('Email is required.')
         value = value.lower().strip()
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError('Пользователь с таким email уже существует.')
@@ -150,5 +164,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
 
-        ClientProfile.objects.create(user=user, role=AppRole.default_role(), **profile_fields)
+        profile = ensure_client_profile(user)
+        for attr, value in profile_fields.items():
+            setattr(profile, attr, value)
+        profile.save()
         return user

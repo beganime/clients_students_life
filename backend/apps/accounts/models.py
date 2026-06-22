@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from apps.common.models import TimeStampedModel
 
@@ -111,3 +113,22 @@ def is_manager_user(user):
     except ClientProfile.DoesNotExist:
         return False
     return bool(profile.role_id and profile.role.is_manager)
+
+
+def ensure_client_profile(user):
+    if not user or not getattr(user, 'is_authenticated', False):
+        return None
+    profile, _ = ClientProfile.objects.get_or_create(
+        user=user,
+        defaults={'role': AppRole.default_role()},
+    )
+    if not profile.role_id:
+        profile.role = AppRole.default_role()
+        profile.save(update_fields=['role', 'updated_at'])
+    return profile
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_mobile_profile_for_user(sender, instance, created, **kwargs):
+    if created:
+        ensure_client_profile(instance)

@@ -1,14 +1,15 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin, TabularInline
 
 from .models import Application, ApplicationFile, ApplicationStatusHistory
 
 
-class ApplicationFileInline(admin.TabularInline):
+class ApplicationFileInline(TabularInline):
     model = ApplicationFile
     extra = 0
     readonly_fields = ('created_at', 'updated_at')
     
-class ApplicationStatusHistoryInline(admin.TabularInline):
+class ApplicationStatusHistoryInline(TabularInline):
     model = ApplicationStatusHistory
     extra = 0
     readonly_fields = ('old_status', 'new_status', 'changed_by', 'comment', 'created_at', 'updated_at')
@@ -16,7 +17,7 @@ class ApplicationStatusHistoryInline(admin.TabularInline):
 
 
 @admin.register(Application)
-class ApplicationAdmin(admin.ModelAdmin):
+class ApplicationAdmin(ModelAdmin):
     list_display = (
         'application_number',
         'full_name',
@@ -74,13 +75,13 @@ class ApplicationAdmin(admin.ModelAdmin):
 
 
 @admin.register(ApplicationFile)
-class ApplicationFileAdmin(admin.ModelAdmin):
+class ApplicationFileAdmin(ModelAdmin):
     list_display = ('application', 'file_type', 'original_name', 'uploaded_by', 'created_at')
     list_filter = ('file_type', 'created_at')
     search_fields = ('application__application_number', 'application__full_name', 'original_name')
     
 @admin.register(ApplicationStatusHistory)
-class ApplicationStatusHistoryAdmin(admin.ModelAdmin):
+class ApplicationStatusHistoryAdmin(ModelAdmin):
     list_display = ('application', 'old_status', 'new_status', 'changed_by', 'created_at')
     list_filter = ('old_status', 'new_status', 'created_at')
     search_fields = ('application__application_number', 'application__full_name', 'comment')

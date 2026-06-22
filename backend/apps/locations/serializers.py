@@ -4,6 +4,9 @@ from .models import City, Country, Office
 
 
 class CountryListSerializer(serializers.ModelSerializer):
+    cities_count = serializers.IntegerField(source='cities.count', read_only=True)
+    universities_count = serializers.IntegerField(source='universities.count', read_only=True)
+
     class Meta:
         model = Country
         fields = (
@@ -15,11 +18,16 @@ class CountryListSerializer(serializers.ModelSerializer):
             'short_description',
             'average_tuition',
             'average_living_cost',
+            'cities_count',
+            'universities_count',
             'sort_order',
         )
 
 
 class CountryDetailSerializer(serializers.ModelSerializer):
+    cities_count = serializers.IntegerField(source='cities.count', read_only=True)
+    universities_count = serializers.IntegerField(source='universities.count', read_only=True)
+
     class Meta:
         model = Country
         fields = (
@@ -34,6 +42,8 @@ class CountryDetailSerializer(serializers.ModelSerializer):
             'work_info',
             'average_tuition',
             'average_living_cost',
+            'cities_count',
+            'universities_count',
             'meta_title',
             'meta_description',
             'created_at',
@@ -44,6 +54,8 @@ class CountryDetailSerializer(serializers.ModelSerializer):
 class CitySerializer(serializers.ModelSerializer):
     country_name = serializers.CharField(source='country.name', read_only=True)
     country_slug = serializers.CharField(source='country.slug', read_only=True)
+    cover_image = serializers.ImageField(source='image', read_only=True)
+    universities_count = serializers.IntegerField(source='universities.count', read_only=True)
 
     class Meta:
         model = City
@@ -55,11 +67,13 @@ class CitySerializer(serializers.ModelSerializer):
             'name',
             'slug',
             'image',
+            'cover_image',
             'description_markdown',
             'rent_cost',
             'food_cost',
             'transport_cost',
             'total_monthly_cost',
+            'universities_count',
             'sort_order',
         )
 
@@ -81,8 +95,13 @@ class OfficeSerializer(serializers.ModelSerializer):
             'phone',
             'whatsapp',
             'telegram',
+            'email',
             'imo',
             'work_time',
+            'instagram',
+            'tiktok',
+            'website',
+            'map_url',
             'latitude',
             'longitude',
             'image',

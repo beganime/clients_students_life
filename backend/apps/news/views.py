@@ -1,17 +1,19 @@
 from rest_framework import viewsets
 
+from apps.common.viewsets import IdOrSlugLookupMixin
+
 from .models import NewsCategory, NewsPost
 from .serializers import NewsCategorySerializer, NewsDetailSerializer, NewsListSerializer
 
 
-class NewsCategoryViewSet(viewsets.ReadOnlyModelViewSet):
+class NewsCategoryViewSet(IdOrSlugLookupMixin, viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     serializer_class = NewsCategorySerializer
     queryset = NewsCategory.objects.all().order_by('title')
     search_fields = ('title',)
 
 
-class NewsPostViewSet(viewsets.ReadOnlyModelViewSet):
+class NewsPostViewSet(IdOrSlugLookupMixin, viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     filterset_fields = ('category', 'category__slug', 'is_important')
     search_fields = ('title', 'short_description', 'content_markdown')

@@ -1,12 +1,13 @@
 from rest_framework import viewsets
 
 from apps.common.manager_sl_catalog import map_city, map_country, proxy_manager_sl_resource
+from apps.common.viewsets import IdOrSlugLookupMixin
 
 from .models import City, Country, Office
 from .serializers import CitySerializer, CountryDetailSerializer, CountryListSerializer, OfficeSerializer
 
 
-class CountryViewSet(viewsets.ReadOnlyModelViewSet):
+class CountryViewSet(IdOrSlugLookupMixin, viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     search_fields = ('name', 'short_description', 'description_markdown')
     ordering_fields = ('sort_order', 'name', 'created_at')
@@ -33,7 +34,7 @@ class CountryViewSet(viewsets.ReadOnlyModelViewSet):
         return CountryListSerializer
 
 
-class CityViewSet(viewsets.ReadOnlyModelViewSet):
+class CityViewSet(IdOrSlugLookupMixin, viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     serializer_class = CitySerializer
     filterset_fields = ('country', 'country__slug')

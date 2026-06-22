@@ -1,14 +1,16 @@
+import django_filters
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.common.manager_sl_catalog import map_program, map_university, proxy_manager_sl_resource
+from apps.common.viewsets import IdOrSlugLookupMixin
 
 from .models import FavoriteUniversity, Program, University
 from .serializers import FavoriteUniversitySerializer, ProgramSerializer, UniversityDetailSerializer, UniversityListSerializer
 
 
-class UniversityViewSet(viewsets.ReadOnlyModelViewSet):
+class UniversityViewSet(IdOrSlugLookupMixin, viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     filterset_fields = (
         'country',
@@ -79,19 +81,46 @@ class UniversityViewSet(viewsets.ReadOnlyModelViewSet):
         return UniversityListSerializer
 
 
+class ProgramFilter(django_filters.FilterSet):
+    tuition_fee_min = django_filters.NumberFilter(field_name='tuition_fee', lookup_expr='gte')
+    tuition_fee_max = django_filters.NumberFilter(field_name='tuition_fee', lookup_expr='lte')
+    country = django_filters.CharFilter(method='filter_country')
+    city = django_filters.CharFilter(method='filter_city')
+
+    class Meta:
+        model = Program
+        fields = (
+            'university',
+            'university__slug',
+            'level',
+            'language',
+            'currency',
+            'university__country',
+            'university__country__slug',
+            'university__city',
+            'university__city__slug',
+        )
+
+    def filter_country(self, queryset, name, value):
+        value = str(value or '').strip()
+        if not value:
+            return queryset
+        if value.isdigit():
+            return queryset.filter(university__country_id=int(value))
+        return queryset.filter(university__country__slug=value)
+
+    def filter_city(self, queryset, name, value):
+        value = str(value or '').strip()
+        if not value:
+            return queryset
+        if value.isdigit():
+            return queryset.filter(university__city_id=int(value))
+        return queryset.filter(university__city__slug=value)
+
+
 class ProgramViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProgramSerializer
-    filterset_fields = (
-        'university',
-        'university__slug',
-        'level',
-        'language',
-        'currency',
-        'university__country',
-        'university__country__slug',
-        'university__city',
-        'university__city__slug',
-    )
+    filterset_class = ProgramFilter
     search_fields = ('title', 'faculty', 'specialty', 'requirements', 'university__name')
     ordering_fields = ('sort_order', 'title', 'tuition_fee', 'created_at')
     ordering = ('university__name', 'sort_order', 'title')

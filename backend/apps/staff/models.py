@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.deletion import PROTECT
 
 from apps.common.models import TimeStampedModel, SortableModel
 from apps.locations.models import Office
@@ -8,9 +10,7 @@ from apps.locations.models import Office
 class StaffProfile(TimeStampedModel, SortableModel):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=PROTECT,
         related_name='staff_profile',
         verbose_name='Пользователь'
     )
@@ -41,3 +41,11 @@ class StaffProfile(TimeStampedModel, SortableModel):
 
     def __str__(self):
         return self.full_name
+
+    def clean(self):
+        super().clean()
+        if not self.user_id:
+            raise ValidationError({'user': 'Select a user for this staff profile.'})
+        duplicate = StaffProfile.objects.filter(user=self.user).exclude(pk=self.pk).exists()
+        if duplicate:
+            raise ValidationError({'user': 'This user already has a staff profile.'})
