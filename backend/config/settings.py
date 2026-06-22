@@ -126,19 +126,51 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+DEFAULT_LOCAL_WEB_ORIGINS = [
+    'http://localhost:3000',
+    'http://localhost:8081',
+    'http://localhost:19000',
+    'http://localhost:19006',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:8081',
+    'http://127.0.0.1:19000',
+    'http://127.0.0.1:19006',
+]
+
+DEFAULT_PRODUCTION_ORIGINS = [
+    'https://stud-life.com',
+    'https://www.stud-life.com',
+]
+
 CORS_ALLOW_ALL_ORIGINS = DEBUG and config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 
-CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8081,http://127.0.0.1:3000',
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys([
+    *config(
+        'CORS_ALLOWED_ORIGINS',
+        default=','.join(DEFAULT_LOCAL_WEB_ORIGINS + DEFAULT_PRODUCTION_ORIGINS),
+        cast=Csv(),
+    ),
+    *DEFAULT_LOCAL_WEB_ORIGINS,
+]))
+
+CORS_ALLOWED_ORIGIN_REGEXES = config(
+    'CORS_ALLOWED_ORIGIN_REGEXES',
+    default=r'^http://localhost:\d+$,^http://127\.0\.0\.1:\d+$',
     cast=Csv(),
 )
 
-CSRF_TRUSTED_ORIGINS = config(
-    'CSRF_TRUSTED_ORIGINS',
-    default='http://localhost:3000,http://localhost:8081,http://127.0.0.1:8081,http://127.0.0.1:3000',
-    cast=Csv(),
-)
+CORS_ALLOW_CREDENTIALS = config('CORS_ALLOW_CREDENTIALS', default=True, cast=bool)
+CORS_ALLOW_PRIVATE_NETWORK = config('CORS_ALLOW_PRIVATE_NETWORK', default=True, cast=bool)
+
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([
+    *config(
+        'CSRF_TRUSTED_ORIGINS',
+        default=','.join(DEFAULT_LOCAL_WEB_ORIGINS + DEFAULT_PRODUCTION_ORIGINS),
+        cast=Csv(),
+    ),
+    *DEFAULT_LOCAL_WEB_ORIGINS,
+    *DEFAULT_PRODUCTION_ORIGINS,
+]))
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-device-platform',

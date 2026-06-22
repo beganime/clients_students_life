@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.hashers import make_password
 from django.db import migrations, models
 import django.db.models.deletion
 
@@ -23,7 +24,7 @@ def attach_placeholder_users(apps, schema_editor):
             last_name=' '.join((staff.full_name or '').split(' ')[1:])[:150],
             is_active=False,
         )
-        user.set_unusable_password()
+        user.password = make_password(None)
         user.save()
         staff.user = user
         staff.save(update_fields=['user'])
