@@ -32,4 +32,4 @@ export const MANAGER_SL_ROOT_URL = MANAGER_SL_API_BASE_URL.replace(/\/api\/clien
 export const PRIVACY_POLICY_URL = `${API_ROOT_URL}/privacy-policy/`;
 
 export const APP_NAME = "Student's Life";
-export const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
+export const APP_VERSION = Constants.expoConfig?.version || '1.0.2';
