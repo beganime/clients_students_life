@@ -16,14 +16,11 @@ const RAW_RANKINGS = `
 Беларусь|851-900|Belarusian National Technical University
 Россия|17|Lomonosov Moscow State University
 Россия|47|Saint Petersburg State University
-Россия|59|Moscow Institute of Physics and Technology
-Россия|105|Lomonosov Moscow State University
-Россия|133|Lomonosov Moscow State University
+Россия|59|Moscow Institute of Physics and Technol
 Россия|137|National Research University Higher School of Economics (HSE)
 Россия|201–250|Bauman Moscow State Technical University
 Россия|238|Novosibirsk State University
 Россия|284|RUDN University
-Россия|290|Bauman Moscow State Technical University
 Россия|301-350|MISIS University
 Россия|301-350|Moscow State Institute of International Relations
 Россия|301-350|Ural Federal University
@@ -44,24 +41,18 @@ const RAW_RANKINGS = `
 Россия|461|Novosibirsk State University
 Россия|499|Tomsk State University
 Россия|501-550|Innopolis University
-Россия|501-550|Kazan Federal University
-Россия|501–600|Kazan Federal University
-Россия|519|Ural Federal University
 Россия|591|National Research Nuclear University MEPhI (Moscow Engineering Physics Institute)
-Россия|601–800|RUDN University
 Россия|601–800|Siberian Federal University
 Россия|601–800|Tomsk Polytechnic University
 Россия|650|MGIMO University
 Россия|651-700|Financial University under the Government of the Russian Federation
 Россия|651-700|Moscow Aviation Institute (National Research University)
-Россия|688|Tomsk Polytechnic University
 Россия|701-800|Bashkir State Medical University
 Россия|701-800|Far Eastern Federal University
 Россия|701-800|National Research Lobachevsky State University of Nizhny Novgorod
 Россия|701-800|Plekhanov Russian University of Economics
 Россия|701-800|Saint-Petersburg Mining University
 Россия|701-800|Southern Federal University
-Россия|711-720|ITMO University
 Россия|721-730|National University of Science and Technology MISiS
 Россия|731-740|Far Eastern Federal University
 Россия|801-900|Gubkin Russian State University of Oil and Gas (National Research University)
@@ -94,7 +85,6 @@ const RAW_RANKINGS = `
 Турция|601–800|Yıldız Technical University
 Турция|628|Istanbul University
 Турция|697|Ankara Üniversitesi
-Турция|731-740|Yildiz Technical University
 Турция|801–1000|Abdullah Gül University
 Турция|801–1000|Atatürk University
 Турция|801–1000|Bahçeşehir University
