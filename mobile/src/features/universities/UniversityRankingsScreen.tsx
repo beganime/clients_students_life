@@ -7,9 +7,9 @@ import { AppCard } from '../../components/AppCard';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
+import { RANKINGS_DOCUMENT_FILE_NAME, RANKINGS_DOCUMENT_URL } from './documentDownload';
 
-const DOCUMENT_URL =
-  './src/assets/documents/Список_вузов 202627.docx';
+const DOCUMENT_URL = RANKINGS_DOCUMENT_URL;
 
 const RAW_RANKINGS = `
 Беларусь|447|Belarusian State University
@@ -142,7 +142,7 @@ export function UniversityRankingsScreen() {
     } catch (error) {
       Alert.alert(
         'Не удалось открыть документ',
-        'Проверьте интернет или замените файл в mobile/src/assets/documents/universities-2026-2027.csv.',
+        `Проверьте интернет или замените файл ${RANKINGS_DOCUMENT_FILE_NAME} в mobile/src/assets/documents/.`,
       );
     }
   };
@@ -174,7 +174,7 @@ export function UniversityRankingsScreen() {
       <AppCard style={styles.downloadCard}>
         <Text style={styles.downloadTitle}>Файл для кнопки скачивания</Text>
         <Text style={styles.downloadText}>
-          Документ лежит в папке assets: mobile/src/assets/documents/universities-2026-2027.csv. Можно заменить его на обновлённый файл с таким же названием.
+          Документ лежит в папке assets: mobile/src/assets/documents/{RANKINGS_DOCUMENT_FILE_NAME}. Если замените файл, оставьте такое же имя.
         </Text>
         <AppButton title="Скачать документ" variant="secondary" onPress={handleDownload} />
       </AppCard>
