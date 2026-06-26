@@ -9,7 +9,7 @@ import { Screen } from '../../components/Screen';
 import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
 
 const DOCUMENT_URL =
-  'https://raw.githubusercontent.com/beganime/clients_students_life/main/mobile/src/assets/documents/universities-2026-2027.csv';
+  './src/assets/documents/Список_вузов 202627.docx';
 
 const RAW_RANKINGS = `
 Беларусь|447|Belarusian State University
