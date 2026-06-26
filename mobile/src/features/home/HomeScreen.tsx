@@ -56,6 +56,11 @@ export function HomeScreen() {
         <View style={styles.heroActions}>
           <AppButton title="Посмотреть вузы" onPress={() => navigation.navigate('Universities')} />
           <AppButton
+            title="Список вузов 2026–2027"
+            variant="secondary"
+            onPress={() => navigation.navigate('UniversityRankings')}
+          />
+          <AppButton
             title="Оставить заявку"
             variant="outline"
             onPress={() => navigation.navigate('ApplicationCreate')}
@@ -122,6 +127,11 @@ export function HomeScreen() {
       <SectionHeader eyebrow="Быстрые действия" title="Что нужно студенту" />
       <View style={styles.serviceGrid}>
         <QuickService icon="university" title="Вузы" onPress={() => navigation.navigate('Universities')} />
+        <QuickService
+          icon="document"
+          title="Список вузов 2026–2027"
+          onPress={() => navigation.navigate('UniversityRankings')}
+        />
         <QuickService
           icon="application"
           title="Поступить"
