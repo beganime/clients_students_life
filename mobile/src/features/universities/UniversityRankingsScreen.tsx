@@ -171,13 +171,6 @@ export function UniversityRankingsScreen() {
         ))}
       </View>
 
-      <AppCard style={styles.downloadCard}>
-        <Text style={styles.downloadTitle}>Файл для кнопки скачивания</Text>
-        <Text style={styles.downloadText}>
-          Документ лежит в папке assets: mobile/src/assets/documents/{RANKINGS_DOCUMENT_FILE_NAME}. Если замените файл, оставьте такое же имя.
-        </Text>
-        <AppButton title="Скачать документ" variant="secondary" onPress={handleDownload} />
-      </AppCard>
 
       <Text style={styles.sectionTitle}>Рейтинг вузов</Text>
       <Text style={styles.sectionText}>
