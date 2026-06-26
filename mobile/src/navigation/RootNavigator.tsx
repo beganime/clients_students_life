@@ -24,12 +24,14 @@ import { CountryDetailScreen } from '../features/universities/CountryDetailScree
 import { FavoriteUniversitiesScreen } from '../features/universities/FavoriteUniversitiesScreen';
 import { ProgramDetailScreen } from '../features/universities/ProgramDetailScreen';
 import { UniversityDetailScreen } from '../features/universities/UniversityDetailScreen';
+import { UniversityRankingsScreen } from '../features/universities/UniversityRankingsScreen';
 
 import { AppNavigator } from './AppNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const UNIVERSITY_RANKINGS_ROUTE = 'UniversityRankings' as const;
 
 export function RootNavigator() {
   const { bootstrap, isLoading } = useAuthStore();
@@ -50,6 +52,7 @@ export function RootNavigator() {
         <Stack.Screen name="CountryDetail" component={CountryDetailScreen} options={{ title: 'Страна' }} />
         <Stack.Screen name="CityDetail" component={CityDetailScreen} options={{ title: 'Город' }} />
         <Stack.Screen name="UniversityDetail" component={UniversityDetailScreen} options={{ title: 'Университет' }} />
+        <Stack.Screen name={UNIVERSITY_RANKINGS_ROUTE} component={UniversityRankingsScreen} options={{ title: 'Вузы 2026–2027' }} />
         <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} options={{ title: 'Программа' }} />
         <Stack.Screen name="NewsDetail" component={NewsDetailScreen} options={{ title: 'Новость' }} />
         <Stack.Screen name="KnowledgeList" component={KnowledgeListScreen} options={{ title: 'База знаний' }} />
