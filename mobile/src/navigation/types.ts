@@ -22,6 +22,7 @@ export type RootStackParamList = {
   CountryDetail: { id: number | string };
   CityDetail: { id: number | string; countryId?: number | string };
   UniversityDetail: { id: number | string };
+  UniversityRankings: undefined;
   ProgramDetail: { id: number | string };
   NewsDetail: { slug: string };
   KnowledgeList: undefined;
