@@ -33,9 +33,9 @@ const gradientStops = [
 ] as const;
 
 const imageGradientStops = [
-  ['0%', '#B8201A', 0.42],
-  ['50%', '#B71D17', 0.34],
-  ['100%', '#7F1D1D', 0.54],
+  ['0%', '#000000', 0],
+  ['50%', '#000000', 0],
+  ['100%', '#000000', 0],
 ] as const;
 
 export function HeroBanner({
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(20,0,0,0.14)',
+    backgroundColor: 'transparent',
   },
   watermark: {
     position: 'absolute',
