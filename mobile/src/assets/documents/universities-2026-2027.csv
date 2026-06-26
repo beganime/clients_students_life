@@ -1,1 +1,11 @@
-placeholder
+Страна;Рейтинг (Место);Название университета
+Беларусь;447;Belarusian State University
+Беларусь;851-900;Belarusian National Technical University
+Россия;17;Lomonosov Moscow State University
+Россия;47;Saint Petersburg State University
+Россия;59;Moscow Institute of Physics and Technology
+Турция;269;Middle East Technical University
+Турция;298;Istanbul Technical University
+Узбекистан;721-730;National University of Uzbekistan
+
+Полная таблица уже встроена в страницу приложения. Этот файл можно заменить на полный документ с тем же названием.
