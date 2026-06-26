@@ -79,7 +79,6 @@ export function SettingsScreen() {
       <AppCard style={styles.aboutCard}>
         <Text style={styles.aboutTitle}>{APP_NAME}</Text>
         <Text style={styles.aboutText}>Версия {APP_VERSION}</Text>
-        <Text style={styles.aboutText}>Каталог: {MANAGER_SL_API_BASE_URL}</Text>
       </AppCard>
     </Screen>
   );
