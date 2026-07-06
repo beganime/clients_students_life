@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from apps.common.models import TimeStampedModel
 from apps.services.models import Service
@@ -167,6 +168,11 @@ class Application(TimeStampedModel):
 
 
 class ApplicationFile(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'На проверке'
+        APPROVED = 'approved', 'Принят'
+        REJECTED = 'rejected', 'Не принят'
+
     class FileType(models.TextChoices):
         PASSPORT = 'passport', 'Паспорт'
         CERTIFICATE = 'certificate', 'Аттестат'
@@ -192,6 +198,9 @@ class ApplicationFile(TimeStampedModel):
         blank=True,
         verbose_name='Кем загружен'
     )
+    status = models.CharField('Статус проверки', max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    admin_comment = models.TextField('Комментарий менеджера', blank=True)
+    reviewed_at = models.DateTimeField('Дата проверки', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Файл заявки'
@@ -200,7 +209,8 @@ class ApplicationFile(TimeStampedModel):
 
     def __str__(self):
         return self.original_name or str(self.file)
-    
+
+
 class ApplicationStatusHistory(TimeStampedModel):
     application = models.ForeignKey(
         Application,
@@ -227,6 +237,7 @@ class ApplicationStatusHistory(TimeStampedModel):
     def __str__(self):
         return f'{self.application.application_number}: {self.old_status} → {self.new_status}'
 
+
 @receiver(pre_save, sender=Application)
 def store_old_application_status(sender, instance, **kwargs):
     if not instance.pk:
@@ -252,7 +263,7 @@ def create_application_status_history(sender, instance, created, **kwargs):
 
     old_status = getattr(instance, '_old_status', None)
     if old_status is not None and old_status != instance.status:
-            ApplicationStatusHistory.objects.create(
+        ApplicationStatusHistory.objects.create(
             application=instance,
             old_status=old_status,
             new_status=instance.status,
