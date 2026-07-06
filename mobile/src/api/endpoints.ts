@@ -9,6 +9,7 @@ import {
   FavoriteUniversity,
   HomeContent,
   KnowledgeArticle,
+  MyDocument,
   NewsPost,
   PaginatedResponse,
   Program,
@@ -263,6 +264,30 @@ export const applicationsApi = {
       },
     );
 
+    return data;
+  },
+};
+
+export const documentsApi = {
+  async getMyDocuments() {
+    const { data } = await apiClient.get<MyDocument[]>('/documents/my-documents/');
+    return data;
+  },
+
+  async uploadMyDocument(documentTypeId: number, file: { uri: string; name: string; type: string }, hasTranslation: boolean) {
+    const formData = new FormData();
+    formData.append('has_translation', hasTranslation ? 'true' : 'false');
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: file.type,
+    } as any);
+
+    const { data } = await apiClient.post<MyDocument>(`/documents/my-documents/${documentTypeId}/upload/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return data;
   },
 };

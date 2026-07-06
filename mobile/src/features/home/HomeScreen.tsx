@@ -19,6 +19,7 @@ import { Screen } from '../../components/Screen';
 import { SectionHeader } from '../../components/SectionHeader';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
+import { useAuthStore } from '../../store/authStore';
 import { Country } from '../../types/api';
 
 const { width } = Dimensions.get('window');
@@ -33,6 +34,7 @@ const QUICK_CARD_WIDTH =
 
 export function HomeScreen() {
   const navigation = useNavigation<any>();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const countriesQuery = useQuery({
     queryKey: ['catalog', 'countries', 'home'],
     queryFn: () => educationCatalogApi.getCountries(),
@@ -65,6 +67,13 @@ export function HomeScreen() {
             variant="outline"
             onPress={() => navigation.navigate('ApplicationCreate')}
           />
+          {isAuthenticated ? (
+            <AppButton
+              title="Мои документы"
+              variant="secondary"
+              onPress={() => navigation.navigate('MyDocuments')}
+            />
+          ) : null}
         </View>
       </RedGradientHero>
 
@@ -139,6 +148,7 @@ export function HomeScreen() {
         />
         <QuickService icon="visa" title="Виза" onPress={() => navigation.navigate('VisaInfo')} />
         <QuickService icon="mapPin" title="Туры" onPress={() => navigation.navigate('ToursInfo')} />
+        {isAuthenticated ? <QuickService icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} /> : null}
       </View>
 
       <AppCard style={styles.registerCard}>

@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 
 from .models import AppRole, AppUserActivity, ensure_client_profile
+from .manager_sl_sync import sync_mobile_client_to_manager_sl
 from .serializers import LoginSerializer, RegisterSerializer, UserMeSerializer
 
 
@@ -46,6 +47,7 @@ class RegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        sync_mobile_client_to_manager_sl(user)
         response_serializer = UserMeSerializer(user, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -93,7 +95,8 @@ class MeView(APIView):
             context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = serializer.save()
+        sync_mobile_client_to_manager_sl(user)
         return Response(serializer.data)
 
 

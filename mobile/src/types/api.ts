@@ -206,6 +206,25 @@ export type ChatRoom = {
   updated_at: string;
 };
 
+export type MyDocumentStatus = 'not_uploaded' | 'pending' | 'approved' | 'rejected';
+
+export type MyDocument = {
+  id: number;
+  document_id?: number | null;
+  title: string;
+  description?: string;
+  is_required: boolean;
+  translation_required: boolean;
+  has_translation: boolean;
+  status: MyDocumentStatus;
+  file?: string | null;
+  original_name?: string;
+  admin_comment?: string;
+  uploaded_at?: string | null;
+  reviewed_at?: string | null;
+  updated_at?: string | null;
+};
+
 export type ChatAttachment = {
   id: number;
   url?: string | null;

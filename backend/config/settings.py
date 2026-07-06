@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'apps.knowledge_base',
     'apps.chat',
     'apps.notifications',
+    'apps.documents',
     'apps.common',
 ]
 

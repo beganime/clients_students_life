@@ -11,6 +11,7 @@ import { MyApplicationsScreen } from '../features/applications/MyApplicationsScr
 import { ChatListScreen } from '../features/chat/ChatListScreen';
 import { ChatRoomScreen } from '../features/chat/ChatRoomScreen';
 import { AdmissionInfoScreen, ToursInfoScreen, VisaInfoScreen } from '../features/info/InfoScreens';
+import { MyDocumentsScreen } from '../features/documents/MyDocumentsScreen';
 import { KnowledgeDetailScreen } from '../features/knowledge/KnowledgeDetailScreen';
 import { KnowledgeListScreen } from '../features/knowledge/KnowledgeListScreen';
 import { NewsDetailScreen } from '../features/news/NewsDetailScreen';
@@ -67,6 +68,7 @@ export function RootNavigator() {
         <Stack.Screen name="ApplicationCreate" component={ApplicationCreateScreen} options={{ title: 'Подать заявку' }} />
         <Stack.Screen name="Chat" component={ChatListScreen} options={{ title: 'Чат с менеджером' }} />
         <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'Мои заявки' }} />
+        <Stack.Screen name="MyDocuments" component={MyDocumentsScreen} options={{ title: 'Мои документы' }} />
         <Stack.Screen name="FavoriteUniversities" component={FavoriteUniversitiesScreen} options={{ title: 'Избранные вузы' }} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Уведомления' }} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Редактировать профиль' }} />

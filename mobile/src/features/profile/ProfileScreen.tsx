@@ -86,9 +86,9 @@ export function ProfileScreen() {
 
       <View style={styles.quickGrid}>
         <QuickAction icon="document" title="Мои заявки" onPress={() => navigation.navigate('MyApplications')} />
+        <QuickAction icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
         <QuickAction icon="chat" title="Мои чаты" onPress={() => navigation.navigate('Chat')} />
         <QuickAction icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
-        <QuickAction icon="heart" title="Избранное" onPress={() => navigation.navigate('FavoriteUniversities')} />
       </View>
 
       <AppCard style={styles.infoCard}>
@@ -112,6 +112,7 @@ export function ProfileScreen() {
         <ProfileMenuItem icon="edit" title="Редактировать профиль" onPress={() => navigation.navigate('EditProfile')} />
         <ProfileMenuItem icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
         <ProfileMenuItem icon="document" title={isManager ? 'Заявки клиентов' : 'Мои заявки'} onPress={() => navigation.navigate('MyApplications')} />
+        <ProfileMenuItem icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
         {!isManager ? <ProfileMenuItem icon="application" title="Подать новую заявку" onPress={() => navigation.navigate('ApplicationCreate')} /> : null}
         <ProfileMenuItem icon="chat" title={isManager ? 'Входящие чаты клиентов' : 'Чат с менеджером'} onPress={() => navigation.navigate('Chat')} />
         <ProfileMenuItem icon="services" title="Настройки" onPress={() => navigation.navigate('Settings')} />
