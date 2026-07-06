@@ -52,6 +52,32 @@ def send_document_review_push(user, status_value, document_title='', comment='',
     )
 
 
+def update_application_file_review(application_file, status_value, comment):
+    application_file.status = status_value
+    application_file.admin_comment = comment
+    application_file.reviewed_at = timezone.now() if status_value in {ApplicationFile.Status.APPROVED, ApplicationFile.Status.REJECTED} else None
+    application_file.save(update_fields=['status', 'admin_comment', 'reviewed_at', 'updated_at'])
+    user = application_file.application.user or application_file.uploaded_by
+    document_title = application_file.original_name or application_file.get_file_type_display() or str(application_file.file)
+    send_document_review_push(
+        user=user,
+        status_value=status_value,
+        document_title=document_title,
+        comment=comment,
+        related_object_type='application_file',
+        related_object_id=application_file.id,
+    )
+    return {
+        'id': application_file.id,
+        'application_id': application_file.application_id,
+        'status': application_file.status,
+        'status_display': application_file.get_status_display(),
+        'admin_comment': application_file.admin_comment,
+        'reviewed_at': application_file.reviewed_at,
+        'detail': 'Application file review saved.',
+    }
+
+
 class MyDocumentViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [JSONParser, FormParser, MultiPartParser]
@@ -152,6 +178,15 @@ class ExternalDocumentReviewView(APIView):
 
         comment = str(request.data.get('admin_comment') or request.data.get('comment') or '').strip()
 
+        application_file = (
+            ApplicationFile.objects
+            .select_related('application', 'application__user', 'uploaded_by')
+            .filter(pk=document_id)
+            .first()
+        )
+        if application_file:
+            return Response(update_application_file_review(application_file, status_value, comment))
+
         document = UserDocument.objects.select_related('document_type', 'user').filter(pk=document_id).first()
         if document:
             document.status = status_value
@@ -160,29 +195,4 @@ class ExternalDocumentReviewView(APIView):
             document.save(update_fields=['status', 'admin_comment', 'reviewed_at', 'updated_at'])
             return Response(MyDocumentSerializer(document, context={'request': request}).data)
 
-        application_file = (
-            ApplicationFile.objects
-            .select_related('application', 'application__user', 'uploaded_by')
-            .filter(pk=document_id)
-            .first()
-        )
-        if not application_file:
-            return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-        user = application_file.application.user or application_file.uploaded_by
-        document_title = application_file.original_name or application_file.get_file_type_display() or str(application_file.file)
-        send_document_review_push(
-            user=user,
-            status_value=status_value,
-            document_title=document_title,
-            comment=comment,
-            related_object_type='application_file',
-            related_object_id=application_file.id,
-        )
-        return Response({
-            'id': application_file.id,
-            'application_id': application_file.application_id,
-            'status': status_value,
-            'admin_comment': comment,
-            'detail': 'Application file review notification processed.',
-        })
+        return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
