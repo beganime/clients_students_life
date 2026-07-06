@@ -56,7 +56,35 @@ class MyQuestionnaireView(APIView):
 
     def patch(self, request):
         questionnaire = get_or_create_questionnaire(request.user)
-        serializer = ApplicantQuestionnaireUpdateSerializer(questionnaire, data=request.data, partial=True)
+        serializer = ApplicantQuestionnaireUpdateSerializer(
+            questionnaire,
+            data=request.data,
+            partial=True,
+            context={'request': request, 'require_consent': False},
+        )
+        serializer.is_valid(raise_exception=True)
+        questionnaire = serializer.save()
+        questionnaire.manager_sl_sync_status = 'pending'
+        questionnaire.save(update_fields=['manager_sl_sync_status', 'updated_at'])
+        response_serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
+        return Response(response_serializer.data)
+
+    def post(self, request):
+        return self.patch(request)
+
+
+class MyQuestionnaireSubmitView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+
+    def post(self, request):
+        questionnaire = get_or_create_questionnaire(request.user)
+        serializer = ApplicantQuestionnaireUpdateSerializer(
+            questionnaire,
+            data=request.data,
+            partial=True,
+            context={'request': request, 'require_consent': True},
+        )
         serializer.is_valid(raise_exception=True)
         questionnaire = serializer.save()
         questionnaire.mark_submitted()
@@ -64,9 +92,6 @@ class MyQuestionnaireView(APIView):
         sync_questionnaire_to_manager_sl(questionnaire, request=request)
         response_serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
         return Response(response_serializer.data)
-
-    def post(self, request):
-        return self.patch(request)
 
 
 class MyQuestionnaireAttachmentView(APIView):
@@ -83,7 +108,6 @@ class MyQuestionnaireAttachmentView(APIView):
         attachment = serializer.save()
         questionnaire.manager_sl_sync_status = 'pending'
         questionnaire.save(update_fields=['manager_sl_sync_status', 'updated_at'])
-        sync_questionnaire_to_manager_sl(questionnaire, request=request)
         return Response(
             QuestionnaireAttachmentSerializer(attachment, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
