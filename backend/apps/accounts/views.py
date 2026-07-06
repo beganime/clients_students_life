@@ -14,6 +14,31 @@ def clean_device_value(value, max_length=255):
     return str(value or '').strip()[:max_length]
 
 
+def normalize_me_payload(data):
+    user_fields = ('email', 'first_name', 'last_name')
+    profile_fields = ('phone', 'whatsapp', 'telegram', 'country', 'city', 'citizenship', 'avatar', 'language')
+    payload = {}
+
+    for field in user_fields:
+        if field in data:
+            payload[field] = data.get(field)
+
+    profile_data = {}
+    raw_profile = data.get('profile') if hasattr(data, 'get') else None
+    if isinstance(raw_profile, dict):
+        profile_data.update(raw_profile)
+
+    for field in profile_fields:
+        dotted = f'profile.{field}'
+        if dotted in data:
+            profile_data[field] = data.get(dotted)
+
+    if profile_data:
+        payload['profile'] = profile_data
+
+    return payload or data
+
+
 def ensure_manager_role(user):
     manager_role, _ = AppRole.objects.get_or_create(
         code=AppRole.MANAGER,
@@ -90,7 +115,7 @@ class MeView(APIView):
     def patch(self, request):
         serializer = UserMeSerializer(
             request.user,
-            data=request.data,
+            data=normalize_me_payload(request.data),
             partial=True,
             context={'request': request},
         )

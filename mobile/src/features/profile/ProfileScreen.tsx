@@ -87,6 +87,7 @@ export function ProfileScreen() {
       <View style={styles.quickGrid}>
         <QuickAction icon="document" title="Мои заявки" onPress={() => navigation.navigate('MyApplications')} />
         <QuickAction icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
+        <QuickAction icon="application" title="Анкета" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
         <QuickAction icon="chat" title="Мои чаты" onPress={() => navigation.navigate('Chat')} />
         <QuickAction icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
       </View>
@@ -113,9 +114,11 @@ export function ProfileScreen() {
         <ProfileMenuItem icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
         <ProfileMenuItem icon="document" title={isManager ? 'Заявки клиентов' : 'Мои заявки'} onPress={() => navigation.navigate('MyApplications')} />
         <ProfileMenuItem icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
+        <ProfileMenuItem icon="application" title="Анкета абитуриента" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
         {!isManager ? <ProfileMenuItem icon="application" title="Подать новую заявку" onPress={() => navigation.navigate('ApplicationCreate')} /> : null}
         <ProfileMenuItem icon="chat" title={isManager ? 'Входящие чаты клиентов' : 'Чат с менеджером'} onPress={() => navigation.navigate('Chat')} />
         <ProfileMenuItem icon="services" title="Настройки" onPress={() => navigation.navigate('Settings')} />
+        <ProfileMenuItem icon="lock" title="Согласие на обработку данных" onPress={() => navigation.navigate('DataConsent')} />
         <ProfileMenuItem icon="document" title="Политика конфиденциальности" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
       </View>
 

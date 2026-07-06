@@ -135,11 +135,11 @@ def notify_user_document_review(sender, instance, created, **kwargs):
         from apps.notifications.services import send_push_to_user
 
         if instance.status == UserDocument.Status.APPROVED:
-            title = 'Документы приняты!'
-            body = 'Ваши документы проверены и приняты.'
+            title = 'Документ принят'
+            body = 'Ваш документ успешно проверен и принят.'
         else:
-            title = 'Документы не приняты'
-            body = 'Некоторые документы нужно исправить. Откройте раздел “Мои документы”, чтобы посмотреть комментарий.'
+            title = 'Документ не подходит'
+            body = 'Ваш документ не принят. Посмотрите комментарий менеджера и загрузите исправленный файл.'
 
         send_push_to_user(
             user=instance.user,

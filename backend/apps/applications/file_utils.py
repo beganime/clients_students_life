@@ -1,4 +1,5 @@
 import os
+import mimetypes
 
 from django.conf import settings
 from PIL import Image, UnidentifiedImageError
@@ -28,6 +29,9 @@ def validate_application_file(uploaded):
     original_name = clean_original_name(uploaded)
     extension = os.path.splitext(original_name)[1].lower()
     content_type = str(getattr(uploaded, 'content_type', '') or '').lower()
+    if not content_type or content_type == 'application/octet-stream':
+        guessed_type, _ = mimetypes.guess_type(original_name)
+        content_type = (guessed_type or content_type).lower()
     allowed_extensions = ALLOWED_APPLICATION_FILE_TYPES.get(content_type)
 
     if not allowed_extensions or extension not in allowed_extensions:

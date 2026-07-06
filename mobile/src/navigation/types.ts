@@ -36,6 +36,8 @@ export type RootStackParamList = {
 
   MyApplications: undefined;
   MyDocuments: undefined;
+  ApplicantQuestionnaire: undefined;
+  DataConsent: undefined;
   FavoriteUniversities: undefined;
   Notifications: undefined;
   Chat: undefined;

@@ -21,7 +21,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
     def get_throttles(self):
         if self.action == 'send_message':
-            has_upload = bool(self.request.FILES.get('image'))
+            has_upload = bool(self.request.FILES.get('image') or self.request.FILES.get('file'))
             self.throttle_scope = 'chat_upload' if has_upload else 'chat_message'
         elif self.action == 'create':
             self.throttle_scope = 'chat_message'

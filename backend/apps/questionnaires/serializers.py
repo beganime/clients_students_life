@@ -1,0 +1,159 @@
+import json
+
+from rest_framework import serializers
+
+from apps.applications.file_utils import clean_original_name, validate_application_file
+
+from .models import ApplicantQuestionnaire, QuestionnaireAttachment
+
+
+def absolute_file_url(request, file_field):
+    if not file_field:
+        return None
+    try:
+        url = file_field.url
+    except ValueError:
+        return None
+    return request.build_absolute_uri(url) if request else url
+
+
+class QuestionnaireAttachmentSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QuestionnaireAttachment
+        fields = ('id', 'file', 'original_name', 'file_type', 'created_at')
+
+    def get_file(self, obj):
+        return absolute_file_url(self.context.get('request'), obj.file)
+
+
+class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
+    face_photo = serializers.SerializerMethodField()
+    attachments = QuestionnaireAttachmentSerializer(many=True, read_only=True)
+    generated_document_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ApplicantQuestionnaire
+        fields = (
+            'id',
+            'status',
+            'full_name',
+            'birth_date',
+            'gender',
+            'citizenship',
+            'marital_status',
+            'face_photo',
+            'residence_country',
+            'residence_region',
+            'residence_city',
+            'residence_street',
+            'residence_house',
+            'residence_postal_code',
+            'passport_number',
+            'passport_issued_by',
+            'passport_issue_date',
+            'passport_expiry_date',
+            'phone',
+            'email',
+            'extra_phone',
+            'imo',
+            'telegram',
+            'preferred_contact_method',
+            'parent_full_name',
+            'parent_relation',
+            'parent_contacts',
+            'parent_workplace',
+            'family_members',
+            'education_level',
+            'school_class',
+            'school_name',
+            'school_country',
+            'school_city',
+            'graduation_year',
+            'education_status',
+            'achievements',
+            'languages',
+            'desired_program',
+            'admission_goal',
+            'desired_city',
+            'desired_country',
+            'desired_language',
+            'desired_education_level',
+            'admission_urgency',
+            'help_needed',
+            'has_visa',
+            'visa_country',
+            'visa_city',
+            'visa_valid_until',
+            'has_international_passport',
+            'hobbies',
+            'applicant_comment',
+            'referral_source',
+            'data_processing_consent',
+            'submitted_at',
+            'attachments',
+            'generated_document_url',
+            'updated_at',
+        )
+        read_only_fields = ('id', 'status', 'submitted_at', 'attachments', 'generated_document_url', 'updated_at')
+
+    def get_face_photo(self, obj):
+        return absolute_file_url(self.context.get('request'), obj.face_photo)
+
+    def get_generated_document_url(self, obj):
+        return obj.manager_sl_document_url or ''
+
+
+class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApplicantQuestionnaire
+        exclude = (
+            'user',
+            'created_at',
+            'updated_at',
+            'submitted_at',
+            'status',
+            'manager_sl_questionnaire_id',
+            'manager_sl_document_url',
+            'manager_sl_sync_status',
+            'manager_sl_sync_error',
+        )
+
+    def to_internal_value(self, data):
+        mutable = data.copy() if hasattr(data, 'copy') else dict(data)
+        for field in ('achievements', 'languages', 'help_needed'):
+            value = mutable.get(field)
+            if isinstance(value, str):
+                try:
+                    mutable[field] = json.loads(value) if value.strip() else []
+                except json.JSONDecodeError:
+                    mutable[field] = [item.strip() for item in value.split(',') if item.strip()]
+        return super().to_internal_value(mutable)
+
+    def validate(self, attrs):
+        consent = attrs.get('data_processing_consent', getattr(self.instance, 'data_processing_consent', False))
+        if not consent:
+            raise serializers.ValidationError({
+                'data_processing_consent': 'Необходимо согласие на обработку персональных данных.',
+            })
+        return attrs
+
+
+class QuestionnaireAttachmentUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionnaireAttachment
+        fields = ('file',)
+
+    def validate_file(self, value):
+        validate_application_file(value)
+        return value
+
+    def create(self, validated_data):
+        uploaded_file = validated_data['file']
+        return QuestionnaireAttachment.objects.create(
+            questionnaire=self.context['questionnaire'],
+            file=uploaded_file,
+            original_name=clean_original_name(uploaded_file),
+            file_type=getattr(uploaded_file, 'content_type', '') or '',
+        )

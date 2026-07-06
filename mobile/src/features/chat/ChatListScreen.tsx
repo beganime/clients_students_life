@@ -75,7 +75,13 @@ function ChatListContent() {
         }
         renderItem={({ item }) => {
           const title = isManager ? item.user_name || 'Клиент' : 'Чат с менеджером';
-          const lastText = item.last_message?.text || (item.last_message?.message_type === 'image' ? 'Фото' : 'Сообщений пока нет');
+          const lastText =
+            item.last_message?.text ||
+            (item.last_message?.message_type === 'image'
+              ? 'Фото'
+              : item.last_message?.message_type === 'file'
+                ? 'Файл'
+                : 'Сообщений пока нет');
           return (
             <AnimatedPressable style={styles.cardWrap} onPress={() => navigation.navigate('ChatRoom', { id: item.id })}>
               <AppCard style={styles.card}>

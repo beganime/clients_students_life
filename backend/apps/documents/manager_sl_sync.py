@@ -26,8 +26,6 @@ def build_document_payload(document, request=None):
         'title': compact(document.document_type.title, 255),
         'description': compact(document.document_type.description, 1000),
         'is_required': document.document_type.is_required,
-        'translation_required': document.document_type.translation_required,
-        'has_translation': document.has_translation,
         'status': document.status if document.status != UserDocument.Status.NOT_UPLOADED else UserDocument.Status.PENDING,
         'admin_comment': compact(document.admin_comment, 1000),
         'file_url': document_file_url(document, request=request),

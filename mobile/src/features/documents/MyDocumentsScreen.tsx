@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
-import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { documentsApi } from '../../api/endpoints';
@@ -34,13 +34,11 @@ const STATUS_VARIANTS: Record<MyDocumentStatus, 'neutral' | 'blue' | 'mint' | 'c
 
 type UploadPayload = {
   documentTypeId: number;
-  hasTranslation: boolean;
   file: { uri: string; name: string; type: string };
 };
 
 export function MyDocumentsScreen() {
   const queryClient = useQueryClient();
-  const [translations, setTranslations] = useState<Record<number, boolean>>({});
 
   const documentsQuery = useQuery({
     queryKey: ['my-documents'],
@@ -49,8 +47,8 @@ export function MyDocumentsScreen() {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: ({ documentTypeId, file, hasTranslation }: UploadPayload) =>
-      documentsApi.uploadMyDocument(documentTypeId, file, hasTranslation),
+    mutationFn: ({ documentTypeId, file }: UploadPayload) =>
+      documentsApi.uploadMyDocument(documentTypeId, file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-documents'] });
       Alert.alert('Документ отправлен', 'Файл загружен и отправлен менеджеру на проверку.');
@@ -71,7 +69,6 @@ export function MyDocumentsScreen() {
     const asset = result.assets[0];
     uploadMutation.mutate({
       documentTypeId: document.id,
-      hasTranslation: translations[document.id] ?? document.has_translation,
       file: {
         uri: asset.uri,
         name: asset.name || `document-${document.id}`,
@@ -95,7 +92,7 @@ export function MyDocumentsScreen() {
         <Badge label="Личный кабинет" variant="mint" icon="check" />
         <Text style={styles.title}>Мои документы</Text>
         <Text style={styles.subtitle}>
-          Загружайте документы для поступления, отмечайте наличие перевода и следите за статусом проверки.
+          Загружайте документы для поступления и следите за статусом проверки. Если нужен перевод, менеджер добавит его отдельным типом документа.
         </Text>
       </RedGradientHero>
 
@@ -120,13 +117,6 @@ export function MyDocumentsScreen() {
           <DocumentCard
             key={document.id}
             document={document}
-            hasTranslation={translations[document.id] ?? document.has_translation}
-            onToggleTranslation={() =>
-              setTranslations(prev => ({
-                ...prev,
-                [document.id]: !(prev[document.id] ?? document.has_translation),
-              }))
-            }
             onUpload={() => handlePick(document)}
             uploading={uploadMutation.isPending && uploadMutation.variables?.documentTypeId === document.id}
           />
@@ -147,14 +137,10 @@ function SummaryCard({ value, label }: { value: string; label: string }) {
 
 function DocumentCard({
   document,
-  hasTranslation,
-  onToggleTranslation,
   onUpload,
   uploading,
 }: {
   document: MyDocument;
-  hasTranslation: boolean;
-  onToggleTranslation: () => void;
   onUpload: () => void;
   uploading: boolean;
 }) {
@@ -177,16 +163,6 @@ function DocumentCard({
       </View>
 
       {document.description ? <Text style={styles.description}>{document.description}</Text> : null}
-
-      <Pressable style={styles.checkboxRow} onPress={onToggleTranslation}>
-        <View style={[styles.checkbox, hasTranslation && styles.checkboxActive]}>
-          {hasTranslation ? <SvgIcon name="check" size={15} color={colors.white} strokeWidth={2.6} /> : null}
-        </View>
-        <View style={styles.checkboxTextBox}>
-          <Text style={styles.checkboxTitle}>Есть перевод</Text>
-          {document.translation_required ? <Text style={styles.checkboxHint}>Для этого документа перевод обязателен.</Text> : null}
-        </View>
-      </Pressable>
 
       {document.original_name ? (
         <Text style={styles.metaText}>Файл: {document.original_name}</Text>
@@ -239,29 +215,6 @@ const styles = StyleSheet.create({
   documentTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.sm },
   description: { color: colors.muted, lineHeight: 22, marginTop: spacing.md, fontWeight: typography.weights.medium },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-  },
-  checkboxActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkboxTextBox: { flex: 1 },
-  checkboxTitle: { color: colors.text, fontWeight: typography.weights.heavy },
-  checkboxHint: { color: colors.muted, fontSize: typography.small, marginTop: 2 },
   metaText: { color: colors.muted, fontSize: typography.small, fontWeight: typography.weights.bold, marginTop: spacing.sm },
   commentBox: { marginTop: spacing.md, padding: spacing.md, borderRadius: radius.md, backgroundColor: 'rgba(244,63,94,0.08)' },
   commentTitle: { color: colors.danger, fontWeight: typography.weights.heavy },

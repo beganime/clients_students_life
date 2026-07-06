@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as ImagePicker from 'expo-image-picker';
-import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chatApi } from '../../api/endpoints';
@@ -26,7 +26,7 @@ export function ChatRoomScreen() {
   const listRef = useRef<FlatList<ChatMessage> | null>(null);
   const [text, setText] = useState('');
   const [sendingText, setSendingText] = useState(false);
-  const [sendingImage, setSendingImage] = useState(false);
+  const [sendingFile, setSendingFile] = useState(false);
   const [sendError, setSendError] = useState('');
 
   const messagesQuery = useQuery({
@@ -59,7 +59,7 @@ export function ChatRoomScreen() {
 
   const handleSend = async () => {
     const message = text.trim();
-    if (!message || sendingText || sendingImage) return;
+    if (!message || sendingText || sendingFile) return;
 
     try {
       setSendError('');
@@ -76,42 +76,38 @@ export function ChatRoomScreen() {
     }
   };
 
-  const handlePickImage = async () => {
-    if (sendingText || sendingImage) return;
+  const handlePickFile = async () => {
+    if (sendingText || sendingFile) return;
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Нет доступа', 'Разрешите доступ к галерее, чтобы отправить фото.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 0.72,
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
+      multiple: false,
+      copyToCacheDirectory: true,
     });
 
-    if (result.canceled || !result.assets.length) return;
+    if (result.canceled || !result.assets?.length) return;
 
     const asset = result.assets[0];
     const file = {
       uri: asset.uri,
-      name: asset.fileName || `chat-photo-${Date.now()}.jpg`,
-      type: asset.mimeType || 'image/jpeg',
+      name: asset.name || `chat-file-${Date.now()}`,
+      type: asset.mimeType || 'application/octet-stream',
     };
 
     try {
       setSendError('');
-      setSendingImage(true);
-      const created = await chatApi.sendImage(route.params.id, file, text);
+      setSendingFile(true);
+      const created = file.type.startsWith('image/')
+        ? await chatApi.sendImage(route.params.id, file, text)
+        : await chatApi.sendFile(route.params.id, file, text);
       appendMessage(created);
       setText('');
     } catch (error) {
-      const messageText = getApiErrorMessage(error, 'Фото не отправилось. Попробуйте ещё раз.');
+      const messageText = getApiErrorMessage(error, 'Файл не отправился. Попробуйте ещё раз.');
       setSendError(messageText);
       Alert.alert('Ошибка отправки', messageText);
     } finally {
-      setSendingImage(false);
+      setSendingFile(false);
     }
   };
 
@@ -143,19 +139,19 @@ export function ChatRoomScreen() {
       )}
 
       {sendError ? <Text style={styles.errorText}>{sendError}</Text> : null}
-      {sendingText || sendingImage ? (
+      {sendingText || sendingFile ? (
         <View style={styles.sendingRow}>
           <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={styles.sendingText}>{sendingImage ? 'Отправляем фото...' : 'Отправляем сообщение...'}</Text>
+          <Text style={styles.sendingText}>{sendingFile ? 'Отправляем файл...' : 'Отправляем сообщение...'}</Text>
         </View>
       ) : null}
 
       <AppCard style={[styles.inputCard, { marginBottom: Math.max(insets.bottom, spacing.md) }]}>
-        <Pressable style={styles.iconButton} onPress={handlePickImage} disabled={sendingText || sendingImage}>
+        <Pressable style={styles.iconButton} onPress={handlePickFile} disabled={sendingText || sendingFile}>
           <SvgIcon name="file" size={22} color={colors.primary} />
         </Pressable>
         <TextInput value={text} onChangeText={setText} placeholder="Напишите сообщение..." placeholderTextColor={colors.mutedLight} style={styles.input} multiline />
-        <Pressable style={[styles.sendButton, (!text.trim() || sendingText || sendingImage) && styles.sendButtonDisabled]} onPress={handleSend} disabled={!text.trim() || sendingText || sendingImage}>
+        <Pressable style={[styles.sendButton, (!text.trim() || sendingText || sendingFile) && styles.sendButtonDisabled]} onPress={handleSend} disabled={!text.trim() || sendingText || sendingFile}>
           <SvgIcon name="chevronRight" size={23} color={colors.white} strokeWidth={2.8} />
         </Pressable>
       </AppCard>
@@ -165,14 +161,22 @@ export function ChatRoomScreen() {
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isMine = Boolean(message.is_mine);
-  const imageUrl = getMediaUrl(message.attachments?.[0]?.url || message.file || null);
+  const fileUrl = getMediaUrl(message.attachments?.[0]?.url || message.file || null);
+  const isImage = message.message_type === 'image' && Boolean(fileUrl);
+  const isFile = message.message_type === 'file' && Boolean(fileUrl);
   const sender = message.sender_display_name || message.sender_staff?.full_name || message.sender_user_name;
 
   return (
     <View style={[styles.messageWrap, isMine ? styles.myWrap : styles.otherWrap]}>
       <View style={[styles.message, isMine ? styles.myMessage : styles.otherMessage]}>
         {!isMine && sender ? <Text style={styles.sender}>{sender}</Text> : null}
-        {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.messageImage} resizeMode="cover" /> : null}
+        {isImage && fileUrl ? <Image source={{ uri: fileUrl }} style={styles.messageImage} resizeMode="cover" /> : null}
+        {isFile && fileUrl ? (
+          <Pressable style={styles.fileBubble} onPress={() => Linking.openURL(fileUrl)}>
+            <SvgIcon name="file" size={20} color={isMine ? colors.white : colors.secondary} />
+            <Text style={[styles.fileBubbleText, isMine && styles.myMessageText]}>Открыть файл</Text>
+          </Pressable>
+        ) : null}
         {message.text ? <Text style={[styles.messageText, isMine && styles.myMessageText]}>{message.text}</Text> : null}
         <View style={styles.messageFooter}>
           <Text style={[styles.time, isMine && styles.myTime]}>{new Date(message.created_at).toLocaleTimeString()}</Text>
@@ -200,6 +204,8 @@ const styles = StyleSheet.create({
   otherMessage: { backgroundColor: colors.card, borderBottomLeftRadius: 7, borderWidth: 1, borderColor: colors.border, ...shadows.soft },
   sender: { color: colors.primary, fontSize: 12, fontWeight: typography.weights.heavy, marginBottom: 4 },
   messageImage: { width: 220, height: 165, borderRadius: radius.md, marginBottom: spacing.sm, backgroundColor: colors.border },
+  fileBubble: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  fileBubbleText: { color: colors.secondary, fontWeight: typography.weights.heavy },
   messageText: { color: colors.text, fontSize: typography.body, lineHeight: 22 },
   myMessageText: { color: colors.white },
   messageFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs, marginTop: spacing.xs },

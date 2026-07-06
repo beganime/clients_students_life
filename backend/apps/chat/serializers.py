@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from apps.accounts.models import AppUserActivity, is_manager_user
 from apps.accounts.serializers import AppUserActivitySerializer
+from apps.applications.file_utils import validate_application_file
 from apps.staff.serializers import StaffProfileSerializer
 
 from .image_utils import prepare_chat_image
@@ -107,24 +108,36 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 class ChatMessageCreateSerializer(serializers.Serializer):
     text = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True, max_length=4000)
     image = serializers.ImageField(required=False, allow_null=True)
+    file = serializers.FileField(required=False, allow_null=True)
 
     def validate(self, attrs):
         text = attrs.get('text', '').strip()
         image = attrs.get('image')
-        if not text and not image:
-            raise serializers.ValidationError('Напишите сообщение или приложите фото.')
+        file = attrs.get('file')
+        if image and file:
+            raise serializers.ValidationError('Прикрепите либо фото, либо файл.')
+        if file:
+            validate_application_file(file)
+        if not text and not image and not file:
+            raise serializers.ValidationError('Напишите сообщение или приложите файл.')
         attrs['text'] = text
         return attrs
 
     def create_message(self, *, room, sender_user, sender_staff=None):
         image = self.validated_data.get('image')
+        file = self.validated_data.get('file')
         text = self.validated_data.get('text', '')
         message = ChatMessage.objects.create(
             room=room,
             sender_user=sender_user,
             sender_staff=sender_staff,
-            message_type=ChatMessage.MessageType.IMAGE if image else ChatMessage.MessageType.TEXT,
+            message_type=(
+                ChatMessage.MessageType.IMAGE
+                if image
+                else ChatMessage.MessageType.FILE if file else ChatMessage.MessageType.TEXT
+            ),
             text=text,
+            file=file if file else None,
         )
         if image:
             attachment_data = prepare_chat_image(image)

@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/v1/chat/', include('apps.chat.urls')),
     path('api/v1/notifications/', include('apps.notifications.urls')),
     path('api/v1/documents/', include('apps.documents.urls')),
+    path('api/v1/questionnaire/', include('apps.questionnaires.urls')),
     path('api/v1/common/', include('apps.common.urls')),
 ]
 

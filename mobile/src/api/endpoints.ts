@@ -13,6 +13,8 @@ import {
   NewsPost,
   PaginatedResponse,
   Program,
+  ApplicantQuestionnaire,
+  QuestionnaireAttachment,
   Service,
   StaffProfile,
   University,
@@ -83,6 +85,18 @@ export type UniversityFilters = {
   recognized_status?: boolean;
 };
 
+function inferFileType(file: { name?: string; type?: string }) {
+  const explicit = String(file.type || '').trim();
+  if (explicit && explicit !== 'application/octet-stream') return explicit;
+
+  const name = String(file.name || '').toLowerCase();
+  if (name.endsWith('.pdf')) return 'application/pdf';
+  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg';
+  if (name.endsWith('.png')) return 'image/png';
+  if (name.endsWith('.webp')) return 'image/webp';
+  return explicit || 'application/octet-stream';
+}
+
 export const authApi = {
   async login(payload: LoginPayload) {
     const { data } = await apiClient.post<LoginResponse>('/auth/login/', payload);
@@ -112,11 +126,7 @@ export const authApi = {
   },
 
   async updateMeFormData(formData: FormData) {
-    const { data } = await apiClient.patch<UserMe>('/accounts/me/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const { data } = await apiClient.patch<UserMe>('/accounts/me/', formData);
     return data;
   },
 
@@ -251,18 +261,10 @@ export const applicationsApi = {
     formData.append('file', {
       uri: file.uri,
       name: file.name,
-      type: file.type,
+      type: inferFileType(file),
     } as any);
 
-    const { data } = await apiClient.post<ApplicationFile>(
-      `/applications/${applicationId}/upload_file/`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      },
-    );
+    const { data } = await apiClient.post<ApplicationFile>(`/applications/${applicationId}/upload_file/`, formData);
 
     return data;
   },
@@ -274,20 +276,38 @@ export const documentsApi = {
     return data;
   },
 
-  async uploadMyDocument(documentTypeId: number, file: { uri: string; name: string; type: string }, hasTranslation: boolean) {
+  async uploadMyDocument(documentTypeId: number, file: { uri: string; name: string; type: string }) {
     const formData = new FormData();
-    formData.append('has_translation', hasTranslation ? 'true' : 'false');
     formData.append('file', {
       uri: file.uri,
       name: file.name,
-      type: file.type,
+      type: inferFileType(file),
     } as any);
 
-    const { data } = await apiClient.post<MyDocument>(`/documents/my-documents/${documentTypeId}/upload/`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const { data } = await apiClient.post<MyDocument>(`/documents/my-documents/${documentTypeId}/upload/`, formData);
+    return data;
+  },
+};
+
+export const questionnaireApi = {
+  async getMyQuestionnaire() {
+    const { data } = await apiClient.get<ApplicantQuestionnaire>('/questionnaire/my/');
+    return data;
+  },
+
+  async saveMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
+    const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my/', payload);
+    return data;
+  },
+
+  async uploadAttachment(file: { uri: string; name: string; type: string }) {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: inferFileType(file),
+    } as any);
+    const { data } = await apiClient.post<QuestionnaireAttachment>('/questionnaire/my/attachments/', formData);
     return data;
   },
 };
@@ -323,14 +343,25 @@ export const chatApi = {
     formData.append('image', {
       uri: file.uri,
       name: file.name,
-      type: file.type,
+      type: inferFileType(file),
     } as any);
 
-    const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
+    return data;
+  },
+
+  async sendFile(roomId: number, file: { uri: string; name: string; type: string }, text = '') {
+    const formData = new FormData();
+    if (text.trim()) {
+      formData.append('text', text.trim());
+    }
+    formData.append('file', {
+      uri: file.uri,
+      name: file.name,
+      type: inferFileType(file),
+    } as any);
+
+    const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
     return data;
   },
 

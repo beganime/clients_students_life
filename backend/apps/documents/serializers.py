@@ -11,8 +11,6 @@ class MyDocumentSerializer(serializers.Serializer):
     title = serializers.CharField(source='document_type.title')
     description = serializers.CharField(source='document_type.description')
     is_required = serializers.BooleanField(source='document_type.is_required')
-    translation_required = serializers.BooleanField(source='document_type.translation_required')
-    has_translation = serializers.BooleanField()
     status = serializers.CharField()
     file = serializers.FileField(allow_null=True)
     original_name = serializers.CharField()
@@ -25,7 +23,7 @@ class MyDocumentSerializer(serializers.Serializer):
 class UserDocumentUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDocument
-        fields = ('file', 'has_translation')
+        fields = ('file',)
 
     def validate_file(self, value):
         validate_application_file(value)
@@ -33,7 +31,6 @@ class UserDocumentUploadSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         uploaded_file = validated_data.get('file')
-        instance.has_translation = validated_data.get('has_translation', instance.has_translation)
         if uploaded_file:
             instance.file = uploaded_file
             instance.mark_uploaded(clean_original_name(uploaded_file))
@@ -49,7 +46,6 @@ class RequiredDocumentTypeSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'is_required',
-            'translation_required',
             'service',
             'country',
             'category',

@@ -67,13 +67,6 @@ export function HomeScreen() {
             variant="outline"
             onPress={() => navigation.navigate('ApplicationCreate')}
           />
-          {isAuthenticated ? (
-            <AppButton
-              title="Мои документы"
-              variant="secondary"
-              onPress={() => navigation.navigate('MyDocuments')}
-            />
-          ) : null}
         </View>
       </RedGradientHero>
 
@@ -82,6 +75,40 @@ export function HomeScreen() {
         <StatCard value="1200+" label="студентов" />
         <StatCard value="24/7" label="поддержка" />
       </View>
+
+      {isAuthenticated ? (
+        <>
+          <AppCard style={styles.documentsCard}>
+            <View style={styles.documentsIcon}>
+              <SvgIcon name="file" size={23} color={colors.secondary} />
+            </View>
+            <View style={styles.documentsTextBox}>
+              <Text style={styles.documentsTitle}>Мои документы</Text>
+              <Text style={styles.documentsText}>Загрузите документы для проверки менеджером</Text>
+            </View>
+            <AppButton
+              title="Открыть документы"
+              onPress={() => navigation.navigate('MyDocuments')}
+              style={styles.documentsButton}
+            />
+          </AppCard>
+          <AppCard style={styles.documentsCard}>
+            <View style={styles.documentsIcon}>
+              <SvgIcon name="application" size={23} color={colors.secondary} />
+            </View>
+            <View style={styles.documentsTextBox}>
+              <Text style={styles.documentsTitle}>Анкета абитуриента</Text>
+              <Text style={styles.documentsText}>Заполните данные для подготовки документов</Text>
+            </View>
+            <AppButton
+              title="Открыть анкету"
+              variant="outline"
+              onPress={() => navigation.navigate('ApplicantQuestionnaire')}
+              style={styles.documentsButton}
+            />
+          </AppCard>
+        </>
+      ) : null}
 
       <SectionHeader
         eyebrow="Каталог"
@@ -148,7 +175,6 @@ export function HomeScreen() {
         />
         <QuickService icon="visa" title="Виза" onPress={() => navigation.navigate('VisaInfo')} />
         <QuickService icon="mapPin" title="Туры" onPress={() => navigation.navigate('ToursInfo')} />
-        {isAuthenticated ? <QuickService icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} /> : null}
       </View>
 
       <AppCard style={styles.registerCard}>
@@ -252,6 +278,26 @@ const styles = StyleSheet.create({
   statCard: { flex: 1, padding: spacing.md },
   statValue: { color: colors.secondary, fontSize: 22, fontWeight: typography.weights.heavy },
   statLabel: { color: colors.muted, fontSize: 12, fontWeight: typography.weights.bold, marginTop: 4 },
+  documentsCard: {
+    marginBottom: spacing.lg,
+    borderColor: 'rgba(13,65,109,0.14)',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  documentsIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(13,65,109,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  documentsTextBox: { flex: 1, minWidth: 0 },
+  documentsTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy },
+  documentsText: { color: colors.muted, lineHeight: 20, marginTop: 3, fontWeight: typography.weights.medium },
+  documentsButton: { width: '100%' },
   countryCard: {
     width: COUNTRY_CARD_WIDTH,
     minHeight: 190,

@@ -214,8 +214,6 @@ export type MyDocument = {
   title: string;
   description?: string;
   is_required: boolean;
-  translation_required: boolean;
-  has_translation: boolean;
   status: MyDocumentStatus;
   file?: string | null;
   original_name?: string;
@@ -301,6 +299,76 @@ export type UserNotification = {
   related_object_id?: number | null;
   is_read: boolean;
   created_at: string;
+};
+
+export type QuestionnaireAttachment = {
+  id: number;
+  file?: string | null;
+  original_name?: string;
+  file_type?: string;
+  created_at: string;
+};
+
+export type ApplicantQuestionnaire = {
+  id: number;
+  status: 'draft' | 'submitted' | 'updated';
+  full_name?: string;
+  birth_date?: string | null;
+  gender?: 'male' | 'female' | '';
+  citizenship?: string;
+  marital_status?: string;
+  face_photo?: string | null;
+  residence_country?: string;
+  residence_region?: string;
+  residence_city?: string;
+  residence_street?: string;
+  residence_house?: string;
+  residence_postal_code?: string;
+  passport_number?: string;
+  passport_issued_by?: string;
+  passport_issue_date?: string | null;
+  passport_expiry_date?: string | null;
+  phone?: string;
+  email?: string;
+  extra_phone?: string;
+  imo?: string;
+  telegram?: string;
+  preferred_contact_method?: string;
+  parent_full_name?: string;
+  parent_relation?: string;
+  parent_contacts?: string;
+  parent_workplace?: string;
+  family_members?: string;
+  education_level?: string;
+  school_class?: string;
+  school_name?: string;
+  school_country?: string;
+  school_city?: string;
+  graduation_year?: string;
+  education_status?: string;
+  achievements?: string[];
+  languages?: Array<{ language: string; level: string }>;
+  desired_program?: string;
+  admission_goal?: string;
+  desired_city?: string;
+  desired_country?: string;
+  desired_language?: string;
+  desired_education_level?: string;
+  admission_urgency?: string;
+  help_needed?: string[];
+  has_visa?: string;
+  visa_country?: string;
+  visa_city?: string;
+  visa_valid_until?: string | null;
+  has_international_passport?: string;
+  hobbies?: string;
+  applicant_comment?: string;
+  referral_source?: string;
+  data_processing_consent?: boolean;
+  submitted_at?: string | null;
+  attachments?: QuestionnaireAttachment[];
+  generated_document_url?: string;
+  updated_at?: string;
 };
 
 export type HomeBanner = {

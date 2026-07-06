@@ -7,18 +7,18 @@ from .models import RequiredDocumentType, UserDocument
 
 @admin.register(RequiredDocumentType)
 class RequiredDocumentTypeAdmin(ModelAdmin):
-    list_display = ('title', 'is_required', 'translation_required', 'service', 'country', 'category', 'is_active', 'sort_order')
-    list_filter = ('is_required', 'translation_required', 'is_active', 'service', 'country', 'category')
+    list_display = ('title', 'is_required', 'service', 'country', 'category', 'is_active', 'sort_order')
+    list_filter = ('is_required', 'is_active', 'service', 'country', 'category')
     search_fields = ('title', 'description', 'category')
     autocomplete_fields = ('service', 'country')
-    list_editable = ('is_required', 'translation_required', 'is_active', 'sort_order')
+    list_editable = ('is_required', 'is_active', 'sort_order')
     readonly_fields = ('created_at', 'updated_at')
 
 
 @admin.register(UserDocument)
 class UserDocumentAdmin(ModelAdmin):
-    list_display = ('user', 'document_type', 'status', 'has_translation', 'uploaded_at', 'reviewed_at', 'reviewed_by')
-    list_filter = ('status', 'has_translation', 'document_type', 'uploaded_at', 'reviewed_at')
+    list_display = ('user', 'document_type', 'status', 'uploaded_at', 'reviewed_at', 'reviewed_by')
+    list_filter = ('status', 'document_type', 'uploaded_at', 'reviewed_at')
     search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'document_type__title', 'original_name', 'admin_comment')
     autocomplete_fields = ('user', 'document_type', 'reviewed_by')
     readonly_fields = ('created_at', 'updated_at', 'uploaded_at', 'manager_sl_sync_status', 'manager_sl_sync_error')
