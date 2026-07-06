@@ -132,6 +132,9 @@ class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
         return super().to_internal_value(mutable)
 
     def validate(self, attrs):
+        if not self.context.get('require_consent', False):
+            return attrs
+
         consent = attrs.get('data_processing_consent', getattr(self.instance, 'data_processing_consent', False))
         if not consent:
             raise serializers.ValidationError({
