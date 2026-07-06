@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import { authApi } from '../../api/endpoints';
+import { appendUploadFile, authApi, UploadableFile } from '../../api/endpoints';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
@@ -26,10 +26,10 @@ export function EditProfileScreen() {
   const [country, setCountry] = useState(user?.profile?.country || '');
   const [city, setCity] = useState(user?.profile?.city || '');
   const [citizenship, setCitizenship] = useState(user?.profile?.citizenship || '');
-  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<UploadableFile | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const currentAvatar = avatarUri || getMediaUrl(user?.profile?.avatar || null);
+  const currentAvatar = avatarFile?.uri || getMediaUrl(user?.profile?.avatar || null);
 
   const pickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -38,7 +38,15 @@ export function EditProfileScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
-    if (!result.canceled) setAvatarUri(result.assets[0].uri);
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      setAvatarFile({
+        uri: asset.uri,
+        name: asset.fileName || 'avatar.jpg',
+        type: asset.mimeType || 'image/jpeg',
+        file: (asset as any).file,
+      });
+    }
   };
 
   const handleSave = async () => {
@@ -54,7 +62,7 @@ export function EditProfileScreen() {
       formData.append('profile.city', city);
       formData.append('profile.citizenship', citizenship);
       formData.append('profile.language', user?.profile?.language || 'ru');
-      if (avatarUri) formData.append('profile.avatar', { uri: avatarUri, name: 'avatar.jpg', type: 'image/jpeg' } as any);
+      if (avatarFile) appendUploadFile(formData, 'profile.avatar', avatarFile);
       await authApi.updateMeFormData(formData);
       await refreshMe();
       Alert.alert('Готово', 'Профиль обновлён.');

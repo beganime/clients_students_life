@@ -4,6 +4,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { documentsApi } from '../../api/endpoints';
+import { UploadableFile } from '../../api/endpoints';
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
@@ -34,7 +35,7 @@ const STATUS_VARIANTS: Record<MyDocumentStatus, 'neutral' | 'blue' | 'mint' | 'c
 
 type UploadPayload = {
   documentTypeId: number;
-  file: { uri: string; name: string; type: string };
+  file: UploadableFile;
 };
 
 export function MyDocumentsScreen() {
@@ -73,6 +74,7 @@ export function MyDocumentsScreen() {
         uri: asset.uri,
         name: asset.name || `document-${document.id}`,
         type: asset.mimeType || 'application/octet-stream',
+        file: (asset as any).file,
       },
     });
   };

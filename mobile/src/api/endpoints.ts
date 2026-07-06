@@ -85,6 +85,13 @@ export type UniversityFilters = {
   recognized_status?: boolean;
 };
 
+export type UploadableFile = {
+  uri: string;
+  name: string;
+  type: string;
+  file?: Blob;
+};
+
 function inferFileType(file: { name?: string; type?: string }) {
   const explicit = String(file.type || '').trim();
   if (explicit && explicit !== 'application/octet-stream') return explicit;
@@ -95,6 +102,32 @@ function inferFileType(file: { name?: string; type?: string }) {
   if (name.endsWith('.png')) return 'image/png';
   if (name.endsWith('.webp')) return 'image/webp';
   return explicit || 'application/octet-stream';
+}
+
+export function appendUploadFile(formData: FormData, field: string, file: UploadableFile) {
+  const type = inferFileType(file);
+  const webFile = (file as any).file;
+
+  if (typeof Blob !== 'undefined' && webFile instanceof Blob) {
+    if (typeof File !== 'undefined' && webFile instanceof File) {
+      formData.append(field, webFile);
+      return;
+    }
+
+    if (typeof File !== 'undefined') {
+      formData.append(field, new File([webFile], file.name || 'upload', { type }));
+      return;
+    }
+
+    formData.append(field, webFile as any);
+    return;
+  }
+
+  formData.append(field, {
+    uri: file.uri,
+    name: file.name,
+    type,
+  } as any);
 }
 
 export const authApi = {
@@ -254,15 +287,11 @@ export const applicationsApi = {
     return data;
   },
 
-  async uploadFile(applicationId: number, file: { uri: string; name: string; type: string }, fileType = 'other') {
+  async uploadFile(applicationId: number, file: UploadableFile, fileType = 'other') {
     const formData = new FormData();
 
     formData.append('file_type', fileType);
-    formData.append('file', {
-      uri: file.uri,
-      name: file.name,
-      type: inferFileType(file),
-    } as any);
+    appendUploadFile(formData, 'file', file);
 
     const { data } = await apiClient.post<ApplicationFile>(`/applications/${applicationId}/upload_file/`, formData);
 
@@ -276,13 +305,9 @@ export const documentsApi = {
     return data;
   },
 
-  async uploadMyDocument(documentTypeId: number, file: { uri: string; name: string; type: string }) {
+  async uploadMyDocument(documentTypeId: number, file: UploadableFile) {
     const formData = new FormData();
-    formData.append('file', {
-      uri: file.uri,
-      name: file.name,
-      type: inferFileType(file),
-    } as any);
+    appendUploadFile(formData, 'file', file);
 
     const { data } = await apiClient.post<MyDocument>(`/documents/my-documents/${documentTypeId}/upload/`, formData);
     return data;
@@ -300,13 +325,9 @@ export const questionnaireApi = {
     return data;
   },
 
-  async uploadAttachment(file: { uri: string; name: string; type: string }) {
+  async uploadAttachment(file: UploadableFile) {
     const formData = new FormData();
-    formData.append('file', {
-      uri: file.uri,
-      name: file.name,
-      type: inferFileType(file),
-    } as any);
+    appendUploadFile(formData, 'file', file);
     const { data } = await apiClient.post<QuestionnaireAttachment>('/questionnaire/my/attachments/', formData);
     return data;
   },
@@ -335,31 +356,23 @@ export const chatApi = {
     return data;
   },
 
-  async sendImage(roomId: number, file: { uri: string; name: string; type: string }, text = '') {
+  async sendImage(roomId: number, file: UploadableFile, text = '') {
     const formData = new FormData();
     if (text.trim()) {
       formData.append('text', text.trim());
     }
-    formData.append('image', {
-      uri: file.uri,
-      name: file.name,
-      type: inferFileType(file),
-    } as any);
+    appendUploadFile(formData, 'image', file);
 
     const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
     return data;
   },
 
-  async sendFile(roomId: number, file: { uri: string; name: string; type: string }, text = '') {
+  async sendFile(roomId: number, file: UploadableFile, text = '') {
     const formData = new FormData();
     if (text.trim()) {
       formData.append('text', text.trim());
     }
-    formData.append('file', {
-      uri: file.uri,
-      name: file.name,
-      type: inferFileType(file),
-    } as any);
+    appendUploadFile(formData, 'file', file);
 
     const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
     return data;

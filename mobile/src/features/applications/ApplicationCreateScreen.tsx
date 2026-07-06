@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
-import { applicationsApi, contentApi } from '../../api/endpoints';
+import { applicationsApi, contentApi, UploadableFile } from '../../api/endpoints';
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
@@ -22,7 +22,7 @@ import { useAuthStore } from '../../store/authStore';
 import { City, Country, Program, Service, University } from '../../types/api';
 import { getApiErrorMessage } from '../../utils/apiError';
 
-type SelectedFile = { uri: string; name: string; type: string };
+type SelectedFile = UploadableFile;
 type SubmitStatus = { type: 'success' | 'error' | 'info'; text: string } | null;
 
 function makeIdempotencyKey() {
@@ -189,6 +189,7 @@ function ApplicationCreateForm() {
       uri: asset.uri,
       name: asset.name,
       type: asset.mimeType || 'application/octet-stream',
+      file: (asset as any).file,
     }));
     setFiles(prev => [...prev, ...pickedFiles]);
   };

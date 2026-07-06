@@ -5,7 +5,7 @@ import { Alert, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-
 import { useNavigation } from '@react-navigation/native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { questionnaireApi } from '../../api/endpoints';
+import { appendUploadFile, questionnaireApi, UploadableFile } from '../../api/endpoints';
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
@@ -88,7 +88,7 @@ export function ApplicantQuestionnaireScreen() {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Partial<ApplicantQuestionnaire>>({});
-  const [facePhotoUri, setFacePhotoUri] = useState<string | null>(null);
+  const [facePhoto, setFacePhoto] = useState<UploadableFile | null>(null);
 
   const questionnaireQuery = useQuery({
     queryKey: ['my-questionnaire'],
@@ -103,9 +103,9 @@ export function ApplicantQuestionnaireScreen() {
   }, [questionnaireQuery.data]);
 
   const saveMutation = useMutation({
-    mutationFn: () => questionnaireApi.saveMyQuestionnaire(buildPayload(form, facePhotoUri)),
+    mutationFn: () => questionnaireApi.saveMyQuestionnaire(buildPayload(form, facePhoto)),
     onSuccess: data => {
-      setFacePhotoUri(null);
+      setFacePhoto(null);
       setForm(data);
       queryClient.setQueryData(['my-questionnaire'], data);
       Alert.alert('Анкета сохранена', 'Данные отправлены менеджеру и обновлены в кабинете.');
@@ -163,7 +163,13 @@ export function ApplicantQuestionnaireScreen() {
     });
 
     if (!result.canceled && result.assets[0]?.uri) {
-      setFacePhotoUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setFacePhoto({
+        uri: asset.uri,
+        name: asset.fileName || `face-photo-${Date.now()}.jpg`,
+        type: asset.mimeType || 'image/jpeg',
+        file: (asset as any).file,
+      });
     }
   };
 
@@ -179,12 +185,13 @@ export function ApplicantQuestionnaireScreen() {
       uri: asset.uri,
       name: asset.name || `questionnaire-file-${Date.now()}`,
       type: asset.mimeType || 'application/octet-stream',
+      file: (asset as any).file,
     });
   };
 
   const photoUrl = useMemo(
-    () => facePhotoUri || getMediaUrl(form.face_photo || null),
-    [facePhotoUri, form.face_photo],
+    () => facePhoto?.uri || getMediaUrl(form.face_photo || null),
+    [facePhoto?.uri, form.face_photo],
   );
 
   const handleSave = () => {
@@ -352,8 +359,8 @@ export function ApplicantQuestionnaireScreen() {
   );
 }
 
-function buildPayload(form: Partial<ApplicantQuestionnaire>, facePhotoUri: string | null) {
-  const useFormData = Boolean(facePhotoUri);
+function buildPayload(form: Partial<ApplicantQuestionnaire>, facePhoto: UploadableFile | null) {
+  const useFormData = Boolean(facePhoto);
   if (!useFormData) {
     const payload: Partial<ApplicantQuestionnaire> = {};
     TEXT_FIELDS.forEach(field => {
@@ -380,12 +387,8 @@ function buildPayload(form: Partial<ApplicantQuestionnaire>, facePhotoUri: strin
   data.append('languages', JSON.stringify(form.languages || []));
   data.append('help_needed', JSON.stringify(form.help_needed || []));
   data.append('data_processing_consent', form.data_processing_consent ? 'true' : 'false');
-  if (facePhotoUri) {
-    data.append('face_photo', {
-      uri: facePhotoUri,
-      name: `face-photo-${Date.now()}.jpg`,
-      type: 'image/jpeg',
-    } as any);
+  if (facePhoto) {
+    appendUploadFile(data, 'face_photo', facePhoto);
   }
   return data;
 }

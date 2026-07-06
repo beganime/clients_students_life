@@ -92,6 +92,7 @@ export function ChatRoomScreen() {
       uri: asset.uri,
       name: asset.name || `chat-file-${Date.now()}`,
       type: asset.mimeType || 'application/octet-stream',
+      file: (asset as any).file,
     };
 
     try {
