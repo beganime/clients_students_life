@@ -119,6 +119,18 @@ class ManagerSLClient:
             extra_headers=headers,
         )
 
+    def sync_mobile_document(self, payload: dict[str, Any], idempotency_key: str | None = None):
+        headers = {}
+        if idempotency_key:
+            headers['Idempotency-Key'] = idempotency_key
+        return self.request_json(
+            'POST',
+            'mobile/documents/sync/',
+            payload=payload,
+            require_api_key=True,
+            extra_headers=headers,
+        )
+
 
 def manager_sl_enabled():
     return ManagerSLClient.from_settings().is_configured
