@@ -29,6 +29,8 @@ def normalize_me_payload(data):
         profile_data.update(raw_profile)
 
     for field in profile_fields:
+        if field in data:
+            profile_data[field] = data.get(field)
         dotted = f'profile.{field}'
         if dotted in data:
             profile_data[field] = data.get(dotted)
