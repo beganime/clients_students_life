@@ -38,11 +38,11 @@ export function EditProfileScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
-    if (!result.canceled) {
+    if (!result.canceled && result.assets[0]?.uri) {
       const asset = result.assets[0];
       setAvatarFile({
         uri: asset.uri,
-        name: asset.fileName || 'avatar.jpg',
+        name: asset.fileName || `avatar-${Date.now()}.jpg`,
         type: asset.mimeType || 'image/jpeg',
         file: (asset as any).file,
       });
@@ -55,15 +55,16 @@ export function EditProfileScreen() {
       const formData = new FormData();
       formData.append('first_name', firstName);
       formData.append('last_name', lastName);
-      formData.append('profile.phone', phone);
-      formData.append('profile.whatsapp', whatsapp);
-      formData.append('profile.telegram', telegram);
-      formData.append('profile.country', country);
-      formData.append('profile.city', city);
-      formData.append('profile.citizenship', citizenship);
-      formData.append('profile.language', user?.profile?.language || 'ru');
-      if (avatarFile) appendUploadFile(formData, 'profile.avatar', avatarFile);
+      formData.append('phone', phone);
+      formData.append('whatsapp', whatsapp);
+      formData.append('telegram', telegram);
+      formData.append('country', country);
+      formData.append('city', city);
+      formData.append('citizenship', citizenship);
+      formData.append('language', user?.profile?.language || 'ru');
+      if (avatarFile) appendUploadFile(formData, 'avatar', avatarFile);
       await authApi.updateMeFormData(formData);
+      setAvatarFile(null);
       await refreshMe();
       Alert.alert('Готово', 'Профиль обновлён.');
     } catch (error) {
