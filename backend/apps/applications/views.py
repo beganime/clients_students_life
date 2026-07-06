@@ -8,7 +8,7 @@ from django.http import FileResponse, Http404
 from apps.accounts.models import is_manager_user
 
 from .file_utils import clean_original_name
-from .manager_sl_sync import sync_application_to_manager_sl
+from .manager_sl_sync import sync_application_file_to_manager_sl, sync_application_to_manager_sl
 from .models import Application, ApplicationFile
 from .serializers import (
     ApplicationCreateSerializer,
@@ -172,12 +172,17 @@ class ApplicationViewSet(mixins.CreateModelMixin,
         serializer = ApplicationFileSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         uploaded_file = request.FILES.get('file')
-        serializer.save(
+        application_file = serializer.save(
             application=application,
             uploaded_by=request.user,
             original_name=clean_original_name(uploaded_file) if uploaded_file else '',
         )
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        response_data = ApplicationFileSerializer(application_file, context={'request': request}).data
+        response_data['manager_sl_document_sync'] = sync_application_file_to_manager_sl(
+            application_file,
+            request=request,
+        )
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class ApplicationFileViewSet(viewsets.ReadOnlyModelViewSet):
