@@ -9,6 +9,8 @@ from .models import Application, ApplicationFile, ApplicationStatusHistory
 
 
 class ApplicationFileSerializer(serializers.ModelSerializer):
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
     class Meta:
         model = ApplicationFile
         fields = (
@@ -17,14 +19,29 @@ class ApplicationFileSerializer(serializers.ModelSerializer):
             'file',
             'file_type',
             'original_name',
+            'status',
+            'status_display',
+            'admin_comment',
+            'reviewed_at',
             'created_at',
+            'updated_at',
         )
-        read_only_fields = ('id', 'application', 'original_name', 'created_at')
+        read_only_fields = (
+            'id',
+            'application',
+            'original_name',
+            'status',
+            'status_display',
+            'admin_comment',
+            'reviewed_at',
+            'created_at',
+            'updated_at',
+        )
 
     def validate_file(self, value):
         validate_application_file(value)
         return value
-        
+         
 class ApplicationStatusHistorySerializer(serializers.ModelSerializer):
     changed_by_name = serializers.CharField(source='changed_by.get_full_name', read_only=True)
 
