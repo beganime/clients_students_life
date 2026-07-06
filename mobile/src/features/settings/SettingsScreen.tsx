@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
@@ -17,8 +19,10 @@ import {
   PRIVACY_POLICY_URL,
 } from '../../constants/config';
 import { colors, radius, spacing, typography } from '../../constants/colors';
+import { RootStackParamList } from '../../navigation/types';
 
 export function SettingsScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [clearing, setClearing] = useState(false);
 
   const clearCatalogCache = async () => {
@@ -66,6 +70,14 @@ export function SettingsScreen() {
         text="Сейчас используется светлая тема. Структура настроек готова к будущей тёмной теме."
       >
         <Badge label="Светлая" variant="neutral" icon="check" />
+      </SettingsBlock>
+
+      <SettingsBlock
+        icon="lock"
+        title="Вход для менеджера"
+        text={`Отдельный вход для сотрудников. Данные проверяются через manager-sl.ru, затем приложение включает роль менеджера для чатов и заявок. API: ${MANAGER_SL_API_BASE_URL}`}
+      >
+        <AppButton title="Войти как менеджер" variant="secondary" onPress={() => navigation.navigate('ManagerLogin')} />
       </SettingsBlock>
 
       <SettingsBlock

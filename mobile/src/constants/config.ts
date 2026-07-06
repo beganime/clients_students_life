@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
 const DEFAULT_PROD_API_URL = 'https://stud-life.com/api/v1';
-const DEFAULT_MANAGER_SL_API_URL = 'https://medisinskayaodezhda.ru/manager-sl/api/client/v1';
+const DEFAULT_MANAGER_SL_API_URL = 'https://manager-sl.ru/api/client/v1';
 
 export const OFFICIAL_SITE_URL = 'https://students-life.ru';
 export const COMPANY_APPS_URL = '';

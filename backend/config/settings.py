@@ -4,6 +4,7 @@ from datetime import timedelta
 from corsheaders.defaults import default_headers
 from decouple import Csv, config
 from django.core.exceptions import ImproperlyConfigured
+from django.urls import reverse_lazy
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -238,6 +239,7 @@ FIREBASE_CREDENTIALS_PATH = config('FIREBASE_CREDENTIALS_PATH', default='')
 MANAGER_SL_API_BASE_URL = config('MANAGER_SL_API_BASE_URL', default='')
 MANAGER_SL_LEADS_API_KEY = config('MANAGER_SL_LEADS_API_KEY', default='')
 MANAGER_SL_TIMEOUT_SECONDS = config('MANAGER_SL_TIMEOUT_SECONDS', default=8, cast=int)
+MANAGER_SL_AUTH_BASE_URL = config('MANAGER_SL_AUTH_BASE_URL', default='https://manager-sl.ru')
 
 CHAT_IMAGE_MAX_UPLOAD_SIZE = config('CHAT_IMAGE_MAX_UPLOAD_SIZE', default=6 * 1024 * 1024, cast=int)
 CHAT_IMAGE_MAX_STORED_SIZE = config('CHAT_IMAGE_MAX_STORED_SIZE', default=2 * 1024 * 1024, cast=int)
@@ -302,5 +304,52 @@ UNFOLD = {
     'SIDEBAR': {
         'show_search': True,
         'show_all_applications': True,
+        'navigation': [
+            {
+                'title': 'Доступ и клиенты',
+                'separator': True,
+                'items': [
+                    {'title': 'Пользователи', 'icon': 'person', 'link': reverse_lazy('admin:auth_user_changelist')},
+                    {'title': 'Профили клиентов', 'icon': 'badge', 'link': reverse_lazy('admin:accounts_clientprofile_changelist')},
+                    {'title': 'Роли приложения', 'icon': 'admin_panel_settings', 'link': reverse_lazy('admin:accounts_approle_changelist')},
+                    {'title': 'Сотрудники', 'icon': 'support_agent', 'link': reverse_lazy('admin:staff_staffprofile_changelist')},
+                ],
+            },
+            {
+                'title': 'Работа с клиентами',
+                'separator': True,
+                'items': [
+                    {'title': 'Заявки', 'icon': 'assignment', 'link': reverse_lazy('admin:applications_application_changelist')},
+                    {'title': 'Файлы заявок', 'icon': 'attach_file', 'link': reverse_lazy('admin:applications_applicationfile_changelist')},
+                    {'title': 'Чаты', 'icon': 'forum', 'link': reverse_lazy('admin:chat_chatroom_changelist')},
+                    {'title': 'Сообщения', 'icon': 'chat', 'link': reverse_lazy('admin:chat_chatmessage_changelist')},
+                    {'title': 'Push-токены', 'icon': 'notifications', 'link': reverse_lazy('admin:notifications_devicetoken_changelist')},
+                    {'title': 'Активность', 'icon': 'schedule', 'link': reverse_lazy('admin:accounts_appuseractivity_changelist')},
+                ],
+            },
+            {
+                'title': 'Контент приложения',
+                'separator': True,
+                'items': [
+                    {'title': 'Услуги', 'icon': 'design_services', 'link': reverse_lazy('admin:services_service_changelist')},
+                    {'title': 'Новости', 'icon': 'newspaper', 'link': reverse_lazy('admin:news_newspost_changelist')},
+                    {'title': 'База знаний', 'icon': 'menu_book', 'link': reverse_lazy('admin:knowledge_base_knowledgearticle_changelist')},
+                    {'title': 'Баннеры главной', 'icon': 'view_carousel', 'link': reverse_lazy('admin:common_homebanner_changelist')},
+                    {'title': 'Контакты офисов', 'icon': 'contact_phone', 'link': reverse_lazy('admin:common_officecontact_changelist')},
+                    {'title': 'Политика конфиденциальности', 'icon': 'policy', 'link': reverse_lazy('admin:common_privacypolicy_changelist')},
+                ],
+            },
+            {
+                'title': 'Каталог образования',
+                'separator': True,
+                'items': [
+                    {'title': 'Страны', 'icon': 'public', 'link': reverse_lazy('admin:locations_country_changelist')},
+                    {'title': 'Города', 'icon': 'location_city', 'link': reverse_lazy('admin:locations_city_changelist')},
+                    {'title': 'Офисы', 'icon': 'business', 'link': reverse_lazy('admin:locations_office_changelist')},
+                    {'title': 'Вузы', 'icon': 'school', 'link': reverse_lazy('admin:universities_university_changelist')},
+                    {'title': 'Программы', 'icon': 'library_books', 'link': reverse_lazy('admin:universities_program_changelist')},
+                ],
+            },
+        ],
     },
 }

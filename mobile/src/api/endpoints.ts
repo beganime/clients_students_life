@@ -27,6 +27,8 @@ export type LoginPayload = {
 export type LoginResponse = {
   access: string;
   refresh: string;
+  user?: UserMe;
+  manager_sl_user?: Record<string, unknown>;
 };
 
 export type RegisterPayload = {
@@ -84,6 +86,12 @@ export type UniversityFilters = {
 export const authApi = {
   async login(payload: LoginPayload) {
     const { data } = await apiClient.post<LoginResponse>('/auth/login/', payload);
+    await tokenStorage.setTokens(data.access, data.refresh);
+    return data;
+  },
+
+  async managerLogin(payload: LoginPayload) {
+    const { data } = await apiClient.post<LoginResponse>('/accounts/manager-login/', payload);
     await tokenStorage.setTokens(data.access, data.refresh);
     return data;
   },
