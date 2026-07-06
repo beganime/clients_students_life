@@ -325,6 +325,11 @@ export const questionnaireApi = {
     return data;
   },
 
+  async submitMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
+    const { data } = await apiClient.post<ApplicantQuestionnaire>('/questionnaire/my/submit/', payload);
+    return data;
+  },
+
   async uploadAttachment(file: UploadableFile) {
     const formData = new FormData();
     appendUploadFile(formData, 'file', file);
