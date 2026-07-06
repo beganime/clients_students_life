@@ -28,7 +28,6 @@ export type LoginResponse = {
   access: string;
   refresh: string;
   user?: UserMe;
-  manager_sl_user?: Record<string, unknown>;
 };
 
 export type RegisterPayload = {
@@ -91,7 +90,7 @@ export const authApi = {
   },
 
   async managerLogin(payload: LoginPayload) {
-    const { data } = await apiClient.post<LoginResponse>('/accounts/manager-login/', payload);
+    const { data } = await apiClient.post<LoginResponse>('/accounts/staff-login/', payload);
     await tokenStorage.setTokens(data.access, data.refresh);
     return data;
   },

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Image, Linking, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Image, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
@@ -26,11 +26,32 @@ type R = RouteProp<RootStackParamList, 'UniversityDetail'>;
 export function UniversityDetailScreen() {
   const route = useRoute<R>();
   const navigation = useNavigation<any>();
+  const [programSearch, setProgramSearch] = useState('');
+  const [programSort, setProgramSort] = useState<'title' | 'price' | 'duration'>('title');
   const universityQuery = useQuery({
     queryKey: ['catalog', 'university', route.params.id],
     queryFn: () => educationCatalogApi.getUniversity(route.params.id),
     staleTime: 1000 * 60 * 30,
   });
+  const visiblePrograms = useMemo(() => {
+    const queryText = programSearch.trim().toLowerCase();
+    const programs = [...(universityQuery.data?.programs || [])].filter(program => {
+      if (!queryText) return true;
+      return [program.title, program.faculty, program.specialty, program.level, program.language]
+        .filter(Boolean)
+        .some(value => String(value).toLowerCase().includes(queryText));
+    });
+
+    return programs.sort((left, right) => {
+      if (programSort === 'price') {
+        return parseMoney(left.tuition_fee) - parseMoney(right.tuition_fee);
+      }
+      if (programSort === 'duration') {
+        return String(left.duration || '').localeCompare(String(right.duration || ''), 'ru');
+      }
+      return String(left.title || '').localeCompare(String(right.title || ''), 'ru');
+    });
+  }, [programSearch, programSort, universityQuery.data?.programs]);
 
   const handleApplyPress = () => navigation.navigate('ApplicationCreate', { universityId: universityQuery.data?.id });
 
@@ -107,7 +128,26 @@ export function UniversityDetailScreen() {
         <EmptyState title="Программы пока не добавлены" description="Можно отправить заявку по вузу, менеджер уточнит детали." />
       ) : (
         <View style={styles.programsList}>
-          {data.programs.map((program: Program) => (
+          <AppCard style={styles.programFilters}>
+            <View style={styles.searchBox}>
+              <SvgIcon name="search" size={19} color={colors.mutedLight} />
+              <TextInput
+                value={programSearch}
+                onChangeText={setProgramSearch}
+                placeholder="Поиск по программам, факультету, языку"
+                placeholderTextColor={colors.mutedLight}
+                style={styles.searchInput}
+              />
+            </View>
+            <View style={styles.sortRow}>
+              <SortChip label="Название" active={programSort === 'title'} onPress={() => setProgramSort('title')} />
+              <SortChip label="Стоимость" active={programSort === 'price'} onPress={() => setProgramSort('price')} />
+              <SortChip label="Срок" active={programSort === 'duration'} onPress={() => setProgramSort('duration')} />
+            </View>
+            <Text style={styles.programCount}>Показано программ: {visiblePrograms.length}</Text>
+          </AppCard>
+
+          {visiblePrograms.map((program: Program) => (
             <ProgramCard
               key={program.id}
               program={program}
@@ -115,6 +155,11 @@ export function UniversityDetailScreen() {
               onApply={() => navigation.navigate('ApplicationCreate', { universityId: data.id, programId: program.id })}
             />
           ))}
+          {!visiblePrograms.length ? (
+            <AppCard style={styles.programCard}>
+              <Text style={styles.emptyText}>По этому запросу программ не найдено.</Text>
+            </AppCard>
+          ) : null}
         </View>
       )}
 
@@ -197,6 +242,20 @@ function ProgramMeta({ icon, text }: { icon: SvgIconName; text: string }) {
   );
 }
 
+function SortChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable style={[styles.sortChip, active && styles.sortChipActive]} onPress={onPress}>
+      <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function parseMoney(value?: string | number | null) {
+  if (value === null || value === undefined || value === '') return Number.MAX_SAFE_INTEGER;
+  const normalized = String(value).replace(/\s/g, '').replace(',', '.').match(/\d+(\.\d+)?/);
+  return normalized ? Number(normalized[0]) : Number.MAX_SAFE_INTEGER;
+}
+
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.background },
   hero: { minHeight: 300, marginBottom: spacing.lg },
@@ -225,10 +284,37 @@ const styles = StyleSheet.create({
   text: { color: colors.muted, fontSize: typography.body, lineHeight: 23, fontWeight: typography.weights.medium },
   inlineButton: { marginTop: spacing.md },
   programsList: { gap: spacing.md },
+  programFilters: { padding: spacing.md },
+  searchBox: {
+    minHeight: 48,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  searchInput: { flex: 1, minHeight: 46, color: colors.text, fontSize: typography.body },
+  sortRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.md },
+  sortChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sortChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  sortChipText: { color: colors.muted, fontWeight: typography.weights.bold },
+  sortChipTextActive: { color: colors.white },
+  programCount: { color: colors.muted, fontSize: typography.small, fontWeight: typography.weights.bold, marginTop: spacing.sm },
   programCard: { padding: spacing.lg },
   programTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.sm },
   programMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   programMeta: { flex: 1, color: colors.muted, fontWeight: typography.weights.bold },
   programActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   programButton: { flex: 1 },
+  emptyText: { color: colors.muted, lineHeight: 22, fontWeight: typography.weights.bold },
 });

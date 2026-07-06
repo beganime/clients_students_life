@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
@@ -18,6 +18,7 @@ import { colors, radius, spacing, typography } from '../../constants/colors';
 import { MainTabParamList } from '../../navigation/types';
 
 type R = RouteProp<MainTabParamList, 'Universities'>;
+const UNIVERSITIES_PAGE_SIZE = 12;
 
 export function UniversitiesScreen() {
   const navigation = useNavigation<any>();
@@ -51,11 +52,36 @@ export function UniversitiesScreen() {
     return payload;
   }, [search, countryId, cityId]);
 
-  const universitiesQuery = useQuery({
+  const universitiesQuery = useInfiniteQuery({
     queryKey: ['catalog', 'universities', filters],
-    queryFn: () => educationCatalogApi.getUniversities(filters),
-    staleTime: 1000 * 60 * 20,
+    queryFn: ({ pageParam }) =>
+      educationCatalogApi.getUniversitiesPage({
+        ...filters,
+        limit: UNIVERSITIES_PAGE_SIZE,
+        offset: pageParam,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage.next) return undefined;
+      try {
+        const nextUrl = new URL(lastPage.next);
+        const nextOffset = Number(nextUrl.searchParams.get('offset'));
+        if (Number.isFinite(nextOffset)) return nextOffset;
+      } catch {
+        // Some APIs return a relative next URL. Fall back to the number of cached rows.
+      }
+      const loaded = allPages.reduce((sum, page) => sum + page.results.length, 0);
+      return loaded < lastPage.count ? loaded : undefined;
+    },
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60 * 24,
   });
+
+  const universities = useMemo(
+    () => universitiesQuery.data?.pages.flatMap(page => page.results) || [],
+    [universitiesQuery.data],
+  );
+  const universitiesCount = universitiesQuery.data?.pages[0]?.count ?? universities.length;
 
   const refreshAll = () => {
     countriesQuery.refetch();
@@ -67,10 +93,24 @@ export function UniversitiesScreen() {
     <Screen>
       <FlatList
         contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
-        data={universitiesQuery.isLoading || universitiesQuery.isError ? [] : universitiesQuery.data || []}
+        data={universitiesQuery.isLoading || universitiesQuery.isError ? [] : universities}
         keyExtractor={item => String(item.id)}
         refreshing={countriesQuery.isRefetching || citiesQuery.isRefetching || universitiesQuery.isRefetching}
         onRefresh={refreshAll}
+        onEndReached={() => {
+          if (universitiesQuery.hasNextPage && !universitiesQuery.isFetchingNextPage) {
+            universitiesQuery.fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.45}
+        ListFooterComponent={
+          universitiesQuery.isFetchingNextPage ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.footerText}>Загружаем ещё вузы...</Text>
+            </View>
+          ) : null
+        }
         ListHeaderComponent={
           <View>
             <RedGradientHero backgroundImage={bannerImages.universities} style={styles.hero}>
@@ -134,7 +174,10 @@ export function UniversitiesScreen() {
               <Text style={styles.helperText}>
                 Нажмите на чип для фильтра. Удерживайте страну или город, чтобы открыть отдельную страницу.
               </Text>
-              <Text style={styles.countText}>Найдено вузов: {(universitiesQuery.data || []).length}</Text>
+              <Text style={styles.countText}>
+                Показано вузов: {universities.length}
+                {universitiesCount ? ` из ${universitiesCount}` : ''}
+              </Text>
             </AppCard>
 
             {countriesQuery.isError ? <ErrorState title="Страны не загрузились" onAction={() => countriesQuery.refetch()} /> : null}
@@ -239,4 +282,14 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   countText: { color: colors.muted, fontWeight: typography.weights.heavy, marginTop: spacing.md },
+  footerLoader: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  footerText: {
+    color: colors.muted,
+    fontSize: typography.small,
+    fontWeight: typography.weights.bold,
+  },
 });

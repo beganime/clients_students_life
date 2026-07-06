@@ -25,7 +25,7 @@ export function ManagerLoginScreen({ navigation }: Props) {
   const handleLogin = async () => {
     const cleanUsername = username.trim();
     if (!cleanUsername || !password) {
-      setError('Введите логин и пароль менеджера.');
+      setError('Введите логин и пароль сотрудника.');
       return;
     }
 
@@ -35,7 +35,7 @@ export function ManagerLoginScreen({ navigation }: Props) {
       await managerLogin(cleanUsername, password);
       navigation.navigate('App', { screen: 'Profile' });
     } catch (loginError) {
-      setError(getApiErrorMessage(loginError, 'Не удалось войти как менеджер. Проверьте логин и пароль.'));
+      setError(getApiErrorMessage(loginError, 'Не удалось войти как сотрудник. Проверьте логин, пароль и профиль Staff в админке.'));
     } finally {
       setLoading(false);
     }
@@ -44,9 +44,9 @@ export function ManagerLoginScreen({ navigation }: Props) {
   return (
     <Screen scroll style={styles.screen}>
       <RedGradientHero backgroundImage={bannerImages.profile} style={styles.hero}>
-        <Text style={styles.title}>Вход менеджера</Text>
+        <Text style={styles.title}>Вход сотрудника</Text>
         <Text style={styles.subtitle}>
-          Используйте аккаунт manager-sl.ru. После входа откроются клиентские чаты и заявки.
+          Используйте локальный аккаунт Student's Life. Доступ откроется, если к пользователю привязан активный профиль Staff в админке.
         </Text>
       </RedGradientHero>
 
@@ -70,11 +70,11 @@ export function ManagerLoginScreen({ navigation }: Props) {
             setError(null);
           }}
           secureTextEntry
-          placeholder="Пароль от manager-sl.ru"
+          placeholder="Пароль сотрудника"
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <View style={styles.actions}>
-          <AppButton title="Войти как менеджер" onPress={handleLogin} loading={loading} />
+          <AppButton title="Войти как сотрудник" onPress={handleLogin} loading={loading} />
           <AppButton title="Назад к настройкам" variant="outline" onPress={() => navigation.goBack()} disabled={loading} />
         </View>
       </AppCard>

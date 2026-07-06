@@ -15,7 +15,6 @@ import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import {
   APP_NAME,
   APP_VERSION,
-  MANAGER_SL_API_BASE_URL,
   PRIVACY_POLICY_URL,
 } from '../../constants/config';
 import { colors, radius, spacing, typography } from '../../constants/colors';
@@ -74,10 +73,10 @@ export function SettingsScreen() {
 
       <SettingsBlock
         icon="lock"
-        title="Вход для менеджера"
-        text={`Отдельный вход для сотрудников. Данные проверяются через manager-sl.ru, затем приложение включает роль менеджера для чатов и заявок. API: ${MANAGER_SL_API_BASE_URL}`}
+        title="Вход для сотрудника"
+        text="Отдельный вход для сотрудников Student's Life. Доступ включается в админке через раздел Staff: сначала создайте пользователя, затем привяжите к нему активный профиль сотрудника."
       >
-        <AppButton title="Войти как менеджер" variant="secondary" onPress={() => navigation.navigate('ManagerLogin')} />
+        <AppButton title="Войти как сотрудник" variant="secondary" onPress={() => navigation.navigate('ManagerLogin')} />
       </SettingsBlock>
 
       <SettingsBlock

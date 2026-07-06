@@ -2,11 +2,31 @@ import { MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/confi
 
 export const EDUCATION_CATALOG_BASE_URL = MANAGER_SL_API_BASE_URL;
 
-type ListResponse<T> = { results?: T[] } | T[];
+type ListResponse<T> = { count?: number; next?: string | null; previous?: string | null; results?: T[] } | T[];
 type CatalogParams = Record<string, string | number | boolean | undefined>;
+export type CatalogPage<T> = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+};
 
 function list<T>(data: ListResponse<T>): T[] {
   return Array.isArray(data) ? data : data.results || [];
+}
+
+function page<T>(data: ListResponse<T>): CatalogPage<T> {
+  if (Array.isArray(data)) {
+    return { count: data.length, next: null, previous: null, results: data };
+  }
+
+  const results = data.results || [];
+  return {
+    count: data.count ?? results.length,
+    next: data.next ?? null,
+    previous: data.previous ?? null,
+    results,
+  };
 }
 
 async function request<T>(
@@ -182,6 +202,11 @@ export const educationCatalogApi = {
 
   async getUniversities(params?: CatalogParams) {
     return list(await request<ListResponse<any>>('/universities/', withLimit(params, 12))).map(toUniversity);
+  },
+
+  async getUniversitiesPage(params?: CatalogParams) {
+    const data = page(await request<ListResponse<any>>('/universities/', withLimit(params, 12)));
+    return { ...data, results: data.results.map(toUniversity) };
   },
 
   async getUniversity(id: number | string) {
