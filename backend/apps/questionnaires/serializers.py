@@ -174,12 +174,6 @@ class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
         return super().to_internal_value(mutable)
 
     def validate(self, attrs):
-        save_mode = attrs.get('save_mode') or 'draft'
-        consent = attrs.get('data_processing_consent', getattr(self.instance, 'data_processing_consent', False))
-        if save_mode in {'submitted', 'completed'} and not consent:
-            raise serializers.ValidationError({
-                'data_processing_consent': 'Необходимо согласие на обработку персональных данных.',
-            })
         return attrs
 
     def update(self, instance, validated_data):
