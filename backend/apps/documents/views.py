@@ -178,15 +178,6 @@ class ExternalDocumentReviewView(APIView):
 
         comment = str(request.data.get('admin_comment') or request.data.get('comment') or '').strip()
 
-        application_file = (
-            ApplicationFile.objects
-            .select_related('application', 'application__user', 'uploaded_by')
-            .filter(pk=document_id)
-            .first()
-        )
-        if application_file:
-            return Response(update_application_file_review(application_file, status_value, comment))
-
         document = UserDocument.objects.select_related('document_type', 'user').filter(pk=document_id).first()
         if document:
             document.status = status_value
@@ -194,5 +185,16 @@ class ExternalDocumentReviewView(APIView):
             document.reviewed_at = timezone.now()
             document.save(update_fields=['status', 'admin_comment', 'reviewed_at', 'updated_at'])
             return Response(MyDocumentSerializer(document, context={'request': request}).data)
+
+        application_file_id = request.data.get('application_file_id') or request.data.get('application_document_id') or document_id
+        if application_file_id:
+            application_file = (
+                ApplicationFile.objects
+                .select_related('application', 'application__user', 'uploaded_by')
+                .filter(pk=application_file_id)
+                .first()
+            )
+            if application_file:
+                return Response(update_application_file_review(application_file, status_value, comment))
 
         return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)

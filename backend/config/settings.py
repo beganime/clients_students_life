@@ -322,6 +322,8 @@ UNFOLD = {
                 'items': [
                     {'title': 'Заявки', 'icon': 'assignment', 'link': reverse_lazy('admin:applications_application_changelist')},
                     {'title': 'Файлы заявок', 'icon': 'attach_file', 'link': reverse_lazy('admin:applications_applicationfile_changelist')},
+                    {'title': 'Типы документов', 'icon': 'fact_check', 'link': reverse_lazy('admin:documents_requireddocumenttype_changelist')},
+                    {'title': 'Документы клиентов', 'icon': 'file_present', 'link': reverse_lazy('admin:documents_userdocument_changelist')},
                     {'title': 'Чаты', 'icon': 'forum', 'link': reverse_lazy('admin:chat_chatroom_changelist')},
                     {'title': 'Сообщения', 'icon': 'chat', 'link': reverse_lazy('admin:chat_chatmessage_changelist')},
                     {'title': 'Анкеты абитуриентов', 'icon': 'assignment_ind', 'link': reverse_lazy('admin:questionnaires_applicantquestionnaire_changelist')},
