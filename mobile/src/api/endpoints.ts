@@ -5,6 +5,7 @@ import {
   ChatMessage,
   ChatRoom,
   City,
+  ClientExam,
   Country,
   FavoriteUniversity,
   HomeContent,
@@ -408,6 +409,16 @@ export const notificationsApi = {
   async getMyNotifications() {
     const { data } = await apiClient.get<PaginatedResponse<UserNotification>>('/notifications/my/');
     return data.results;
+  },
+
+  async getMyExams() {
+    const { data } = await apiClient.get<ClientExam[]>('/notifications/my-exams/');
+    return data;
+  },
+
+  async acknowledgeExam(id: number) {
+    const { data } = await apiClient.post<ClientExam>(`/notifications/my-exams/${id}/acknowledge/`);
+    return data;
   },
 
   async markNotificationRead(id: number) {

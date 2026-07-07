@@ -1,8 +1,9 @@
 import firebase_admin
 from django.conf import settings
+from django.utils import timezone
 from firebase_admin import credentials, messaging
 
-from .models import DeviceToken, UserNotification
+from .models import ClientExam, DeviceToken, UserNotification
 
 
 _firebase_initialized = False
@@ -60,3 +61,29 @@ def send_push_to_user(user, title, body, notification_type='', related_object_ty
             messaging.send(message)
         except Exception:
             DeviceToken.objects.filter(token=token).update(is_active=False)
+
+
+def send_exam_reminder(exam: ClientExam, *, force=False):
+    if not exam.is_active or exam.acknowledged_by_user:
+        return False
+    now = timezone.now()
+    if not force and exam.next_reminder_at and exam.next_reminder_at > now:
+        return False
+
+    title = 'Напоминание об экзамене'
+    body = f'У вас экзамен: {exam.subject}. Дата: {exam.exam_date:%d.%m.%Y}, время: {exam.exam_time:%H:%M}.'
+    if exam.comment:
+        body = f'{body} {exam.comment}'
+
+    send_push_to_user(
+        user=exam.user,
+        title=title,
+        body=body,
+        notification_type='exam',
+        related_object_type='client_exam',
+        related_object_id=exam.id,
+    )
+    exam.last_reminded_at = now
+    exam.next_reminder_at = exam.compute_next_reminder_at(now)
+    exam.save(update_fields=['last_reminded_at', 'next_reminder_at', 'updated_at'])
+    return True

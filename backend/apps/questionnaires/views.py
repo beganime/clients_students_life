@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import ensure_client_profile
-from apps.documents.views import configured_review_api_keys
+from apps.documents.views import has_service_api_access
 
 from .manager_sl_sync import sync_questionnaire_to_manager_sl
 from .models import ApplicantQuestionnaire
@@ -158,7 +158,7 @@ class ServiceQuestionnaireRegenerateDocumentView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, questionnaire_id):
-        if request.headers.get('X-API-KEY') not in configured_review_api_keys():
+        if not has_service_api_access(request):
             return Response({'detail': 'Invalid API key.'}, status=status.HTTP_403_FORBIDDEN)
         questionnaire = ApplicantQuestionnaire.objects.select_related('user').filter(pk=questionnaire_id).first()
         if not questionnaire:

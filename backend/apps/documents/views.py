@@ -28,6 +28,17 @@ def configured_review_api_keys():
     }
 
 
+def unsafe_local_api_allowed():
+    return bool(getattr(settings, 'DEBUG', False) and getattr(settings, 'ALLOW_UNSAFE_LOCAL_API', False))
+
+
+def has_service_api_access(request):
+    api_key = request.headers.get('X-API-KEY')
+    if api_key and api_key in configured_review_api_keys():
+        return True
+    return unsafe_local_api_allowed()
+
+
 def document_review_push_text(status_value, document_title='', comment=''):
     document_title = str(document_title or '').strip() or 'документ'
     comment = str(comment or '').strip()
@@ -53,8 +64,7 @@ def send_document_review_push(user, status_value, document_title='', comment='',
 
 
 def has_manager_or_service_access(request):
-    api_key = request.headers.get('X-API-KEY')
-    if api_key and api_key in configured_review_api_keys():
+    if has_service_api_access(request):
         return True
     return bool(request.user and request.user.is_authenticated and (request.user.is_staff or is_manager_user(request.user)))
 
@@ -271,8 +281,7 @@ class ExternalDocumentReviewView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        expected_keys = configured_review_api_keys()
-        if not expected_keys or request.headers.get('X-API-KEY') not in expected_keys:
+        if not has_service_api_access(request):
             return Response({'detail': 'Invalid API key.'}, status=status.HTTP_403_FORBIDDEN)
 
         document_id = request.data.get('document_id') or request.data.get('mobile_document_id')

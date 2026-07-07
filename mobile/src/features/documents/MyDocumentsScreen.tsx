@@ -47,7 +47,10 @@ export function MyDocumentsScreen() {
   const documentsQuery = useQuery({
     queryKey: ['my-documents'],
     queryFn: documentsApi.getMyDocuments,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   });
 
   const uploadMutation = useMutation({

@@ -178,6 +178,7 @@ CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-device-platform',
     'idempotency-key',
+    'x-api-key',
 ]
 
 REST_FRAMEWORK = {
@@ -237,6 +238,7 @@ CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://localhost:6379/0')
 
 FIREBASE_CREDENTIALS_PATH = config('FIREBASE_CREDENTIALS_PATH', default='')
+ALLOW_UNSAFE_LOCAL_API = DEBUG and config('ALLOW_UNSAFE_LOCAL_API', default=False, cast=bool)
 
 MANAGER_SL_API_BASE_URL = config('MANAGER_SL_API_BASE_URL', default='')
 MANAGER_SL_LEADS_API_KEY = config('MANAGER_SL_LEADS_API_KEY', default='')

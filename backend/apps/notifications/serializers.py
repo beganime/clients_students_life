@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import DeviceToken, PushNotification, UserNotification
+from .models import ClientExam, DeviceToken, PushNotification, UserNotification
 
 
 class DeviceTokenSerializer(serializers.ModelSerializer):
@@ -47,3 +47,43 @@ class UserNotificationSerializer(serializers.ModelSerializer):
             'is_read',
             'created_at',
         )
+
+
+class ClientExamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClientExam
+        fields = (
+            'id',
+            'user',
+            'subject',
+            'exam_date',
+            'exam_time',
+            'timezone',
+            'comment',
+            'reminder_start_at',
+            'repeat_until_acknowledged',
+            'acknowledged_at',
+            'acknowledged_by_user',
+            'is_active',
+            'manager_sl_exam_id',
+            'last_reminded_at',
+            'next_reminder_at',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = (
+            'id',
+            'user',
+            'acknowledged_at',
+            'acknowledged_by_user',
+            'last_reminded_at',
+            'next_reminder_at',
+            'created_at',
+            'updated_at',
+        )
+
+    def validate_subject(self, value):
+        value = str(value or '').strip()
+        if not value:
+            raise serializers.ValidationError('Subject is required.')
+        return value
