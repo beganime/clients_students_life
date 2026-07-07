@@ -1,5 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -16,6 +16,7 @@ import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
 import { colors, radius, spacing, typography } from '../../constants/colors';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { MyDocument, MyDocumentStatus } from '../../types/api';
 import { getApiErrorMessage } from '../../utils/apiError';
 
@@ -40,6 +41,8 @@ type UploadPayload = {
 
 export function MyDocumentsScreen() {
   const queryClient = useQueryClient();
+  const { isOnline } = useNetworkStatus();
+  const [pendingUploads, setPendingUploads] = useState<Record<number, UploadableFile>>({});
 
   const documentsQuery = useQuery({
     queryKey: ['my-documents'],
@@ -51,6 +54,13 @@ export function MyDocumentsScreen() {
     mutationFn: ({ documentTypeId, file }: UploadPayload) =>
       documentsApi.uploadMyDocument(documentTypeId, file),
     onSuccess: () => {
+      if (uploadMutation.variables?.documentTypeId) {
+        setPendingUploads(prev => {
+          const next = { ...prev };
+          delete next[uploadMutation.variables!.documentTypeId];
+          return next;
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['my-documents'] });
       Alert.alert('Документ отправлен', 'Файл загружен и отправлен менеджеру на проверку.');
     },
@@ -58,6 +68,15 @@ export function MyDocumentsScreen() {
       Alert.alert('Не удалось загрузить документ', getApiErrorMessage(error));
     },
   });
+
+  const uploadFile = (documentTypeId: number, file: UploadableFile) => {
+    if (!isOnline) {
+      setPendingUploads(prev => ({ ...prev, [documentTypeId]: file }));
+      Alert.alert('Ожидает загрузки', 'Вы сейчас offline. Файл будет можно отправить после подключения к интернету.');
+      return;
+    }
+    uploadMutation.mutate({ documentTypeId, file });
+  };
 
   const handlePick = async (document: MyDocument) => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -68,15 +87,21 @@ export function MyDocumentsScreen() {
 
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
-    uploadMutation.mutate({
-      documentTypeId: document.id,
-      file: {
-        uri: asset.uri,
-        name: asset.name || `document-${document.id}`,
-        type: asset.mimeType || 'application/octet-stream',
-        file: (asset as any).file,
-      },
+    uploadFile(document.id, {
+      uri: asset.uri,
+      name: asset.name || `document-${document.id}`,
+      type: asset.mimeType || 'application/octet-stream',
+      file: (asset as any).file,
     });
+  };
+
+  const handlePendingUpload = (document: MyDocument) => {
+    const file = pendingUploads[document.id];
+    if (!file) {
+      handlePick(document);
+      return;
+    }
+    uploadFile(document.id, file);
   };
 
   const documents = documentsQuery.data || [];
@@ -103,6 +128,13 @@ export function MyDocumentsScreen() {
         <SummaryCard value={`${approvedCount}`} label="принято" />
       </View>
 
+      {!isOnline ? (
+        <AppCard style={styles.offlineCard}>
+          <Text style={styles.offlineTitle}>Вы сейчас offline</Text>
+          <Text style={styles.offlineText}>Данные документов показываются из кэша. Новые файлы получат статус «Ожидает загрузки».</Text>
+        </AppCard>
+      ) : null}
+
       {documentsQuery.isLoading ? <LoadingSkeleton rows={4} height={150} /> : null}
       {documentsQuery.isError ? <ErrorState onAction={() => documentsQuery.refetch()} /> : null}
       {!documentsQuery.isLoading && !documentsQuery.isError && !documents.length ? (
@@ -119,8 +151,9 @@ export function MyDocumentsScreen() {
           <DocumentCard
             key={document.id}
             document={document}
-            onUpload={() => handlePick(document)}
+            onUpload={() => handlePendingUpload(document)}
             uploading={uploadMutation.isPending && uploadMutation.variables?.documentTypeId === document.id}
+            pendingUpload={Boolean(pendingUploads[document.id])}
           />
         ))}
       </View>
@@ -141,13 +174,15 @@ function DocumentCard({
   document,
   onUpload,
   uploading,
+  pendingUpload,
 }: {
   document: MyDocument;
   onUpload: () => void;
   uploading: boolean;
+  pendingUpload: boolean;
 }) {
   const rejected = document.status === 'rejected';
-  const buttonTitle = document.status === 'not_uploaded' ? 'Загрузить файл' : rejected ? 'Загрузить исправленный файл' : 'Заменить файл';
+  const buttonTitle = pendingUpload ? 'Повторить загрузку' : document.status === 'not_uploaded' ? 'Загрузить файл' : rejected ? 'Загрузить исправленный файл' : 'Заменить файл';
 
   return (
     <AppCard style={[styles.documentCard, rejected && styles.rejectedCard]}>
@@ -173,6 +208,7 @@ function DocumentCard({
       )}
       {document.uploaded_at ? <Text style={styles.metaText}>Загружен: {formatDate(document.uploaded_at)}</Text> : null}
       {document.reviewed_at ? <Text style={styles.metaText}>Проверен: {formatDate(document.reviewed_at)}</Text> : null}
+      {pendingUpload ? <Text style={styles.pendingText}>Ожидает загрузки после подключения к интернету.</Text> : null}
 
       {rejected && document.admin_comment ? (
         <View style={styles.commentBox}>
@@ -201,6 +237,9 @@ const styles = StyleSheet.create({
   summaryCard: { flex: 1, padding: spacing.md },
   summaryValue: { color: colors.secondary, fontSize: 22, fontWeight: typography.weights.heavy },
   summaryLabel: { color: colors.muted, fontSize: typography.small, fontWeight: typography.weights.bold, marginTop: 2 },
+  offlineCard: { marginBottom: spacing.lg, borderColor: 'rgba(13,65,109,0.2)', backgroundColor: 'rgba(13,65,109,0.06)' },
+  offlineTitle: { color: colors.secondary, fontSize: typography.body, fontWeight: typography.weights.heavy },
+  offlineText: { color: colors.text, lineHeight: 21, marginTop: spacing.xs, fontWeight: typography.weights.medium },
   documentsList: { gap: spacing.md },
   documentCard: { borderColor: colors.border },
   rejectedCard: { borderColor: 'rgba(244,63,94,0.25)' },
@@ -218,6 +257,7 @@ const styles = StyleSheet.create({
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.sm },
   description: { color: colors.muted, lineHeight: 22, marginTop: spacing.md, fontWeight: typography.weights.medium },
   metaText: { color: colors.muted, fontSize: typography.small, fontWeight: typography.weights.bold, marginTop: spacing.sm },
+  pendingText: { color: colors.secondary, fontSize: typography.small, fontWeight: typography.weights.heavy, marginTop: spacing.sm },
   commentBox: { marginTop: spacing.md, padding: spacing.md, borderRadius: radius.md, backgroundColor: 'rgba(244,63,94,0.08)' },
   commentTitle: { color: colors.danger, fontWeight: typography.weights.heavy },
   commentText: { color: colors.text, lineHeight: 21, marginTop: spacing.xs, fontWeight: typography.weights.medium },

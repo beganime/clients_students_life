@@ -3,7 +3,7 @@ import { MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/confi
 export const EDUCATION_CATALOG_BASE_URL = MANAGER_SL_API_BASE_URL;
 
 type ListResponse<T> = { count?: number; next?: string | null; previous?: string | null; results?: T[] } | T[];
-type CatalogParams = Record<string, string | number | boolean | undefined>;
+export type CatalogParams = Record<string, string | number | boolean | undefined>;
 export type CatalogPage<T> = {
   count: number;
   next: string | null;
@@ -105,15 +105,29 @@ function toProgram(item: any): any {
   const firstFee = item.fees?.[0];
   const firstIntake = item.intakes?.[0];
   const degree = item.degree_display || item.degree || item.level;
+  const university = item.university_detail || item.university || {};
+  const universityId = typeof item.university === 'number' ? item.university : item.university_id || university.id;
+  const universityName = item.university_name || university.name || item.university_title;
+  const countryName = item.country_name || item.country || university.country_name;
+  const cityName = item.city_name || item.city || university.city_name;
 
   return {
     ...item,
-    title: item.title || item.name || 'Программа',
+    id: item.program_id || item.id,
+    program_id: item.program_id || item.id,
+    program_title: item.program_title || item.title || item.name,
+    university: universityId,
+    university_id: universityId,
+    university_name: universityName,
+    title: item.program_title || item.title || item.name || 'Программа',
     level: degree || 'Уровень уточняется',
-    country_name: item.country_name || item.country,
-    city_name: item.city_name || item.city,
+    country_name: countryName,
+    city_name: cityName,
     tuition_fee: firstFee?.tuition_fee ?? item.tuition_fee,
     currency: firstFee?.currency || item.currency,
+    currency_symbol: firstFee?.currency_symbol || item.currency_symbol,
+    converted_tuition_fee: item.converted_tuition_fee,
+    selected_currency: item.selected_currency,
     application_deadline: firstIntake?.application_deadline || item.application_deadline,
     start_date: firstIntake?.start_date || item.start_date,
     intakes: item.intakes || [],
@@ -215,6 +229,11 @@ export const educationCatalogApi = {
 
   async getPrograms(params?: CatalogParams) {
     return list(await request<ListResponse<any>>('/programs/', withLimit(params, 50))).map(toProgram);
+  },
+
+  async getProgramsPage(params?: CatalogParams) {
+    const data = page(await request<ListResponse<any>>('/programs/', withLimit(params, 12)));
+    return { ...data, results: data.results.map(toProgram) };
   },
 
   async getProgram(id: number | string) {

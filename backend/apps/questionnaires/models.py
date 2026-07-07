@@ -29,6 +29,7 @@ class ApplicantQuestionnaire(TimeStampedModel):
 
     class Status(models.TextChoices):
         DRAFT = 'draft', 'Не заполнена'
+        COMPLETED = 'completed', 'Заполнена'
         SUBMITTED = 'submitted', 'Заполнена'
         UPDATED = 'updated', 'Обновлена'
 
@@ -123,11 +124,14 @@ class ApplicantQuestionnaire(TimeStampedModel):
     def __str__(self):
         return self.full_name or self.user.get_full_name() or self.user.email or str(self.user)
 
-    def mark_submitted(self):
-        self.status = self.Status.UPDATED if self.submitted_at else self.Status.SUBMITTED
+    def mark_completed(self):
+        self.status = self.Status.UPDATED if self.submitted_at else self.Status.COMPLETED
         if not self.submitted_at:
             self.submitted_at = timezone.now()
         self.manager_sl_sync_status = 'pending'
+
+    def mark_draft(self):
+        self.status = self.Status.DRAFT
 
 
 class QuestionnaireAttachment(TimeStampedModel):

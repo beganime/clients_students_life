@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -18,11 +17,15 @@ import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
 import { colors, radius, spacing, typography } from '../../constants/colors';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { ApplicantQuestionnaire } from '../../types/api';
 import { getApiErrorMessage } from '../../utils/apiError';
+import {
+  clearOfflineQuestionnaireDraft,
+  loadOfflineQuestionnaireDraft,
+  saveOfflineQuestionnaireDraft,
+} from '../../utils/offlineStorage';
 import { getMediaUrl } from '../../utils/media';
-
-const LOCAL_DRAFT_KEY = 'students_life_questionnaire_local_draft_v1';
 
 const TEXT_FIELDS: Array<keyof ApplicantQuestionnaire> = [
   'full_name',
@@ -87,29 +90,14 @@ const URGENCY_OPTIONS = ['в этом году', 'в следующем году
 const PASSPORT_OPTIONS = ['да', 'нет', 'в процессе оформления'];
 const REFERRAL_OPTIONS = ['Instagram', 'TikTok', 'Telegram', 'знакомые', 'офис', 'сайт', 'другое'];
 
-type LocalQuestionnaireDraft = {
-  form: Partial<ApplicantQuestionnaire>;
-  facePhoto?: UploadableFile | null;
-  savedAt?: string;
-};
-
-function serializableFile(file: UploadableFile | null): UploadableFile | null {
-  if (!file) return null;
-  return {
-    uri: file.uri,
-    name: file.name,
-    type: file.type,
-  };
-}
-
 export function ApplicantQuestionnaireScreen() {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
+  const { isOnline } = useNetworkStatus();
   const [form, setForm] = useState<Partial<ApplicantQuestionnaire>>({});
   const [facePhoto, setFacePhoto] = useState<UploadableFile | null>(null);
-  const [draftLoaded, setDraftLoaded] = useState(false);
-  const [hasLocalDraft, setHasLocalDraft] = useState(false);
-  const [localSavedAt, setLocalSavedAt] = useState<string | null>(null);
+  const [offlineDraftSavedAt, setOfflineDraftSavedAt] = useState<string | null>(null);
+  const [offlineDraftChecked, setOfflineDraftChecked] = useState(false);
 
   const questionnaireQuery = useQuery({
     queryKey: ['my-questionnaire'],
@@ -118,81 +106,43 @@ export function ApplicantQuestionnaireScreen() {
   });
 
   useEffect(() => {
-    let mounted = true;
-    AsyncStorage.getItem(LOCAL_DRAFT_KEY)
-      .then(raw => {
-        if (!mounted) return;
-        if (!raw) {
-          setDraftLoaded(true);
-          return;
-        }
-        const parsed = JSON.parse(raw) as LocalQuestionnaireDraft;
-        if (parsed.form) {
-          setForm(parsed.form);
-          setHasLocalDraft(true);
-          setLocalSavedAt(parsed.savedAt || null);
-        }
-        if (parsed.facePhoto?.uri) {
-          setFacePhoto(parsed.facePhoto);
-        }
-        setDraftLoaded(true);
+    let active = true;
+    loadOfflineQuestionnaireDraft()
+      .then(draft => {
+        if (!active || !draft) return;
+        setForm(prev => ({ ...prev, ...draft.form }));
+        setOfflineDraftSavedAt(draft.saved_at);
       })
-      .catch(() => {
-        if (mounted) setDraftLoaded(true);
+      .finally(() => {
+        if (active) setOfflineDraftChecked(true);
       });
     return () => {
-      mounted = false;
+      active = false;
     };
   }, []);
 
   useEffect(() => {
-    if (questionnaireQuery.data && draftLoaded && !hasLocalDraft) {
+    if (questionnaireQuery.data && offlineDraftChecked && !offlineDraftSavedAt) {
       setForm(questionnaireQuery.data);
     }
-  }, [questionnaireQuery.data, draftLoaded, hasLocalDraft]);
-
-  const persistLocalDraft = async () => {
-    const savedAt = new Date().toISOString();
-    await AsyncStorage.setItem(
-      LOCAL_DRAFT_KEY,
-      JSON.stringify({
-        form,
-        facePhoto: serializableFile(facePhoto),
-        savedAt,
-      } satisfies LocalQuestionnaireDraft),
-    );
-    setHasLocalDraft(true);
-    setLocalSavedAt(savedAt);
-  };
-
-  const clearLocalDraft = async () => {
-    await AsyncStorage.removeItem(LOCAL_DRAFT_KEY);
-    setHasLocalDraft(false);
-    setLocalSavedAt(null);
-  };
+  }, [questionnaireQuery.data, offlineDraftChecked, offlineDraftSavedAt]);
 
   const saveMutation = useMutation({
-    mutationFn: () => questionnaireApi.saveMyQuestionnaire(buildPayload(form, facePhoto)),
-    onSuccess: async data => {
+    mutationFn: (saveMode: QuestionnaireSaveMode) =>
+      questionnaireApi.saveMyQuestionnaire(buildPayload(form, facePhoto, saveMode)),
+    onSuccess: async (data, saveMode) => {
       setFacePhoto(null);
       setForm(data);
-      await clearLocalDraft();
+      setOfflineDraftSavedAt(null);
+      await clearOfflineQuestionnaireDraft();
       queryClient.setQueryData(['my-questionnaire'], data);
-      Alert.alert('Черновик сохранён', 'Анкета сохранена на сервере, но ещё не отправлена на проверку. Можно продолжать редактировать.');
+      if (saveMode === 'draft') {
+        Alert.alert('Черновик сохранён', 'Анкету можно продолжить заполнять позже.');
+      } else {
+        Alert.alert('Анкета сохранена', 'Данные отправлены менеджеру и обновлены в кабинете.');
+      }
     },
     onError: error => Alert.alert('Не удалось сохранить на сервере', getApiErrorMessage(error)),
-  });
-
-  const submitMutation = useMutation({
-    mutationFn: () => questionnaireApi.submitMyQuestionnaire(buildPayload(form, facePhoto)),
-    onSuccess: async data => {
-      setFacePhoto(null);
-      setForm(data);
-      await clearLocalDraft();
-      queryClient.setQueryData(['my-questionnaire'], data);
-      Alert.alert('Анкета отправлена', 'Анкета отправлена менеджеру на проверку.');
-    },
-    onError: error => Alert.alert('Не удалось отправить анкету', getApiErrorMessage(error)),
   });
 
   const attachmentMutation = useMutation({
@@ -276,29 +226,43 @@ export function ApplicantQuestionnaireScreen() {
     [facePhoto?.uri, form.face_photo],
   );
 
-  const handleLocalSave = async () => {
-    try {
-      await persistLocalDraft();
-      Alert.alert('Сохранено офлайн', 'Черновик сохранён на устройстве. Можно закрыть приложение и продолжить позже.');
-    } catch {
-      Alert.alert('Не удалось сохранить офлайн', 'Попробуйте ещё раз.');
-    }
-  };
-
-  const handleServerSave = () => {
-    saveMutation.mutate();
-  };
-
-  const handleSubmit = () => {
-    if (!form.data_processing_consent) {
-      Alert.alert('Нужно согласие', 'Перед отправкой анкеты подтвердите согласие на обработку персональных данных.');
+  const handleSaveDraft = async () => {
+    if (!isOnline) {
+      const draft = await saveOfflineQuestionnaireDraft(form);
+      setForm(draft.form);
+      setOfflineDraftSavedAt(draft.saved_at);
+      Alert.alert('Черновик сохранён offline', 'Данные будут синхронизированы после подключения к интернету.');
       return;
     }
-    submitMutation.mutate();
+    saveMutation.mutate('draft');
+  };
+
+  const handleSave = async () => {
+    if (!form.data_processing_consent) {
+      Alert.alert('Нужно согласие', 'Перед сохранением анкеты подтвердите согласие на обработку персональных данных.');
+      return;
+    }
+    if (!isOnline) {
+      const nextForm = { ...form, data_processing_consent: true };
+      const draft = await saveOfflineQuestionnaireDraft(nextForm);
+      setForm(nextForm);
+      setOfflineDraftSavedAt(draft.saved_at);
+      Alert.alert('Анкета сохранена offline', 'После восстановления интернета нажмите «Синхронизировать».');
+      return;
+    }
+    saveMutation.mutate('completed');
+  };
+
+  const handleSyncOfflineDraft = () => {
+    if (!isOnline) {
+      Alert.alert('Нет интернета', 'Синхронизация будет доступна после подключения.');
+      return;
+    }
+    saveMutation.mutate(form.data_processing_consent ? 'completed' : 'draft');
   };
 
   const isEmptyForm = Object.keys(form).length === 0;
-  if (!draftLoaded || (questionnaireQuery.isLoading && isEmptyForm)) {
+  if (!offlineDraftChecked || (questionnaireQuery.isLoading && isEmptyForm && !offlineDraftSavedAt)) {
     return (
       <Screen scroll style={styles.screen}>
         <LoadingSkeleton rows={6} height={120} />
@@ -306,7 +270,7 @@ export function ApplicantQuestionnaireScreen() {
     );
   }
 
-  if (questionnaireQuery.isError && !hasLocalDraft && isEmptyForm) {
+  if (questionnaireQuery.isError && !offlineDraftSavedAt && isEmptyForm) {
     return (
       <Screen scroll style={styles.screen}>
         <ErrorState onAction={() => questionnaireQuery.refetch()} />
@@ -321,13 +285,6 @@ export function ApplicantQuestionnaireScreen() {
         <Text style={styles.heroTitle}>Анкета абитуриента</Text>
         <Text style={styles.heroText}>Заполняйте анкету как черновик. На проверку она уйдёт только после отдельной отправки.</Text>
       </RedGradientHero>
-
-      {hasLocalDraft ? (
-        <AppCard style={styles.localDraftCard}>
-          <Text style={styles.localDraftTitle}>Есть офлайн-черновик</Text>
-          <Text style={styles.localDraftText}>Последнее локальное сохранение: {localSavedAt ? new Date(localSavedAt).toLocaleString('ru-RU') : 'сохранено на устройстве'}.</Text>
-        </AppCard>
-      ) : null}
 
       <Section title="Личные данные">
         <Pressable style={styles.photoRow} onPress={pickFacePhoto}>
@@ -452,10 +409,23 @@ export function ApplicantQuestionnaireScreen() {
         <AppButton title="Открыть текст согласия" variant="ghost" onPress={() => navigation.navigate('DataConsent')} />
       </AppCard>
 
+      {(offlineDraftSavedAt || !isOnline) ? (
+        <AppCard style={styles.offlineCard}>
+          <Text style={styles.offlineTitle}>Оффлайн-режим</Text>
+          <Text style={styles.offlineText}>
+            {!isOnline
+              ? 'Вы сейчас offline. Данные будут синхронизированы после подключения к интернету.'
+              : `Найден локальный черновик от ${formatDraftDate(offlineDraftSavedAt)}.`}
+          </Text>
+          {isOnline && offlineDraftSavedAt ? (
+            <AppButton title="Синхронизировать" variant="outline" onPress={handleSyncOfflineDraft} loading={saveMutation.isPending} />
+          ) : null}
+        </AppCard>
+      ) : null}
+
       <View style={styles.actions}>
-        <AppButton title="Сохранить офлайн" variant="outline" onPress={handleLocalSave} />
-        <AppButton title="Сохранить черновик на сервере" variant="outline" onPress={handleServerSave} loading={saveMutation.isPending} />
-        <AppButton title="Отправить на проверку" onPress={handleSubmit} loading={submitMutation.isPending} />
+        <AppButton title="Сохранить анкету" onPress={handleSave} loading={saveMutation.isPending} />
+        <AppButton title="Сохранить черновик" variant="outline" onPress={handleSaveDraft} loading={saveMutation.isPending} />
         {form.generated_document_url ? (
           <AppButton title="Скачать документ анкеты" variant="outline" onPress={() => Linking.openURL(form.generated_document_url || '')} />
         ) : null}
@@ -464,10 +434,12 @@ export function ApplicantQuestionnaireScreen() {
   );
 }
 
-function buildPayload(form: Partial<ApplicantQuestionnaire>, facePhoto: UploadableFile | null) {
+type QuestionnaireSaveMode = 'draft' | 'completed';
+
+function buildPayload(form: Partial<ApplicantQuestionnaire>, facePhoto: UploadableFile | null, saveMode: QuestionnaireSaveMode) {
   const useFormData = Boolean(facePhoto);
   if (!useFormData) {
-    const payload: Partial<ApplicantQuestionnaire> = {};
+    const payload: Partial<ApplicantQuestionnaire> & { save_mode?: QuestionnaireSaveMode } = {};
     TEXT_FIELDS.forEach(field => {
       const value = form[field];
       if (value !== undefined && value !== null && value !== '') {
@@ -478,6 +450,7 @@ function buildPayload(form: Partial<ApplicantQuestionnaire>, facePhoto: Uploadab
     payload.languages = form.languages || [];
     payload.help_needed = form.help_needed || [];
     payload.data_processing_consent = Boolean(form.data_processing_consent);
+    payload.save_mode = saveMode;
     return payload;
   }
 
@@ -492,10 +465,23 @@ function buildPayload(form: Partial<ApplicantQuestionnaire>, facePhoto: Uploadab
   data.append('languages', JSON.stringify(form.languages || []));
   data.append('help_needed', JSON.stringify(form.help_needed || []));
   data.append('data_processing_consent', form.data_processing_consent ? 'true' : 'false');
+  data.append('save_mode', saveMode);
   if (facePhoto) {
     appendUploadFile(data, 'face_photo', facePhoto);
   }
   return data;
+}
+
+function formatDraftDate(value: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -583,6 +569,14 @@ const styles = StyleSheet.create({
   attachmentsList: { marginTop: spacing.md, gap: spacing.xs },
   attachmentText: { color: colors.muted, fontSize: typography.small, fontWeight: typography.weights.bold },
   consentCard: { marginBottom: spacing.lg },
+  offlineCard: {
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+    borderColor: 'rgba(13,65,109,0.22)',
+    backgroundColor: 'rgba(13,65,109,0.06)',
+  },
+  offlineTitle: { color: colors.secondary, fontSize: typography.body, fontWeight: typography.weights.heavy },
+  offlineText: { color: colors.text, lineHeight: 21, fontWeight: typography.weights.medium },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   checkbox: { width: 24, height: 24, borderRadius: 7, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
   checkboxActive: { backgroundColor: colors.primary, borderColor: colors.primary },

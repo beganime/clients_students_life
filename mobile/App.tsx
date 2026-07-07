@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { OfflineBanner } from './src/components/OfflineBanner';
 import { useAppActivity } from './src/hooks/useAppActivity';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
 import { asyncStoragePersister, queryClient } from './src/api/queryClient';
@@ -15,7 +16,12 @@ import { colors } from './src/constants/colors';
 function AppContent() {
   useAppActivity();
   usePushNotifications();
-  return <RootNavigator />;
+  return (
+    <>
+      <OfflineBanner />
+      <RootNavigator />
+    </>
+  );
 }
 
 export default function App() {

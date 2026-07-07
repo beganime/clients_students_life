@@ -49,7 +49,10 @@ export type City = {
 
 export type Program = {
   id: number;
+  program_id?: number;
+  program_title?: string;
   university: number;
+  university_id?: number;
   university_name?: string;
   country_name?: string;
   city_name?: string;
@@ -61,6 +64,9 @@ export type Program = {
   duration?: string;
   tuition_fee?: string | null;
   currency?: string;
+  currency_symbol?: string;
+  converted_tuition_fee?: string | number | null;
+  selected_currency?: string;
   application_deadline?: string;
   start_date?: string;
   description_markdown?: string;
@@ -311,7 +317,7 @@ export type QuestionnaireAttachment = {
 
 export type ApplicantQuestionnaire = {
   id: number;
-  status: 'draft' | 'submitted' | 'updated';
+  status: 'draft' | 'completed' | 'submitted' | 'updated';
   full_name?: string;
   birth_date?: string | null;
   gender?: 'male' | 'female' | '';

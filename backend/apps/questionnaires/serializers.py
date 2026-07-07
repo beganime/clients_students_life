@@ -106,6 +106,8 @@ class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
 
 
 class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
+    save_mode = serializers.ChoiceField(choices=('draft', 'completed'), write_only=True, required=False, default='completed')
+
     class Meta:
         model = ApplicantQuestionnaire
         exclude = (
@@ -132,15 +134,17 @@ class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
         return super().to_internal_value(mutable)
 
     def validate(self, attrs):
-        if not self.context.get('require_consent', False):
-            return attrs
-
+        save_mode = attrs.get('save_mode') or 'completed'
         consent = attrs.get('data_processing_consent', getattr(self.instance, 'data_processing_consent', False))
-        if not consent:
+        if save_mode == 'completed' and not consent:
             raise serializers.ValidationError({
                 'data_processing_consent': 'Необходимо согласие на обработку персональных данных.',
             })
         return attrs
+
+    def update(self, instance, validated_data):
+        validated_data.pop('save_mode', None)
+        return super().update(instance, validated_data)
 
 
 class QuestionnaireAttachmentUploadSerializer(serializers.ModelSerializer):

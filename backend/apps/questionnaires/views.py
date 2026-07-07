@@ -60,12 +60,18 @@ class MyQuestionnaireView(APIView):
             questionnaire,
             data=request.data,
             partial=True,
-            context={'request': request, 'require_consent': False},
+            context={'request': request},
         )
+        save_mode = request.data.get('save_mode') or 'completed'
         serializer.is_valid(raise_exception=True)
         questionnaire = serializer.save()
-        questionnaire.manager_sl_sync_status = 'pending'
-        questionnaire.save(update_fields=['manager_sl_sync_status', 'updated_at'])
+        if save_mode == 'draft':
+            questionnaire.mark_draft()
+        else:
+            questionnaire.mark_completed()
+        questionnaire.save()
+        if save_mode != 'draft':
+            sync_questionnaire_to_manager_sl(questionnaire, request=request)
         response_serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
         return Response(response_serializer.data)
 
@@ -79,15 +85,17 @@ class MyQuestionnaireSubmitView(APIView):
 
     def post(self, request):
         questionnaire = get_or_create_questionnaire(request.user)
+        data = request.data.copy()
+        data['save_mode'] = 'completed'
         serializer = ApplicantQuestionnaireUpdateSerializer(
             questionnaire,
-            data=request.data,
+            data=data,
             partial=True,
-            context={'request': request, 'require_consent': True},
+            context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
         questionnaire = serializer.save()
-        questionnaire.mark_submitted()
+        questionnaire.mark_completed()
         questionnaire.save()
         sync_questionnaire_to_manager_sl(questionnaire, request=request)
         response_serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
