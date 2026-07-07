@@ -36,7 +36,7 @@ export type RootStackParamList = {
 
   MyApplications: undefined;
   MyDocuments: undefined;
-  ApplicantQuestionnaire: undefined;
+  ApplicantQuestionnaire: { formType?: 'school_student' | 'applicant' } | undefined;
   DataConsent: undefined;
   FavoriteUniversities: undefined;
   Notifications: undefined;

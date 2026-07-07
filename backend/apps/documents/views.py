@@ -52,6 +52,55 @@ def send_document_review_push(user, status_value, document_title='', comment='',
     )
 
 
+def has_manager_or_service_access(request):
+    api_key = request.headers.get('X-API-KEY')
+    if api_key and api_key in configured_review_api_keys():
+        return True
+    return bool(request.user and request.user.is_authenticated and (request.user.is_staff or is_manager_user(request.user)))
+
+
+def review_user_document(document, status_value, comment='', reviewer=None, request=None):
+    if status_value == UserDocument.Status.REJECTED and not str(comment or '').strip():
+        return {'comment': 'Укажите причину отказа.'}
+    if status_value not in {UserDocument.Status.APPROVED, UserDocument.Status.REJECTED, UserDocument.Status.PENDING}:
+        return {'status': 'Invalid document status.'}
+
+    document.status = status_value
+    document.admin_comment = '' if status_value == UserDocument.Status.APPROVED else str(comment or '').strip()
+    document.reviewed_by = reviewer if reviewer and reviewer.is_authenticated else None
+    document.reviewed_at = timezone.now() if status_value in {UserDocument.Status.APPROVED, UserDocument.Status.REJECTED} else None
+    document.save(update_fields=['status', 'admin_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
+    if status_value in {UserDocument.Status.APPROVED, UserDocument.Status.REJECTED}:
+        from apps.notifications.models import UserNotification
+        from apps.notifications.services import send_push_to_user
+
+        if status_value == UserDocument.Status.APPROVED:
+            title = 'Документ принят'
+            body = 'Ваш документ успешно проверен и принят.'
+        else:
+            title = 'Документ не подходит'
+            body = 'Ваш документ не принят. Посмотрите комментарий менеджера и загрузите исправленный файл.'
+
+        exists = UserNotification.objects.filter(
+            user=document.user,
+            title=title,
+            notification_type='documents',
+            related_object_type='user_document',
+            related_object_id=document.id,
+        ).exists()
+        if not exists:
+            send_push_to_user(
+                user=document.user,
+                title=title,
+                body=body,
+                notification_type='documents',
+                related_object_type='user_document',
+                related_object_id=document.id,
+            )
+    sync_user_document_to_manager_sl(document, request=request)
+    return None
+
+
 def update_application_file_review(application_file, status_value, comment):
     application_file.status = status_value
     application_file.admin_comment = comment
@@ -138,14 +187,72 @@ class UserDocumentReviewViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Manager access required.'}, status=status.HTTP_403_FORBIDDEN)
         document = self.get_object()
         status_value = request.data.get('status')
-        if status_value not in {UserDocument.Status.APPROVED, UserDocument.Status.REJECTED, UserDocument.Status.PENDING}:
-            return Response({'status': 'Invalid document status.'}, status=status.HTTP_400_BAD_REQUEST)
-        document.status = status_value
-        document.admin_comment = str(request.data.get('admin_comment') or '').strip()
-        document.reviewed_by = request.user
-        document.reviewed_at = timezone.now()
-        document.save(update_fields=['status', 'admin_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
-        sync_user_document_to_manager_sl(document, request=request)
+        error = review_user_document(
+            document,
+            status_value,
+            comment=request.data.get('admin_comment') or request.data.get('comment') or '',
+            reviewer=request.user,
+            request=request,
+        )
+        if error:
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        return Response(MyDocumentSerializer(document, context={'request': request}).data)
+
+
+class UserDocumentApproveView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, document_id):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        document = UserDocument.objects.select_related('document_type', 'user').filter(pk=document_id).first()
+        if not document:
+            return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
+        error = review_user_document(document, UserDocument.Status.APPROVED, reviewer=request.user, request=request)
+        if error:
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        return Response(MyDocumentSerializer(document, context={'request': request}).data)
+
+
+class UserDocumentRejectView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, document_id):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        document = UserDocument.objects.select_related('document_type', 'user').filter(pk=document_id).first()
+        if not document:
+            return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
+        error = review_user_document(
+            document,
+            UserDocument.Status.REJECTED,
+            comment=request.data.get('comment') or request.data.get('admin_comment') or '',
+            reviewer=request.user,
+            request=request,
+        )
+        if error:
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        return Response(MyDocumentSerializer(document, context={'request': request}).data)
+
+
+class UserDocumentStatusView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def patch(self, request, document_id):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        document = UserDocument.objects.select_related('document_type', 'user').filter(pk=document_id).first()
+        if not document:
+            return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
+        error = review_user_document(
+            document,
+            request.data.get('status'),
+            comment=request.data.get('comment') or request.data.get('admin_comment') or '',
+            reviewer=request.user,
+            request=request,
+        )
+        if error:
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
         return Response(MyDocumentSerializer(document, context={'request': request}).data)
 
 

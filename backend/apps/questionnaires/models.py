@@ -2,6 +2,7 @@ import os
 import uuid
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db import models
 from django.utils import timezone
 
@@ -22,15 +23,25 @@ def questionnaire_attachment_upload_to(instance, filename):
     return f'questionnaires/{instance.questionnaire.user_id}/attachments/{uuid.uuid4().hex}{ext}'
 
 
+def questionnaire_document_upload_to(instance, filename):
+    return f'questionnaires/{instance.user_id}/generated/{uuid.uuid4().hex}-{filename}'
+
+
 class ApplicantQuestionnaire(TimeStampedModel):
+    class FormType(models.TextChoices):
+        SCHOOL_STUDENT = 'school_student', 'Школьник / предварительная заявка'
+        APPLICANT = 'applicant', 'Абитуриент / полная анкета'
+
     class Gender(models.TextChoices):
         MALE = 'male', 'Мужской'
         FEMALE = 'female', 'Женский'
 
     class Status(models.TextChoices):
-        DRAFT = 'draft', 'Не заполнена'
+        DRAFT = 'draft', 'Черновик'
         COMPLETED = 'completed', 'Заполнена'
-        SUBMITTED = 'submitted', 'Заполнена'
+        SUBMITTED = 'submitted', 'Отправлена на проверку'
+        APPROVED = 'approved', 'Принята'
+        REJECTED = 'rejected', 'Отклонена'
         UPDATED = 'updated', 'Обновлена'
 
     user = models.OneToOneField(
@@ -41,6 +52,7 @@ class ApplicantQuestionnaire(TimeStampedModel):
     )
 
     status = models.CharField('Статус анкеты', max_length=20, choices=Status.choices, default=Status.DRAFT)
+    form_type = models.CharField('Тип заявки', max_length=32, choices=FormType.choices, default=FormType.APPLICANT, db_index=True)
 
     full_name = models.CharField('Полное ФИО', max_length=255, blank=True)
     birth_date = models.DateField('Дата рождения', null=True, blank=True)
@@ -108,6 +120,8 @@ class ApplicantQuestionnaire(TimeStampedModel):
 
     manager_sl_questionnaire_id = models.CharField('Manager SL questionnaire ID', max_length=100, blank=True)
     manager_sl_document_url = models.URLField('Manager SL generated document URL', max_length=1000, blank=True)
+    generated_document = models.FileField('Сгенерированный документ анкеты', upload_to=questionnaire_document_upload_to, blank=True, null=True)
+    generated_document_at = models.DateTimeField('Дата генерации документа', null=True, blank=True)
     manager_sl_sync_status = models.CharField(
         'Manager SL sync status',
         max_length=20,
@@ -124,14 +138,122 @@ class ApplicantQuestionnaire(TimeStampedModel):
     def __str__(self):
         return self.full_name or self.user.get_full_name() or self.user.email or str(self.user)
 
-    def mark_completed(self):
-        self.status = self.Status.UPDATED if self.submitted_at else self.Status.COMPLETED
+    def mark_submitted(self):
+        self.status = self.Status.UPDATED if self.submitted_at else self.Status.SUBMITTED
         if not self.submitted_at:
             self.submitted_at = timezone.now()
         self.manager_sl_sync_status = 'pending'
 
+    def mark_completed(self):
+        self.mark_submitted()
+
     def mark_draft(self):
-        self.status = self.Status.DRAFT
+        if self.status not in {self.Status.SUBMITTED, self.Status.APPROVED, self.Status.REJECTED, self.Status.UPDATED}:
+            self.status = self.Status.DRAFT
+
+    def missing_required_fields(self):
+        if self.form_type == self.FormType.SCHOOL_STUDENT:
+            required = (
+                'full_name',
+                'birth_date',
+                'phone',
+                'citizenship',
+                'residence_country',
+                'residence_city',
+                'school_class',
+                'school_name',
+                'graduation_year',
+                'desired_country',
+                'desired_program',
+                'parent_full_name',
+                'parent_contacts',
+                'data_processing_consent',
+            )
+        else:
+            required = (
+                'full_name',
+                'birth_date',
+                'gender',
+                'citizenship',
+                'marital_status',
+                'residence_country',
+                'residence_city',
+                'passport_number',
+                'passport_issued_by',
+                'passport_issue_date',
+                'passport_expiry_date',
+                'phone',
+                'email',
+                'parent_full_name',
+                'parent_contacts',
+                'education_level',
+                'school_name',
+                'school_country',
+                'school_city',
+                'graduation_year',
+                'education_status',
+                'desired_program',
+                'desired_country',
+                'desired_city',
+                'desired_language',
+                'desired_education_level',
+                'preferred_contact_method',
+                'admission_urgency',
+                'data_processing_consent',
+            )
+        missing = []
+        for field in required:
+            value = getattr(self, field)
+            if value in (None, '', [], {}, False):
+                missing.append(field)
+        if self.education_status in {'school_student', 'школьник'} and not self.school_class:
+            missing.append('school_class')
+        return sorted(set(missing))
+
+    def generate_document(self):
+        title = 'Предварительная заявка школьника' if self.form_type == self.FormType.SCHOOL_STUDENT else 'Анкета абитуриента'
+        rows = [
+            ('Тип заявки', self.get_form_type_display()),
+            ('Статус', self.get_status_display()),
+            ('ФИО', self.full_name),
+            ('Дата рождения', self.birth_date),
+            ('Гражданство', self.citizenship),
+            ('Телефон', self.phone),
+            ('Email', self.email),
+            ('Telegram', self.telegram),
+            ('Страна проживания', self.residence_country),
+            ('Город проживания', self.residence_city),
+            ('Текущий статус образования', self.education_status),
+            ('Класс', self.school_class),
+            ('Учебное заведение', self.school_name),
+            ('Страна школы/вуза', self.school_country),
+            ('Город школы/вуза', self.school_city),
+            ('Год окончания', self.graduation_year),
+            ('Желаемая программа/направление', self.desired_program),
+            ('Желаемый вуз/город', self.desired_city),
+            ('Желаемая страна', self.desired_country),
+            ('Язык обучения', self.desired_language),
+            ('Цель поступления', self.admission_goal),
+            ('Родитель', self.parent_full_name),
+            ('Контакты родителя', self.parent_contacts),
+            ('Комментарий', self.applicant_comment),
+        ]
+        if self.form_type == self.FormType.APPLICANT:
+            rows.extend([
+                ('Паспорт', self.passport_number),
+                ('Кем выдан паспорт', self.passport_issued_by),
+                ('Дата выдачи паспорта', self.passport_issue_date),
+                ('Срок действия паспорта', self.passport_expiry_date),
+                ('Виза', self.has_visa),
+                ('Нужна помощь с', ', '.join(self.help_needed or [])),
+            ])
+        body = '\n'.join(f'{label}: {value or "Не указано"}' for label, value in rows)
+        content = f'Student’s Life\n{title}\nДата формирования: {timezone.now():%d.%m.%Y %H:%M}\n\n{body}\n'
+        filename = 'school-student-application.txt' if self.form_type == self.FormType.SCHOOL_STUDENT else 'applicant-questionnaire.txt'
+        self.generated_document.save(filename, ContentFile(content.encode('utf-8')), save=False)
+        self.generated_document_at = timezone.now()
+        self.manager_sl_sync_status = 'pending'
+        return self.generated_document
 
 
 class QuestionnaireAttachment(TimeStampedModel):

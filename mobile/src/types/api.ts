@@ -317,7 +317,8 @@ export type QuestionnaireAttachment = {
 
 export type ApplicantQuestionnaire = {
   id: number;
-  status: 'draft' | 'completed' | 'submitted' | 'updated';
+  status: 'draft' | 'completed' | 'submitted' | 'approved' | 'rejected' | 'updated';
+  form_type?: 'school_student' | 'applicant';
   full_name?: string;
   birth_date?: string | null;
   gender?: 'male' | 'female' | '';
@@ -374,6 +375,9 @@ export type ApplicantQuestionnaire = {
   submitted_at?: string | null;
   attachments?: QuestionnaireAttachment[];
   generated_document_url?: string;
+  document_file?: string;
+  generated_document_at?: string | null;
+  missing_required_fields?: string[];
   updated_at?: string;
 };
 

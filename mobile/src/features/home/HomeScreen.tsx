@@ -110,6 +110,24 @@ export function HomeScreen() {
         </>
       ) : null}
 
+      <AppCard style={styles.schoolCard}>
+        <View style={styles.documentsIcon}>
+          <SvgIcon name="application" size={23} color={colors.secondary} />
+        </View>
+        <View style={styles.documentsTextBox}>
+          <Text style={styles.documentsTitle}>Ещё учишься в школе?</Text>
+          <Text style={styles.documentsText}>
+            Ты можешь заранее оставить заявку на поступление. Мы подскажем, какие документы подготовить и когда лучше начать процесс.
+          </Text>
+        </View>
+        <AppButton
+          title="Оставить заявку заранее"
+          variant="outline"
+          onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'school_student' })}
+          style={styles.documentsButton}
+        />
+      </AppCard>
+
       <SectionHeader
         eyebrow="Каталог"
         title="Страны для обучения"
@@ -281,6 +299,15 @@ const styles = StyleSheet.create({
   documentsCard: {
     marginBottom: spacing.lg,
     borderColor: 'rgba(13,65,109,0.14)',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  schoolCard: {
+    marginBottom: spacing.lg,
+    borderColor: 'rgba(184,32,26,0.16)',
+    backgroundColor: colors.card,
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',

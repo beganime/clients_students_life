@@ -18,6 +18,8 @@ def build_questionnaire_payload(questionnaire, request=None):
         'mobile_user_id': questionnaire.user_id,
         'mobile_questionnaire_id': questionnaire.id,
         'status': questionnaire.status,
+        'form_type': questionnaire.form_type,
+        'application_type': questionnaire.form_type,
         'full_name': compact(questionnaire.full_name, 255),
         'birth_date': questionnaire.birth_date.isoformat() if questionnaire.birth_date else '',
         'gender': questionnaire.gender,
@@ -72,6 +74,8 @@ def build_questionnaire_payload(questionnaire, request=None):
         'referral_source': compact(questionnaire.referral_source, 120),
         'data_processing_consent': questionnaire.data_processing_consent,
         'submitted_at': questionnaire.submitted_at.isoformat() if questionnaire.submitted_at else '',
+        'generated_document_url': file_url(questionnaire.generated_document, request=request),
+        'generated_document_at': questionnaire.generated_document_at.isoformat() if questionnaire.generated_document_at else '',
         'attachments': [
             {
                 'id': attachment.id,

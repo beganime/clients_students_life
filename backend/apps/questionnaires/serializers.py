@@ -7,6 +7,30 @@ from apps.applications.file_utils import clean_original_name, validate_applicati
 from .models import ApplicantQuestionnaire, QuestionnaireAttachment
 
 
+FIELD_ALIASES = {
+    'application_type': 'form_type',
+    'country': 'residence_country',
+    'region': 'residence_region',
+    'city': 'residence_city',
+    'street': 'residence_street',
+    'house': 'residence_house',
+    'apartment': 'residence_house',
+    'postal_code': 'residence_postal_code',
+    'passport_valid_from': 'passport_issue_date',
+    'passport_valid_to': 'passport_expiry_date',
+    'additional_phone': 'extra_phone',
+    'whatsapp': 'imo',
+    'parent_phone': 'parent_contacts',
+    'parent_job': 'parent_workplace',
+    'study_goal': 'admission_goal',
+    'desired_university': 'desired_city',
+    'desired_study_language': 'desired_language',
+    'source': 'referral_source',
+    'needs_help_with': 'help_needed',
+    'personal_data_agreement': 'data_processing_consent',
+}
+
+
 def absolute_file_url(request, file_field):
     if not file_field:
         return None
@@ -32,12 +56,15 @@ class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
     face_photo = serializers.SerializerMethodField()
     attachments = QuestionnaireAttachmentSerializer(many=True, read_only=True)
     generated_document_url = serializers.SerializerMethodField()
+    document_file = serializers.SerializerMethodField()
+    missing_required_fields = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantQuestionnaire
         fields = (
             'id',
             'status',
+            'form_type',
             'full_name',
             'birth_date',
             'gender',
@@ -94,19 +121,29 @@ class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
             'submitted_at',
             'attachments',
             'generated_document_url',
+            'document_file',
+            'generated_document_at',
+            'missing_required_fields',
             'updated_at',
         )
-        read_only_fields = ('id', 'status', 'submitted_at', 'attachments', 'generated_document_url', 'updated_at')
+        read_only_fields = ('id', 'status', 'submitted_at', 'attachments', 'generated_document_url', 'document_file', 'generated_document_at', 'missing_required_fields', 'updated_at')
 
     def get_face_photo(self, obj):
         return absolute_file_url(self.context.get('request'), obj.face_photo)
 
     def get_generated_document_url(self, obj):
-        return obj.manager_sl_document_url or ''
+        request = self.context.get('request')
+        return absolute_file_url(request, obj.generated_document) or obj.manager_sl_document_url or ''
+
+    def get_document_file(self, obj):
+        return self.get_generated_document_url(obj)
+
+    def get_missing_required_fields(self, obj):
+        return obj.missing_required_fields()
 
 
 class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
-    save_mode = serializers.ChoiceField(choices=('draft', 'completed'), write_only=True, required=False, default='completed')
+    save_mode = serializers.ChoiceField(choices=('draft', 'submitted', 'completed'), write_only=True, required=False, default='draft')
 
     class Meta:
         model = ApplicantQuestionnaire
@@ -124,6 +161,9 @@ class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
 
     def to_internal_value(self, data):
         mutable = data.copy() if hasattr(data, 'copy') else dict(data)
+        for alias, field in FIELD_ALIASES.items():
+            if alias in mutable and field not in mutable:
+                mutable[field] = mutable.get(alias)
         for field in ('achievements', 'languages', 'help_needed'):
             value = mutable.get(field)
             if isinstance(value, str):
@@ -134,9 +174,9 @@ class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
         return super().to_internal_value(mutable)
 
     def validate(self, attrs):
-        save_mode = attrs.get('save_mode') or 'completed'
+        save_mode = attrs.get('save_mode') or 'draft'
         consent = attrs.get('data_processing_consent', getattr(self.instance, 'data_processing_consent', False))
-        if save_mode == 'completed' and not consent:
+        if save_mode in {'submitted', 'completed'} and not consent:
             raise serializers.ValidationError({
                 'data_processing_consent': 'Необходимо согласие на обработку персональных данных.',
             })

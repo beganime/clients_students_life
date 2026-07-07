@@ -316,17 +316,27 @@ export const documentsApi = {
 
 export const questionnaireApi = {
   async getMyQuestionnaire() {
-    const { data } = await apiClient.get<ApplicantQuestionnaire>('/questionnaire/my/');
+    const { data } = await apiClient.get<ApplicantQuestionnaire>('/questionnaire/my-application-form/');
     return data;
   },
 
   async saveMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
-    const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my/', payload);
+    const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my-application-form/', payload);
+    return data;
+  },
+
+  async saveMyQuestionnaireDraft(payload: Partial<ApplicantQuestionnaire> | FormData) {
+    const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my-application-form/draft/', payload);
     return data;
   },
 
   async submitMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
-    const { data } = await apiClient.post<ApplicantQuestionnaire>('/questionnaire/my/submit/', payload);
+    const { data } = await apiClient.post<ApplicantQuestionnaire>('/questionnaire/my-application-form/submit/', payload);
+    return data;
+  },
+
+  async regenerateMyQuestionnaireDocument() {
+    const { data } = await apiClient.post<ApplicantQuestionnaire>('/questionnaire/my-application-form/regenerate-document/');
     return data;
   },
 

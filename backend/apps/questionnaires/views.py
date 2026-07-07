@@ -1,3 +1,4 @@
+from django.http import FileResponse
 from django.shortcuts import redirect
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -5,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import ensure_client_profile
+from apps.documents.views import configured_review_api_keys
 
 from .manager_sl_sync import sync_questionnaire_to_manager_sl
 from .models import ApplicantQuestionnaire
@@ -45,6 +47,46 @@ def get_or_create_questionnaire(user):
     return questionnaire
 
 
+def save_questionnaire_payload(request, data, save_mode='draft'):
+    questionnaire = get_or_create_questionnaire(request.user)
+    previous_status = questionnaire.status
+    mutable = data.copy() if hasattr(data, 'copy') else dict(data)
+    mutable['save_mode'] = save_mode
+    serializer = ApplicantQuestionnaireUpdateSerializer(
+        questionnaire,
+        data=mutable,
+        partial=True,
+        context={'request': request},
+    )
+    serializer.is_valid(raise_exception=True)
+    questionnaire = serializer.save()
+    if save_mode == 'draft':
+        questionnaire.mark_draft()
+        questionnaire.save()
+        if previous_status in {
+            ApplicantQuestionnaire.Status.SUBMITTED,
+            ApplicantQuestionnaire.Status.APPROVED,
+            ApplicantQuestionnaire.Status.REJECTED,
+            ApplicantQuestionnaire.Status.UPDATED,
+        }:
+            questionnaire.status = ApplicantQuestionnaire.Status.UPDATED
+            questionnaire.save(update_fields=['status', 'updated_at'])
+        return questionnaire, None
+
+    missing_fields = questionnaire.missing_required_fields()
+    if missing_fields:
+        return questionnaire, {
+            'detail': 'Заполните обязательные поля перед отправкой анкеты.',
+            'missing_fields': missing_fields,
+            'missing_required_fields': missing_fields,
+        }
+    questionnaire.mark_submitted()
+    questionnaire.generate_document()
+    questionnaire.save()
+    sync_questionnaire_to_manager_sl(questionnaire, request=request)
+    return questionnaire, None
+
+
 class MyQuestionnaireView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [JSONParser, FormParser, MultiPartParser]
@@ -55,23 +97,10 @@ class MyQuestionnaireView(APIView):
         return Response(serializer.data)
 
     def patch(self, request):
-        questionnaire = get_or_create_questionnaire(request.user)
-        serializer = ApplicantQuestionnaireUpdateSerializer(
-            questionnaire,
-            data=request.data,
-            partial=True,
-            context={'request': request},
-        )
-        save_mode = request.data.get('save_mode') or 'completed'
-        serializer.is_valid(raise_exception=True)
-        questionnaire = serializer.save()
-        if save_mode == 'draft':
-            questionnaire.mark_draft()
-        else:
-            questionnaire.mark_completed()
-        questionnaire.save()
-        if save_mode != 'draft':
-            sync_questionnaire_to_manager_sl(questionnaire, request=request)
+        save_mode = request.data.get('save_mode') or 'draft'
+        questionnaire, errors = save_questionnaire_payload(request, request.data, save_mode=save_mode)
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         response_serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
         return Response(response_serializer.data)
 
@@ -84,22 +113,71 @@ class MyQuestionnaireSubmitView(APIView):
     parser_classes = [JSONParser, FormParser, MultiPartParser]
 
     def post(self, request):
-        questionnaire = get_or_create_questionnaire(request.user)
-        data = request.data.copy()
-        data['save_mode'] = 'completed'
-        serializer = ApplicantQuestionnaireUpdateSerializer(
-            questionnaire,
-            data=data,
-            partial=True,
-            context={'request': request},
-        )
-        serializer.is_valid(raise_exception=True)
-        questionnaire = serializer.save()
-        questionnaire.mark_completed()
-        questionnaire.save()
-        sync_questionnaire_to_manager_sl(questionnaire, request=request)
+        questionnaire, errors = save_questionnaire_payload(request, request.data, save_mode='submitted')
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         response_serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
         return Response(response_serializer.data)
+
+
+class MyQuestionnaireDraftView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+
+    def patch(self, request):
+        questionnaire, errors = save_questionnaire_payload(request, request.data, save_mode='draft')
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
+        return Response(serializer.data)
+
+
+class MyQuestionnaireRegenerateDocumentView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        questionnaire = get_or_create_questionnaire(request.user)
+        missing_fields = questionnaire.missing_required_fields()
+        if missing_fields:
+            return Response(
+                {
+                    'detail': 'Документ можно сформировать после заполнения обязательных полей.',
+                    'missing_fields': missing_fields,
+                    'missing_required_fields': missing_fields,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        questionnaire.generate_document()
+        questionnaire.save(update_fields=['generated_document', 'generated_document_at', 'manager_sl_sync_status', 'updated_at'])
+        sync_questionnaire_to_manager_sl(questionnaire, request=request)
+        serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
+        return Response(serializer.data)
+
+
+class ServiceQuestionnaireRegenerateDocumentView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, questionnaire_id):
+        if request.headers.get('X-API-KEY') not in configured_review_api_keys():
+            return Response({'detail': 'Invalid API key.'}, status=status.HTTP_403_FORBIDDEN)
+        questionnaire = ApplicantQuestionnaire.objects.select_related('user').filter(pk=questionnaire_id).first()
+        if not questionnaire:
+            return Response({'detail': 'Questionnaire not found.'}, status=status.HTTP_404_NOT_FOUND)
+        missing_fields = questionnaire.missing_required_fields()
+        if missing_fields:
+            return Response(
+                {
+                    'detail': 'Документ можно сформировать после заполнения обязательных полей.',
+                    'missing_fields': missing_fields,
+                    'missing_required_fields': missing_fields,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        questionnaire.generate_document()
+        questionnaire.save(update_fields=['generated_document', 'generated_document_at', 'manager_sl_sync_status', 'updated_at'])
+        sync_questionnaire_to_manager_sl(questionnaire, request=request)
+        serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
+        return Response(serializer.data)
 
 
 class MyQuestionnaireAttachmentView(APIView):
@@ -127,6 +205,12 @@ class MyQuestionnaireDownloadView(APIView):
 
     def get(self, request):
         questionnaire = get_or_create_questionnaire(request.user)
+        if questionnaire.generated_document:
+            return FileResponse(
+                questionnaire.generated_document.open('rb'),
+                as_attachment=True,
+                filename=questionnaire.generated_document.name.rsplit('/', 1)[-1],
+            )
         if questionnaire.manager_sl_document_url:
             return redirect(questionnaire.manager_sl_document_url)
         return Response({'detail': 'Документ анкеты еще не сформирован.'}, status=status.HTTP_404_NOT_FOUND)
