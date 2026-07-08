@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { authApi } from '../api/endpoints';
 import { tokenStorage } from '../api/client';
 import { UserMe } from '../types/api';
+import { clearLocalAvatarUri } from '../utils/localMediaCache';
 
 type AuthState = {
   user: UserMe | null;
@@ -25,6 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const token = await tokenStorage.getAccessToken();
       if (!token) {
+        await clearLocalAvatarUri();
         set({ user: null, isAuthenticated: false, isLoading: false });
         return;
       }
@@ -32,6 +34,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       await tokenStorage.clearTokens();
+      await clearLocalAvatarUri();
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },
@@ -57,6 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   async logout() {
     await authApi.logout();
+    await clearLocalAvatarUri();
     set({ user: null, isAuthenticated: false });
   },
 

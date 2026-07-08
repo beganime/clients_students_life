@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -13,6 +13,7 @@ import { SvgIcon } from '../../components/SvgIcon';
 import { colors, spacing, typography } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/apiError';
+import { getLocalAvatarUri, saveLocalAvatarUri } from '../../utils/localMediaCache';
 import { getMediaUrl } from '../../utils/media';
 
 export function EditProfileScreen() {
@@ -27,9 +28,14 @@ export function EditProfileScreen() {
   const [city, setCity] = useState(user?.profile?.city || '');
   const [citizenship, setCitizenship] = useState(user?.profile?.citizenship || '');
   const [avatarFile, setAvatarFile] = useState<UploadableFile | null>(null);
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const currentAvatar = avatarFile?.uri || getMediaUrl(user?.profile?.avatar || null);
+  useEffect(() => {
+    getLocalAvatarUri().then(setLocalAvatarUri).catch(() => undefined);
+  }, []);
+
+  const currentAvatar = avatarFile?.uri || localAvatarUri || getMediaUrl(user?.profile?.avatar || null);
 
   const pickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -46,6 +52,7 @@ export function EditProfileScreen() {
         type: asset.mimeType || 'image/jpeg',
         file: (asset as any).file,
       });
+      setLocalAvatarUri(asset.uri);
     }
   };
 
@@ -64,6 +71,7 @@ export function EditProfileScreen() {
       formData.append('language', user?.profile?.language || 'ru');
       if (avatarFile) appendUploadFile(formData, 'avatar', avatarFile);
       await authApi.updateMeFormData(formData);
+      if (avatarFile?.uri) await saveLocalAvatarUri(avatarFile.uri);
       setAvatarFile(null);
       await refreshMe();
       Alert.alert('Готово', 'Профиль обновлён.');

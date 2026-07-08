@@ -231,6 +231,10 @@ export const educationCatalogApi = {
     return list(await request<ListResponse<any>>('/universities/', withLimit(params, 12))).map(toUniversity);
   },
 
+  async getAllUniversities(params?: CatalogParams) {
+    return getAllPages('/universities/', params, 100, toUniversity);
+  },
+
   async getUniversitiesPage(params?: CatalogParams) {
     const data = page(await request<ListResponse<any>>('/universities/', withLimit(params, 12)));
     return { ...data, results: data.results.map(toUniversity) };
@@ -242,6 +246,10 @@ export const educationCatalogApi = {
 
   async getPrograms(params?: CatalogParams) {
     return list(await request<ListResponse<any>>('/programs/', withLimit(params, 50))).map(toProgram);
+  },
+
+  async getAllPrograms(params?: CatalogParams) {
+    return getAllPages('/programs/', params, 100, toProgram);
   },
 
   async getProgramsPage(params?: CatalogParams) {
@@ -257,3 +265,24 @@ export const educationCatalogApi = {
     return list(await request<ListResponse<any>>('/services/', withLimit(params, 50)));
   },
 };
+
+async function getAllPages<T>(
+  path: string,
+  params: CatalogParams | undefined,
+  limit: number,
+  mapper: (item: any) => T,
+) {
+  const results: T[] = [];
+  let offset = Number(params?.offset || 0);
+  let guard = 0;
+
+  while (guard < 30) {
+    const data = page(await request<ListResponse<any>>(path, { ...(params || {}), limit, offset }));
+    results.push(...data.results.map(mapper));
+    if (!data.next || data.results.length === 0) break;
+    offset += limit;
+    guard += 1;
+  }
+
+  return results;
+}

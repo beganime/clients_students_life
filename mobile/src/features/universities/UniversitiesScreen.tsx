@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -35,6 +35,7 @@ const CURRENCIES = ['RUB', 'USD', 'EUR', 'TRY', 'TMT'];
 export function UniversitiesScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<R>();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [countryId, setCountryId] = useState<string | number | undefined>(route.params?.country);
@@ -136,15 +137,38 @@ export function UniversitiesScreen() {
     gcTime: 1000 * 60 * 60 * 24,
   });
 
-  const universities = useMemo(
-    () => universitiesQuery.data?.pages.flatMap(page => page.results) || [],
-    [universitiesQuery.data],
-  );
+  const cachedUniversities = (queryClient.getQueryData(['catalog', 'universities', 'all']) || []) as any[];
+  const cachedPrograms = (queryClient.getQueryData(['catalog', 'programs', 'all']) || []) as Program[];
+  const universities = useMemo(() => {
+    const pageRows = universitiesQuery.data?.pages.flatMap(page => page.results) || [];
+    if (pageRows.length) return pageRows;
+    if (!countryId && !cityId) return cachedUniversities;
+    return cachedUniversities.filter(item => {
+      const sameCountry = !countryId || String(item.country) === String(countryId) || String(item.country_id) === String(countryId);
+      const sameCity = !cityId || String(item.city) === String(cityId) || String(item.city_id) === String(cityId);
+      return sameCountry && sameCity;
+    });
+  }, [universitiesQuery.data, cachedUniversities, countryId, cityId]);
   const universitiesCount = universitiesQuery.data?.pages[0]?.count ?? universities.length;
-  const programs = useMemo(
-    () => programsQuery.data?.pages.flatMap(page => page.results) || [],
-    [programsQuery.data],
-  );
+  const programs = useMemo(() => {
+    const pageRows = programsQuery.data?.pages.flatMap(page => page.results) || [];
+    if (pageRows.length) return pageRows;
+    const query = search.trim().toLowerCase();
+    return cachedPrograms.filter(program => {
+      const text = [
+        program.title,
+        program.program_title,
+        program.university_name,
+        program.city_name,
+        program.country_name,
+        program.level,
+        program.language,
+      ].filter(Boolean).join(' ').toLowerCase();
+      return (!query || text.includes(query))
+        && (!countryId || String((program as any).country) === String(countryId) || String((program as any).country_id) === String(countryId))
+        && (!cityId || String((program as any).city) === String(cityId) || String((program as any).city_id) === String(cityId));
+    });
+  }, [programsQuery.data, cachedPrograms, search, countryId, cityId]);
   const programsCount = programsQuery.data?.pages[0]?.count ?? programs.length;
   const currentItems = hasProgramSearch ? programs : universities;
   const activeQuery = hasProgramSearch ? programsQuery : universitiesQuery;

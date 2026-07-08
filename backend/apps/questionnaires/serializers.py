@@ -32,6 +32,24 @@ FIELD_ALIASES = {
 }
 
 
+def normalize_json_field_value(value):
+    if isinstance(value, (list, tuple)) and len(value) == 1 and isinstance(value[0], str):
+        value = value[0]
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value) if value.strip() else []
+        except json.JSONDecodeError:
+            return [item.strip() for item in value.split(',') if item.strip()]
+        if parsed in (None, ''):
+            return []
+        if isinstance(parsed, list):
+            return parsed
+        return [parsed]
+    if value in (None, ''):
+        return []
+    return value
+
+
 def absolute_file_url(request, file_field):
     if not file_field:
         return None
@@ -171,12 +189,12 @@ class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
             if alias in mutable and field not in mutable:
                 mutable[field] = mutable.get(alias)
         for field in ('achievements', 'languages', 'help_needed'):
-            value = mutable.get(field)
-            if isinstance(value, str):
-                try:
-                    mutable[field] = json.loads(value) if value.strip() else []
-                except json.JSONDecodeError:
-                    mutable[field] = [item.strip() for item in value.split(',') if item.strip()]
+            if hasattr(data, 'getlist') and field in data:
+                values = data.getlist(field)
+                mutable[field] = normalize_json_field_value(values[0] if len(values) == 1 else values)
+                continue
+            if field in mutable:
+                mutable[field] = normalize_json_field_value(mutable.get(field))
         return super().to_internal_value(mutable)
 
     def validate(self, attrs):

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -13,6 +13,7 @@ import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors, radius, shadows, spacing, typography } from '../../constants/colors';
 import { PRIVACY_POLICY_URL } from '../../constants/config';
 import { useAuthStore } from '../../store/authStore';
+import { getLocalAvatarUri } from '../../utils/localMediaCache';
 import { getMediaUrl } from '../../utils/media';
 
 const { width } = Dimensions.get('window');
@@ -24,8 +25,13 @@ const QUICK_WIDTH = QUICK_COLUMNS === 1 ? width - SCREEN_PADDING * 2 : Math.floo
 export function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const avatarUrl = getMediaUrl(user?.profile?.avatar || null);
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
+  const avatarUrl = localAvatarUri || getMediaUrl(user?.profile?.avatar || null);
   const isManager = Boolean(user?.is_manager);
+
+  useEffect(() => {
+    getLocalAvatarUri().then(setLocalAvatarUri).catch(() => undefined);
+  }, [user?.profile?.avatar]);
 
   const confirmLogout = () => {
     Alert.alert('Выйти из аккаунта?', 'Вы сможете снова войти по email и паролю.', [

@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { OfflineBanner } from './src/components/OfflineBanner';
 import { useAppActivity } from './src/hooks/useAppActivity';
+import { useCatalogWarmup } from './src/hooks/useCatalogWarmup';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
 import { asyncStoragePersister, queryClient } from './src/api/queryClient';
 import { colors } from './src/constants/colors';
@@ -16,6 +17,7 @@ import { colors } from './src/constants/colors';
 function AppContent() {
   useAppActivity();
   usePushNotifications();
+  useCatalogWarmup();
   return (
     <>
       <OfflineBanner />
