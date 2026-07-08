@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from apps.applications.file_utils import clean_original_name, validate_application_file
 
+from .labels import questionnaire_field_labels
 from .models import ApplicantQuestionnaire, QuestionnaireAttachment
 
 
@@ -58,6 +59,7 @@ class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
     generated_document_url = serializers.SerializerMethodField()
     document_file = serializers.SerializerMethodField()
     missing_required_fields = serializers.SerializerMethodField()
+    missing_required_field_labels = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantQuestionnaire
@@ -124,9 +126,10 @@ class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
             'document_file',
             'generated_document_at',
             'missing_required_fields',
+            'missing_required_field_labels',
             'updated_at',
         )
-        read_only_fields = ('id', 'status', 'submitted_at', 'attachments', 'generated_document_url', 'document_file', 'generated_document_at', 'missing_required_fields', 'updated_at')
+        read_only_fields = ('id', 'status', 'submitted_at', 'attachments', 'generated_document_url', 'document_file', 'generated_document_at', 'missing_required_fields', 'missing_required_field_labels', 'updated_at')
 
     def get_face_photo(self, obj):
         return absolute_file_url(self.context.get('request'), obj.face_photo)
@@ -140,6 +143,9 @@ class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
 
     def get_missing_required_fields(self, obj):
         return obj.missing_required_fields()
+
+    def get_missing_required_field_labels(self, obj):
+        return questionnaire_field_labels(obj.missing_required_fields())
 
 
 class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):

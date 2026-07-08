@@ -102,6 +102,50 @@ const CURRENT_EDUCATION_STATUS_OPTIONS = [
   'другое',
 ];
 
+const QUESTIONNAIRE_FIELD_LABELS: Record<string, string> = {
+  form_type: 'Тип заявки',
+  full_name: 'Полное ФИО',
+  birth_date: 'Дата рождения',
+  gender: 'Пол',
+  citizenship: 'Гражданство',
+  marital_status: 'Семейное положение',
+  residence_country: 'Страна проживания',
+  residence_region: 'Область / регион',
+  residence_city: 'Город / населенный пункт',
+  residence_street: 'Улица',
+  residence_house: 'Дом / квартира',
+  residence_postal_code: 'Почтовый индекс',
+  passport_number: 'Паспорт серия и номер',
+  passport_issued_by: 'Где оформлен паспорт',
+  passport_issue_date: 'Дата начала действия паспорта',
+  passport_expiry_date: 'Дата окончания действия паспорта',
+  phone: 'Основной номер телефона',
+  email: 'Email',
+  extra_phone: 'Дополнительный номер телефона',
+  imo: 'Imo',
+  telegram: 'Telegram',
+  preferred_contact_method: 'Предпочтительный способ связи',
+  parent_full_name: 'ФИО родителя',
+  parent_relation: 'Кем является родитель',
+  parent_contacts: 'Контакты родителя',
+  parent_workplace: 'Кем и где работает родитель',
+  family_members: 'Состав семьи',
+  education_level: 'Уровень образования',
+  school_class: 'Класс',
+  school_name: 'Учебное заведение',
+  school_country: 'Страна учебного заведения',
+  school_city: 'Город учебного заведения',
+  graduation_year: 'Год окончания',
+  education_status: 'Текущий статус образования',
+  desired_program: 'Желаемая программа / вуз',
+  desired_country: 'Желаемая страна поступления',
+  desired_city: 'Желаемый город поступления',
+  desired_language: 'Желаемый язык обучения',
+  desired_education_level: 'Желаемый уровень обучения',
+  admission_urgency: 'Срочность поступления',
+  data_processing_consent: 'Согласие на обработку персональных данных',
+};
+
 export function ApplicantQuestionnaireScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -550,9 +594,13 @@ function formatDraftDate(value: string | null) {
 function formatQuestionnaireError(error: unknown) {
   const data = (error as any)?.response?.data;
   const missing = data?.missing_required_fields || data?.errors?.missing_required_fields;
+  const labels = data?.missing_required_field_labels || data?.missing_field_labels || data?.errors?.missing_required_field_labels;
 
   if (Array.isArray(missing) && missing.length) {
-    return `Заполните обязательные поля: ${missing.join(', ')}`;
+    const readableFields = Array.isArray(labels) && labels.length
+      ? labels
+      : missing.map(field => QUESTIONNAIRE_FIELD_LABELS[field] || field);
+    return `Заполните обязательные поля: ${readableFields.join(', ')}`;
   }
 
   if (typeof data?.detail === 'string') {

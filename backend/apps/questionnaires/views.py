@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from apps.accounts.models import ensure_client_profile
 from apps.documents.views import has_service_api_access
 
+from .labels import questionnaire_field_labels
 from .manager_sl_sync import sync_questionnaire_to_manager_sl
 from .models import ApplicantQuestionnaire
 from .serializers import (
@@ -79,6 +80,8 @@ def save_questionnaire_payload(request, data, save_mode='draft'):
             'detail': 'Заполните обязательные поля перед отправкой анкеты.',
             'missing_fields': missing_fields,
             'missing_required_fields': missing_fields,
+            'missing_field_labels': questionnaire_field_labels(missing_fields),
+            'missing_required_field_labels': questionnaire_field_labels(missing_fields),
         }
     questionnaire.mark_submitted()
     questionnaire.generate_document()
@@ -144,6 +147,8 @@ class MyQuestionnaireRegenerateDocumentView(APIView):
                     'detail': 'Документ можно сформировать после заполнения обязательных полей.',
                     'missing_fields': missing_fields,
                     'missing_required_fields': missing_fields,
+                    'missing_field_labels': questionnaire_field_labels(missing_fields),
+                    'missing_required_field_labels': questionnaire_field_labels(missing_fields),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -170,6 +175,8 @@ class ServiceQuestionnaireRegenerateDocumentView(APIView):
                     'detail': 'Документ можно сформировать после заполнения обязательных полей.',
                     'missing_fields': missing_fields,
                     'missing_required_fields': missing_fields,
+                    'missing_field_labels': questionnaire_field_labels(missing_fields),
+                    'missing_required_field_labels': questionnaire_field_labels(missing_fields),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )

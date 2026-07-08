@@ -2,7 +2,6 @@ import os
 import uuid
 
 from django.conf import settings
-from django.core.files.base import ContentFile
 from django.db import models
 from django.utils import timezone
 
@@ -211,46 +210,13 @@ class ApplicantQuestionnaire(TimeStampedModel):
         return sorted(set(missing))
 
     def generate_document(self):
-        title = 'Предварительная заявка школьника' if self.form_type == self.FormType.SCHOOL_STUDENT else 'Анкета абитуриента'
-        rows = [
-            ('Тип заявки', self.get_form_type_display()),
-            ('Статус', self.get_status_display()),
-            ('ФИО', self.full_name),
-            ('Дата рождения', self.birth_date),
-            ('Гражданство', self.citizenship),
-            ('Телефон', self.phone),
-            ('Email', self.email),
-            ('Telegram', self.telegram),
-            ('Страна проживания', self.residence_country),
-            ('Город проживания', self.residence_city),
-            ('Текущий статус образования', self.education_status),
-            ('Класс', self.school_class),
-            ('Учебное заведение', self.school_name),
-            ('Страна школы/вуза', self.school_country),
-            ('Город школы/вуза', self.school_city),
-            ('Год окончания', self.graduation_year),
-            ('Желаемая программа/направление', self.desired_program),
-            ('Желаемый вуз/город', self.desired_city),
-            ('Желаемая страна', self.desired_country),
-            ('Язык обучения', self.desired_language),
-            ('Цель поступления', self.admission_goal),
-            ('Родитель', self.parent_full_name),
-            ('Контакты родителя', self.parent_contacts),
-            ('Комментарий', self.applicant_comment),
-        ]
-        if self.form_type == self.FormType.APPLICANT:
-            rows.extend([
-                ('Паспорт', self.passport_number),
-                ('Кем выдан паспорт', self.passport_issued_by),
-                ('Дата выдачи паспорта', self.passport_issue_date),
-                ('Срок действия паспорта', self.passport_expiry_date),
-                ('Виза', self.has_visa),
-                ('Нужна помощь с', ', '.join(self.help_needed or [])),
-            ])
-        body = '\n'.join(f'{label}: {value or "Не указано"}' for label, value in rows)
-        content = f'Student’s Life\n{title}\nДата формирования: {timezone.now():%d.%m.%Y %H:%M}\n\n{body}\n'
-        filename = 'school-student-application.txt' if self.form_type == self.FormType.SCHOOL_STUDENT else 'applicant-questionnaire.txt'
-        self.generated_document.save(filename, ContentFile(content.encode('utf-8')), save=False)
+        from django.core.files.base import ContentFile
+
+        from .document_generator import generate_questionnaire_docx
+
+        content = generate_questionnaire_docx(self)
+        filename = 'school-student-application.docx' if self.form_type == self.FormType.SCHOOL_STUDENT else 'applicant-questionnaire.docx'
+        self.generated_document.save(filename, ContentFile(content), save=False)
         self.generated_document_at = timezone.now()
         self.manager_sl_sync_status = 'pending'
         return self.generated_document

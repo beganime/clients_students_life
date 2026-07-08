@@ -396,6 +396,7 @@ export type ApplicantQuestionnaire = {
   document_file?: string;
   generated_document_at?: string | null;
   missing_required_fields?: string[];
+  missing_required_field_labels?: string[];
   updated_at?: string;
 };
 
