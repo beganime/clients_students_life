@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from apps.common.models import TimeStampedModel
 
@@ -169,3 +170,44 @@ class ClientExam(TimeStampedModel):
         if repeat_at and repeat_at < exam_at:
             candidates.append(repeat_at)
         return min(candidates) if candidates else None
+
+
+class AdminReminder(TimeStampedModel):
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Ожидает отправки'
+        SENT = 'sent', 'Отправлено'
+        CANCELLED = 'cancelled', 'Отменено'
+        FAILED = 'failed', 'Ошибка'
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='admin_reminders',
+        verbose_name='Менеджер',
+    )
+    title = models.CharField('Заголовок', max_length=255, default='Напоминание об экзамене')
+    body = models.TextField('Текст уведомления')
+    remind_at = models.DateTimeField('Дата и время уведомления')
+    timezone = models.CharField('Часовой пояс', max_length=64, default='Asia/Ashgabat')
+    status = models.CharField('Статус', max_length=20, choices=Status.choices, default=Status.PENDING)
+    sent_at = models.DateTimeField('Дата отправки', null=True, blank=True)
+    last_error = models.TextField('Последняя ошибка', blank=True)
+
+    class Meta:
+        verbose_name = 'Напоминание менеджера'
+        verbose_name_plural = 'Календарь напоминаний'
+        ordering = ['-remind_at']
+        indexes = [
+            models.Index(fields=['owner', 'status', 'remind_at']),
+            models.Index(fields=['status', 'remind_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.title} - {self.owner}'
+
+    def remind_at_in_timezone(self):
+        try:
+            tz = ZoneInfo(self.timezone)
+        except ZoneInfoNotFoundError:
+            tz = ZoneInfo('Asia/Ashgabat')
+        return timezone.localtime(self.remind_at, tz)

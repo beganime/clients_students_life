@@ -4,6 +4,7 @@ from datetime import timedelta
 from corsheaders.defaults import default_headers
 from decouple import Csv, config
 from django.core.exceptions import ImproperlyConfigured
+from django.templatetags.static import static
 from django.urls import reverse_lazy
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -279,6 +280,9 @@ UNFOLD = {
     'SITE_SYMBOL': 'school',
     'SHOW_HISTORY': True,
     'SHOW_VIEW_ON_SITE': True,
+    'STYLES': [
+        lambda request: static('admin/css/student-life-admin.css'),
+    ],
     'COLORS': {
         'primary': {
             '50': '254 242 242',
@@ -334,6 +338,7 @@ UNFOLD = {
                     {'title': 'Анкеты абитуриентов', 'icon': 'assignment_ind', 'link': reverse_lazy('admin:questionnaires_applicantquestionnaire_changelist')},
                     {'title': 'Вложения анкет', 'icon': 'attach_file', 'link': reverse_lazy('admin:questionnaires_questionnaireattachment_changelist')},
                     {'title': 'Push-уведомления', 'icon': 'campaign', 'link': reverse_lazy('admin:notifications_pushnotification_changelist')},
+                    {'title': 'Календарь напоминаний', 'icon': 'event', 'link': reverse_lazy('admin:notifications_adminreminder_changelist')},
                     {'title': 'Push-токены', 'icon': 'notifications', 'link': reverse_lazy('admin:notifications_devicetoken_changelist')},
                     {'title': 'Активность', 'icon': 'schedule', 'link': reverse_lazy('admin:accounts_appuseractivity_changelist')},
                 ],

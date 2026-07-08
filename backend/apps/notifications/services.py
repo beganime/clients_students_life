@@ -3,7 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 from firebase_admin import credentials, messaging
 
-from .models import ClientExam, DeviceToken, PushNotification, UserNotification
+from .models import AdminReminder, ClientExam, DeviceToken, PushNotification, UserNotification
 
 
 _firebase_initialized = False
@@ -159,4 +159,33 @@ def send_exam_reminder(exam: ClientExam, *, force=False):
     exam.last_reminded_at = now
     exam.next_reminder_at = exam.compute_next_reminder_at(now)
     exam.save(update_fields=['last_reminded_at', 'next_reminder_at', 'updated_at'])
+    return True
+
+
+def send_admin_reminder(reminder: AdminReminder, *, test_user=None):
+    user = test_user or reminder.owner
+    title = reminder.title
+    body = reminder.body
+
+    try:
+        send_push_to_user(
+            user=user,
+            title=title,
+            body=body,
+            notification_type='admin_reminder',
+            related_object_type='admin_reminder',
+            related_object_id=reminder.id,
+        )
+    except Exception as exc:
+        if test_user is None:
+            reminder.status = AdminReminder.Status.FAILED
+            reminder.last_error = str(exc)
+            reminder.save(update_fields=['status', 'last_error', 'updated_at'])
+        raise
+
+    if test_user is None:
+        reminder.status = AdminReminder.Status.SENT
+        reminder.sent_at = timezone.now()
+        reminder.last_error = ''
+        reminder.save(update_fields=['status', 'sent_at', 'last_error', 'updated_at'])
     return True
