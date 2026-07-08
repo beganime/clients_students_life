@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import ClientExam, DeviceToken, PushNotification, UserNotification
+from .services import send_push_notification
 
 
 @admin.register(DeviceToken)
@@ -17,6 +18,20 @@ class PushNotificationAdmin(admin.ModelAdmin):
     list_filter = ('target_type', 'status', 'created_at')
     search_fields = ('title', 'body')
     filter_horizontal = ('target_users',)
+    actions = ('send_now',)
+
+    @admin.action(description='Send selected push notifications now')
+    def send_now(self, request, queryset):
+        total_internal = 0
+        total_push = 0
+        for notification in queryset:
+            result = send_push_notification(notification)
+            total_internal += result['internal_created']
+            total_push += result['push_sent']
+        self.message_user(
+            request,
+            f'Sent notifications. Internal: {total_internal}; FCM pushes: {total_push}.',
+        )
     
 @admin.register(UserNotification)
 class UserNotificationAdmin(admin.ModelAdmin):

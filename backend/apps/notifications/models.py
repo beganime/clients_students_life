@@ -164,7 +164,7 @@ class ClientExam(TimeStampedModel):
         if not self.last_reminded_at:
             return self.reminder_start_at if self.reminder_start_at and self.reminder_start_at > now else now
 
-        repeat_at = now + timezone.timedelta(hours=3) if self.repeat_until_acknowledged else None
+        repeat_at = now + timezone.timedelta(hours=1) if self.repeat_until_acknowledged else None
         candidates = future_milestones
         if repeat_at and repeat_at < exam_at:
             candidates.append(repeat_at)

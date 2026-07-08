@@ -3,7 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 from firebase_admin import credentials, messaging
 
-from .models import ClientExam, DeviceToken, UserNotification
+from .models import ClientExam, DeviceToken, PushNotification, UserNotification
 
 
 _firebase_initialized = False
@@ -61,6 +61,76 @@ def send_push_to_user(user, title, body, notification_type='', related_object_ty
             messaging.send(message)
         except Exception:
             DeviceToken.objects.filter(token=token).update(is_active=False)
+
+
+def send_raw_push_to_tokens(tokens, title, body, data=None):
+    tokens = [token for token in tokens if token]
+    if not tokens:
+        return 0
+
+    init_firebase()
+    if not firebase_admin._apps:
+        return 0
+
+    sent = 0
+    payload = {key: str(value) for key, value in (data or {}).items() if value is not None}
+    for token in tokens:
+        try:
+            messaging.send(messaging.Message(
+                notification=messaging.Notification(title=title, body=body),
+                token=token,
+                data=payload,
+            ))
+            sent += 1
+        except Exception:
+            DeviceToken.objects.filter(token=token).update(is_active=False)
+    return sent
+
+
+def send_push_notification(notification: PushNotification):
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    if notification.target_type == PushNotification.TargetType.USERS:
+        users = notification.target_users.filter(is_active=True).distinct()
+    elif notification.target_type == PushNotification.TargetType.ANONYMOUS:
+        users = User.objects.none()
+    else:
+        users = User.objects.filter(is_active=True)
+
+    created = 0
+    for user in users.iterator():
+        UserNotification.objects.create(
+            user=user,
+            title=notification.title,
+            body=notification.body,
+            notification_type='broadcast',
+            related_object_type='push_notification',
+            related_object_id=notification.id,
+        )
+        created += 1
+
+    if notification.target_type == PushNotification.TargetType.ANONYMOUS:
+        tokens = DeviceToken.objects.filter(user__isnull=True, is_active=True).values_list('token', flat=True)
+    elif notification.target_type == PushNotification.TargetType.USERS:
+        tokens = DeviceToken.objects.filter(user__in=users, is_active=True).values_list('token', flat=True)
+    else:
+        tokens = DeviceToken.objects.filter(is_active=True).values_list('token', flat=True)
+
+    sent = send_raw_push_to_tokens(
+        list(tokens),
+        notification.title,
+        notification.body,
+        data={
+            'notification_type': 'broadcast',
+            'related_object_type': 'push_notification',
+            'related_object_id': notification.id,
+        },
+    )
+    notification.status = PushNotification.Status.SENT
+    notification.sent_at = timezone.now()
+    notification.save(update_fields=['status', 'sent_at', 'updated_at'])
+    return {'internal_created': created, 'push_sent': sent}
 
 
 def send_exam_reminder(exam: ClientExam, *, force=False):
