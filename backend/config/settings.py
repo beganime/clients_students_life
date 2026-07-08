@@ -333,6 +333,7 @@ UNFOLD = {
                     {'title': 'Сообщения', 'icon': 'chat', 'link': reverse_lazy('admin:chat_chatmessage_changelist')},
                     {'title': 'Анкеты абитуриентов', 'icon': 'assignment_ind', 'link': reverse_lazy('admin:questionnaires_applicantquestionnaire_changelist')},
                     {'title': 'Вложения анкет', 'icon': 'attach_file', 'link': reverse_lazy('admin:questionnaires_questionnaireattachment_changelist')},
+                    {'title': 'Push-уведомления', 'icon': 'campaign', 'link': reverse_lazy('admin:notifications_pushnotification_changelist')},
                     {'title': 'Push-токены', 'icon': 'notifications', 'link': reverse_lazy('admin:notifications_devicetoken_changelist')},
                     {'title': 'Активность', 'icon': 'schedule', 'link': reverse_lazy('admin:accounts_appuseractivity_changelist')},
                 ],

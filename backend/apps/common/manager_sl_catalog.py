@@ -202,6 +202,8 @@ def proxy_manager_sl_resource(request, resource, mapper, pk=None, params=None):
     try:
         payload = client.get_client_resource(resource, params=params or request.query_params, pk=pk)
     except (ManagerSLClientError, ManagerSLConfigError) as exc:
+        if getattr(exc, 'status_code', 502) >= 500:
+            return None
         return manager_sl_error_response(exc)
     if pk is not None and isinstance(payload, dict):
         return Response(mapper(payload))

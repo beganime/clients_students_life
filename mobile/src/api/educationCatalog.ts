@@ -1,4 +1,4 @@
-import { MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/config';
+import { API_BASE_URL, API_ROOT_URL, MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/config';
 
 export const EDUCATION_CATALOG_BASE_URL = MANAGER_SL_API_BASE_URL;
 
@@ -33,15 +33,27 @@ async function request<T>(
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
 ): Promise<T> {
+  return requestFromBase<T>(EDUCATION_CATALOG_BASE_URL, path, params, API_BASE_URL);
+}
+
+async function requestFromBase<T>(
+  baseUrl: string,
+  path: string,
+  params?: Record<string, string | number | boolean | undefined>,
+  fallbackBaseUrl?: string,
+): Promise<T> {
   const query = new URLSearchParams();
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined && value !== '') query.append(key, String(value));
   });
 
-  const url = `${EDUCATION_CATALOG_BASE_URL}${path}${query.toString() ? `?${query.toString()}` : ''}`;
+  const url = `${baseUrl}${path}${query.toString() ? `?${query.toString()}` : ''}`;
   const response = await fetch(url, { headers: { Accept: 'application/json' } });
 
   if (!response.ok) {
+    if (fallbackBaseUrl && fallbackBaseUrl !== baseUrl) {
+      return requestFromBase<T>(fallbackBaseUrl, path, params);
+    }
     throw new Error(`Catalog API error: ${response.status}`);
   }
 
@@ -55,8 +67,9 @@ export function resolveCatalogMediaUrl(value?: string | null) {
   if (!cleanValue) return null;
   if (/^https?:\/\//i.test(cleanValue)) return cleanValue;
   if (cleanValue.startsWith('//')) return `https:${cleanValue}`;
-  if (cleanValue.startsWith('/')) return `${MANAGER_SL_ROOT_URL}${cleanValue}`;
-  return `${MANAGER_SL_ROOT_URL}/${cleanValue}`;
+  if (cleanValue.startsWith('/media/') || cleanValue.startsWith('/static/')) return `${API_ROOT_URL}${cleanValue}`;
+  if (cleanValue.startsWith('/')) return `${MANAGER_SL_ROOT_URL || API_ROOT_URL}${cleanValue}`;
+  return `${MANAGER_SL_ROOT_URL || API_ROOT_URL}/${cleanValue}`;
 }
 
 function money(value?: string | number | null, currency?: string | null) {

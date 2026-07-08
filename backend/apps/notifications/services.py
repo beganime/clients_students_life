@@ -18,9 +18,12 @@ def init_firebase():
     if not credentials_path:
         return
 
-    if not firebase_admin._apps:
-        cred = credentials.Certificate(credentials_path)
-        firebase_admin.initialize_app(cred)
+    try:
+        if not firebase_admin._apps:
+            cred = credentials.Certificate(credentials_path)
+            firebase_admin.initialize_app(cred)
+    except Exception:
+        return
 
     _firebase_initialized = True
 

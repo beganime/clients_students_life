@@ -51,6 +51,7 @@ class UniversityAdmin(ModelAdmin):
     ordering = ('sort_order', 'name')
     list_editable = ('is_active', 'sort_order')
     list_per_page = 100
+    list_max_show_all = 10000
     list_select_related = ('country', 'city')
 
 
@@ -62,8 +63,8 @@ class ProgramAdmin(ModelAdmin):
     ordering = ('university__name', 'sort_order', 'title')
     autocomplete_fields = ('university',)
     list_editable = ('is_active', 'sort_order')
-    list_per_page = 200
-    list_max_show_all = 2000
+    list_per_page = 500
+    list_max_show_all = 10000
     show_full_result_count = True
     list_select_related = ('university', 'university__country', 'university__city')
     
