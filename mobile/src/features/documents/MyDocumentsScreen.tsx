@@ -1,10 +1,9 @@
 import * as DocumentPicker from 'expo-document-picker';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { documentsApi } from '../../api/endpoints';
-import { UploadableFile } from '../../api/endpoints';
+import { documentsApi, UploadableFile } from '../../api/endpoints';
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
@@ -19,6 +18,12 @@ import { colors, radius, spacing, typography } from '../../constants/colors';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { MyDocument, MyDocumentStatus } from '../../types/api';
 import { getApiErrorMessage } from '../../utils/apiError';
+import {
+  cacheLocalUploadFile,
+  getPendingDocumentUploads,
+  removePendingDocumentUpload,
+  savePendingDocumentUpload,
+} from '../../utils/localMediaCache';
 
 const STATUS_LABELS: Record<MyDocumentStatus, string> = {
   not_uploaded: 'Не загружен',
@@ -44,6 +49,18 @@ export function MyDocumentsScreen() {
   const { isOnline } = useNetworkStatus();
   const [pendingUploads, setPendingUploads] = useState<Record<number, UploadableFile>>({});
 
+  useEffect(() => {
+    getPendingDocumentUploads()
+      .then(pending => {
+        const files = Object.values(pending).reduce<Record<number, UploadableFile>>((acc, item) => {
+          acc[item.documentTypeId] = item.file;
+          return acc;
+        }, {});
+        setPendingUploads(files);
+      })
+      .catch(() => undefined);
+  }, []);
+
   const documentsQuery = useQuery({
     queryKey: ['my-documents'],
     queryFn: documentsApi.getMyDocuments,
@@ -54,31 +71,41 @@ export function MyDocumentsScreen() {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: ({ documentTypeId, file }: UploadPayload) =>
-      documentsApi.uploadMyDocument(documentTypeId, file),
-    onSuccess: () => {
-      if (uploadMutation.variables?.documentTypeId) {
-        setPendingUploads(prev => {
-          const next = { ...prev };
-          delete next[uploadMutation.variables!.documentTypeId];
-          return next;
-        });
-      }
+    mutationFn: ({ documentTypeId, file }: UploadPayload) => documentsApi.uploadMyDocument(documentTypeId, file),
+    onSuccess: async (_data, variables) => {
+      await removePendingDocumentUpload(variables.documentTypeId);
+      setPendingUploads(prev => {
+        const next = { ...prev };
+        delete next[variables.documentTypeId];
+        return next;
+      });
       queryClient.invalidateQueries({ queryKey: ['my-documents'] });
       Alert.alert('Документ отправлен', 'Файл загружен и отправлен менеджеру на проверку.');
     },
-    onError: error => {
-      Alert.alert('Не удалось загрузить документ', getApiErrorMessage(error));
+    onError: async (error, variables) => {
+      const cachedFile = await savePendingDocumentUpload(variables.documentTypeId, variables.file);
+      setPendingUploads(prev => ({ ...prev, [variables.documentTypeId]: cachedFile }));
+      Alert.alert(
+        'Не удалось загрузить документ',
+        `${getApiErrorMessage(error)}\n\nФайл сохранён на телефоне. Попробуйте отправить его ещё раз, когда соединение будет стабильным.`,
+      );
     },
   });
 
-  const uploadFile = (documentTypeId: number, file: UploadableFile) => {
+  const uploadFile = async (documentTypeId: number, file: UploadableFile) => {
+    const cachedFile = await cacheLocalUploadFile(file, 'documents');
+
     if (!isOnline) {
-      setPendingUploads(prev => ({ ...prev, [documentTypeId]: file }));
-      Alert.alert('Ожидает загрузки', 'Вы сейчас offline. Файл будет можно отправить после подключения к интернету.');
+      const pendingFile = await savePendingDocumentUpload(documentTypeId, cachedFile);
+      setPendingUploads(prev => ({ ...prev, [documentTypeId]: pendingFile }));
+      Alert.alert(
+        'Ожидает загрузки',
+        'Вы сейчас offline. Файл сохранён на телефоне, его можно отправить после подключения к интернету.',
+      );
       return;
     }
-    uploadMutation.mutate({ documentTypeId, file });
+
+    uploadMutation.mutate({ documentTypeId, file: cachedFile });
   };
 
   const handlePick = async (document: MyDocument) => {
@@ -122,7 +149,8 @@ export function MyDocumentsScreen() {
         <Badge label="Личный кабинет" variant="mint" icon="check" />
         <Text style={styles.title}>Мои документы</Text>
         <Text style={styles.subtitle}>
-          Загружайте документы для поступления и следите за статусом проверки. Если нужен перевод, менеджер добавит его отдельным типом документа.
+          Загружайте документы для поступления и следите за статусом проверки. Если нужен перевод,
+          менеджер добавит его отдельным типом документа.
         </Text>
       </RedGradientHero>
 
@@ -134,7 +162,10 @@ export function MyDocumentsScreen() {
       {!isOnline ? (
         <AppCard style={styles.offlineCard}>
           <Text style={styles.offlineTitle}>Вы сейчас offline</Text>
-          <Text style={styles.offlineText}>Данные документов показываются из кэша. Новые файлы получат статус «Ожидает загрузки».</Text>
+          <Text style={styles.offlineText}>
+            Данные документов показываются из кэша. Новые файлы будут сохранены на телефоне и получат
+            статус ожидания загрузки.
+          </Text>
         </AppCard>
       ) : null}
 
@@ -185,7 +216,13 @@ function DocumentCard({
   pendingUpload: boolean;
 }) {
   const rejected = document.status === 'rejected';
-  const buttonTitle = pendingUpload ? 'Повторить загрузку' : document.status === 'not_uploaded' ? 'Загрузить файл' : rejected ? 'Загрузить исправленный файл' : 'Заменить файл';
+  const buttonTitle = pendingUpload
+    ? 'Повторить загрузку'
+    : document.status === 'not_uploaded'
+      ? 'Загрузить файл'
+      : rejected
+        ? 'Загрузить исправленный файл'
+        : 'Заменить файл';
 
   return (
     <AppCard style={[styles.documentCard, rejected && styles.rejectedCard]}>
@@ -196,7 +233,11 @@ function DocumentCard({
         <View style={styles.documentTitleBox}>
           <Text style={styles.documentTitle}>{document.title}</Text>
           <View style={styles.badgeRow}>
-            <Badge label={STATUS_LABELS[document.status]} variant={STATUS_VARIANTS[document.status]} icon={document.status === 'approved' ? 'check' : 'document'} />
+            <Badge
+              label={STATUS_LABELS[document.status]}
+              variant={STATUS_VARIANTS[document.status]}
+              icon={document.status === 'approved' ? 'check' : 'document'}
+            />
             {document.is_required ? <Badge label="Обязательный" variant="orange" icon="warning" /> : null}
           </View>
         </View>
@@ -211,7 +252,7 @@ function DocumentCard({
       )}
       {document.uploaded_at ? <Text style={styles.metaText}>Загружен: {formatDate(document.uploaded_at)}</Text> : null}
       {document.reviewed_at ? <Text style={styles.metaText}>Проверен: {formatDate(document.reviewed_at)}</Text> : null}
-      {pendingUpload ? <Text style={styles.pendingText}>Ожидает загрузки после подключения к интернету.</Text> : null}
+      {pendingUpload ? <Text style={styles.pendingText}>Файл сохранён на телефоне и ожидает отправки.</Text> : null}
 
       {rejected && document.admin_comment ? (
         <View style={styles.commentBox}>
@@ -266,3 +307,4 @@ const styles = StyleSheet.create({
   commentText: { color: colors.text, lineHeight: 21, marginTop: spacing.xs, fontWeight: typography.weights.medium },
   uploadButton: { marginTop: spacing.lg },
 });
+

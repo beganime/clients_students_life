@@ -13,7 +13,7 @@ import { SvgIcon } from '../../components/SvgIcon';
 import { colors, spacing, typography } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 import { getApiErrorMessage } from '../../utils/apiError';
-import { getLocalAvatarUri, saveLocalAvatarUri } from '../../utils/localMediaCache';
+import { getLocalAvatarUri, saveLocalAvatarFile } from '../../utils/localMediaCache';
 import { getMediaUrl } from '../../utils/media';
 
 export function EditProfileScreen() {
@@ -46,13 +46,15 @@ export function EditProfileScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
     if (!result.canceled && result.assets[0]?.uri) {
       const asset = result.assets[0];
-      setAvatarFile({
+      const file = {
         uri: asset.uri,
         name: asset.fileName || `avatar-${Date.now()}.jpg`,
         type: asset.mimeType || 'image/jpeg',
         file: (asset as any).file,
-      });
-      setLocalAvatarUri(asset.uri);
+      };
+      const cachedFile = await saveLocalAvatarFile(file);
+      setAvatarFile(cachedFile);
+      setLocalAvatarUri(cachedFile.uri);
     }
   };
 
@@ -71,7 +73,7 @@ export function EditProfileScreen() {
       formData.append('language', user?.profile?.language || 'ru');
       if (avatarFile) appendUploadFile(formData, 'avatar', avatarFile);
       await authApi.updateMeFormData(formData);
-      if (avatarFile?.uri) await saveLocalAvatarUri(avatarFile.uri);
+      if (avatarFile?.uri) await saveLocalAvatarFile(avatarFile);
       setAvatarFile(null);
       await refreshMe();
       Alert.alert('Готово', 'Профиль обновлён.');

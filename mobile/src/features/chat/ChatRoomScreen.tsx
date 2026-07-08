@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
-import { ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chatApi } from '../../api/endpoints';
 import { AppCard } from '../../components/AppCard';
+import { CachedImage } from '../../components/CachedImage';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { Loading } from '../../components/Loading';
@@ -15,6 +16,7 @@ import { colors, radius, shadows, spacing, typography } from '../../constants/co
 import { RootStackParamList } from '../../navigation/types';
 import { ChatMessage } from '../../types/api';
 import { getApiErrorMessage } from '../../utils/apiError';
+import { cacheLocalUploadFile } from '../../utils/localMediaCache';
 import { getMediaUrl } from '../../utils/media';
 
 type R = RouteProp<RootStackParamList, 'ChatRoom'>;
@@ -88,17 +90,18 @@ export function ChatRoomScreen() {
     if (result.canceled || !result.assets?.length) return;
 
     const asset = result.assets[0];
-    const file = {
+    const file = await cacheLocalUploadFile({
       uri: asset.uri,
       name: asset.name || `chat-file-${Date.now()}`,
       type: asset.mimeType || 'application/octet-stream',
       file: (asset as any).file,
-    };
+    }, 'chat');
 
     try {
       setSendError('');
       setSendingFile(true);
-      const created = file.type.startsWith('image/')
+      const isImageFile = (file.type || '').startsWith('image/');
+      const created = isImageFile
         ? await chatApi.sendImage(route.params.id, file, text)
         : await chatApi.sendFile(route.params.id, file, text);
       appendMessage(created);
@@ -171,7 +174,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     <View style={[styles.messageWrap, isMine ? styles.myWrap : styles.otherWrap]}>
       <View style={[styles.message, isMine ? styles.myMessage : styles.otherMessage]}>
         {!isMine && sender ? <Text style={styles.sender}>{sender}</Text> : null}
-        {isImage && fileUrl ? <Image source={{ uri: fileUrl }} style={styles.messageImage} resizeMode="cover" /> : null}
+        {isImage && fileUrl ? <CachedImage uri={fileUrl} style={styles.messageImage} resizeMode="cover" /> : null}
         {isFile && fileUrl ? (
           <Pressable style={styles.fileBubble} onPress={() => Linking.openURL(fileUrl)}>
             <SvgIcon name="file" size={20} color={isMine ? colors.white : colors.secondary} />

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CachedImage } from '../CachedImage';
 import { colors } from '../../constants/colors';
 import { getMediaUrl } from '../../utils/media';
 
@@ -18,7 +19,7 @@ export function ArticleCard({ title, description, image, category, author, onPre
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} /> : null}
+      {imageUrl ? <CachedImage uri={imageUrl} style={styles.image} /> : null}
       <View style={styles.content}>
         {category ? <Text style={styles.category}>{category}</Text> : null}
         <Text style={styles.title}>{title}</Text>

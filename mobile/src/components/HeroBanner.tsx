@@ -12,6 +12,7 @@ import {
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { radius, shadows, spacing } from '../constants/colors';
+import { useCachedMediaUri } from '../hooks/useCachedMediaUri';
 import { BrandMark } from './BrandLogo';
 
 export type HeroBannerProps = React.PropsWithChildren<{
@@ -49,6 +50,15 @@ export function HeroBanner({
   const { width } = useWindowDimensions();
   const responsiveHeight = Math.min(Math.max(width * 0.58, MIN_HERO_HEIGHT), MAX_HERO_HEIGHT);
   const stops = backgroundImage ? imageGradientStops : gradientStops;
+  const remoteBackgroundUri =
+    backgroundImage && !Array.isArray(backgroundImage) && typeof backgroundImage === 'object' && 'uri' in backgroundImage
+      ? String((backgroundImage as { uri?: string }).uri || '')
+      : null;
+  const cachedBackgroundUri = useCachedMediaUri(remoteBackgroundUri);
+  const effectiveBackgroundImage =
+    remoteBackgroundUri && cachedBackgroundUri
+      ? ({ ...(backgroundImage as object), uri: cachedBackgroundUri } as ImageSourcePropType)
+      : backgroundImage;
 
   const content = (
     <>
@@ -72,10 +82,10 @@ export function HeroBanner({
     </>
   );
 
-  if (backgroundImage) {
+  if (effectiveBackgroundImage) {
     return (
       <ImageBackground
-        source={backgroundImage}
+        source={effectiveBackgroundImage}
         imageStyle={styles.image}
         style={[styles.root, styles.imageRoot, { minHeight: responsiveHeight }, shadows.premium, style]}
         resizeMode={backgroundResizeMode}

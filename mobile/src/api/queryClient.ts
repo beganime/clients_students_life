@@ -2,12 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient } from '@tanstack/react-query';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 
+export const QUERY_CACHE_MAX_AGE = 1000 * 60 * 60 * 24 * 7;
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       staleTime: 1000 * 60 * 5,
-      gcTime: 1000 * 60 * 60 * 24,
+      gcTime: QUERY_CACHE_MAX_AGE,
     },
   },
 });

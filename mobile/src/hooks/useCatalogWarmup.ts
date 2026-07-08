@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { Image } from 'react-native';
 
 import { educationCatalogApi } from '../api/educationCatalog';
 import { queryClient } from '../api/queryClient';
+import { cacheRemoteMediaBatch } from '../utils/localMediaCache';
 import { useNetworkStatus } from './useNetworkStatus';
 
 const WARMUP_KEY = ['catalog', 'warmup'];
@@ -41,9 +41,7 @@ export function useCatalogWarmup() {
           ...programs.flatMap((item: any) => [item.university_logo, item.university_cover]),
         ].filter(Boolean) as string[];
 
-        imageUrls.slice(0, 260).forEach(uri => {
-          Image.prefetch(uri).catch(() => undefined);
-        });
+        await cacheRemoteMediaBatch(imageUrls.slice(0, 320), 'catalog');
       } catch {
         warmupStarted = false;
       }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dimensions, Image, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 
@@ -10,6 +10,7 @@ import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
 import { BannerSlider } from '../../components/BannerSlider';
+import { CachedImage } from '../../components/CachedImage';
 import { CTASection } from '../../components/CTASection';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -222,12 +223,12 @@ function CountryBanner({ country, onPress }: { country: Country; onPress: () => 
 
   return (
     <AnimatedPressable style={styles.countryCard} onPress={onPress}>
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.countryImage} resizeMode="cover" /> : null}
+      {imageUrl ? <CachedImage uri={imageUrl} style={styles.countryImage} resizeMode="cover" /> : null}
       <View style={styles.countryShade} />
       <View style={styles.countryContent}>
         <View style={styles.countryIcon}>
           {country.flag ? (
-            <Image source={{ uri: country.flag }} style={styles.flagImage} resizeMode="cover" />
+            <CachedImage uri={country.flag} style={styles.flagImage} resizeMode="cover" />
           ) : (
             <SvgIcon name="globe" size={22} color={colors.primary} />
           )}

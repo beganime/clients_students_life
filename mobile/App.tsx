@@ -11,7 +11,7 @@ import { OfflineBanner } from './src/components/OfflineBanner';
 import { useAppActivity } from './src/hooks/useAppActivity';
 import { useCatalogWarmup } from './src/hooks/useCatalogWarmup';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
-import { asyncStoragePersister, queryClient } from './src/api/queryClient';
+import { asyncStoragePersister, QUERY_CACHE_MAX_AGE, queryClient } from './src/api/queryClient';
 import { colors } from './src/constants/colors';
 
 function AppContent() {
@@ -33,7 +33,7 @@ export default function App() {
         client={queryClient}
         persistOptions={{
           persister: asyncStoragePersister,
-          maxAge: 1000 * 60 * 60 * 24,
+          maxAge: QUERY_CACHE_MAX_AGE,
         }}
       >
         <StatusBar style="dark" backgroundColor={colors.white} />

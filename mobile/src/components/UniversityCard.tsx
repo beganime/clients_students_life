@@ -1,10 +1,11 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, shadows, spacing, typography } from '../constants/colors';
 import { University } from '../types/api';
 import { AnimatedPressable } from './AnimatedPressable';
 import { Badge } from './Badge';
+import { CachedImage } from './CachedImage';
 import { SvgIcon } from './SvgIcon';
 
 type Props = {
@@ -23,7 +24,7 @@ export function UniversityCard({ university, onPress, onApplyPress }: Props) {
     <AnimatedPressable style={[styles.card, shadows.card]} onPress={onPress}>
       <View style={styles.cover}>
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.coverImage} resizeMode="cover" />
+          <CachedImage uri={imageUrl} style={styles.coverImage} resizeMode="cover" />
         ) : (
           <SvgIcon name="university" size={38} color={colors.white} strokeWidth={2.4} />
         )}

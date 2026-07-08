@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Dimensions, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { Badge } from '../../components/Badge';
+import { CachedImage } from '../../components/CachedImage';
 import { CTASection } from '../../components/CTASection';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
@@ -76,7 +77,7 @@ export function ProfileScreen() {
       <RedGradientHero backgroundImage={bannerImages.profile} style={styles.profileHero}>
         <View style={styles.profileTopRow}>
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <CachedImage uri={avatarUrl} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <SvgIcon name="profile" size={42} color={colors.secondary} />

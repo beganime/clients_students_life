@@ -26,6 +26,7 @@ import {
   saveOfflineQuestionnaireDraft,
 } from '../../utils/offlineStorage';
 import { getMediaUrl } from '../../utils/media';
+import { cacheLocalUploadFile } from '../../utils/localMediaCache';
 
 const TEXT_FIELDS: Array<keyof ApplicantQuestionnaire> = [
   'form_type',
@@ -276,12 +277,13 @@ export function ApplicantQuestionnaireScreen() {
 
     if (!result.canceled && result.assets[0]?.uri) {
       const asset = result.assets[0];
-      setFacePhoto({
+      const cachedFile = await cacheLocalUploadFile({
         uri: asset.uri,
         name: asset.fileName || `face-photo-${Date.now()}.jpg`,
         type: asset.mimeType || 'image/jpeg',
         file: (asset as any).file,
-      });
+      }, 'questionnaire');
+      setFacePhoto(cachedFile);
     }
   };
 
@@ -293,12 +295,13 @@ export function ApplicantQuestionnaireScreen() {
     });
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
-    attachmentMutation.mutate({
+    const cachedFile = await cacheLocalUploadFile({
       uri: asset.uri,
       name: asset.name || `questionnaire-file-${Date.now()}`,
       type: asset.mimeType || 'application/octet-stream',
       file: (asset as any).file,
-    });
+    }, 'questionnaire');
+    attachmentMutation.mutate(cachedFile);
   };
 
   const photoUrl = useMemo(

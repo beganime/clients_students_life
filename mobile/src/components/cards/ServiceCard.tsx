@@ -1,6 +1,7 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { CachedImage } from '../CachedImage';
 import { colors } from '../../constants/colors';
 import { Service } from '../../types/api';
 import { getMediaUrl } from '../../utils/media';
@@ -15,7 +16,7 @@ export function ServiceCard({ item, onPress }: Props) {
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} /> : <View style={styles.placeholder} />}
+      {imageUrl ? <CachedImage uri={imageUrl} style={styles.image} /> : <View style={styles.placeholder} />}
       <View style={styles.content}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description} numberOfLines={3}>{item.short_description}</Text>

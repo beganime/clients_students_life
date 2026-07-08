@@ -139,7 +139,6 @@ export async function uploadFormData<T>(url: string, formData: FormData, method:
     Platform.OS === 'web'
       ? {}
       : {
-          'Content-Type': 'multipart/form-data',
           'X-Device-Platform': Platform.OS,
         };
 
