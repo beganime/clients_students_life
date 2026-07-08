@@ -8,3 +8,6 @@ db.sqlite3
 *.env
 .env
 media/
+secrets/
+*firebase-adminsdk*.json
+*service-account*.json

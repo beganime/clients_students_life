@@ -82,11 +82,8 @@ export const apiClient = axios.create({
   timeout: 20000,
   headers:
     Platform.OS === 'web'
-      ? {
-          'Content-Type': 'application/json',
-        }
+      ? {}
       : {
-          'Content-Type': 'application/json',
           'X-Device-Platform': Platform.OS,
         },
 });
@@ -129,10 +126,39 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       delete (config.headers as any)['Content-Type'];
       delete (config.headers as any)['content-type'];
     }
+  } else if (config.data && config.headers && !(config.headers as any)['Content-Type'] && !(config.headers as any)['content-type']) {
+    (config.headers as any)['Content-Type'] = 'application/json';
   }
 
   return config;
 });
+
+export async function uploadFormData<T>(url: string, formData: FormData, method: 'post' | 'patch' = 'post') {
+  const token = await tokenStorage.getAccessToken();
+  const headers: Record<string, string> =
+    Platform.OS === 'web'
+      ? {}
+      : {
+          'Content-Type': 'multipart/form-data',
+          'X-Device-Platform': Platform.OS,
+        };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const { data } = await axios.request<T>({
+    baseURL: API_BASE_URL,
+    url,
+    method,
+    data: formData,
+    timeout: 120000,
+    headers,
+    transformRequest: value => value,
+  });
+
+  return data;
+}
 
 apiClient.interceptors.response.use(
   response => response,

@@ -1,4 +1,4 @@
-import { apiClient, tokenStorage } from './client';
+import { apiClient, tokenStorage, uploadFormData } from './client';
 import {
   Application,
   ApplicationFile,
@@ -88,8 +88,8 @@ export type UniversityFilters = {
 
 export type UploadableFile = {
   uri: string;
-  name: string;
-  type: string;
+  name?: string;
+  type?: string;
   file?: Blob;
 };
 
@@ -107,6 +107,7 @@ function inferFileType(file: { name?: string; type?: string }) {
 
 export function appendUploadFile(formData: FormData, field: string, file: UploadableFile) {
   const type = inferFileType(file);
+  const name = file.name?.trim() || `upload-${Date.now()}`;
   const webFile = (file as any).file;
 
   if (typeof Blob !== 'undefined' && webFile instanceof Blob) {
@@ -116,7 +117,7 @@ export function appendUploadFile(formData: FormData, field: string, file: Upload
     }
 
     if (typeof File !== 'undefined') {
-      formData.append(field, new File([webFile], file.name || 'upload', { type }));
+      formData.append(field, new File([webFile], name, { type }));
       return;
     }
 
@@ -126,7 +127,7 @@ export function appendUploadFile(formData: FormData, field: string, file: Upload
 
   formData.append(field, {
     uri: file.uri,
-    name: file.name,
+    name,
     type,
   } as any);
 }
@@ -160,8 +161,7 @@ export const authApi = {
   },
 
   async updateMeFormData(formData: FormData) {
-    const { data } = await apiClient.patch<UserMe>('/accounts/me/', formData);
-    return data;
+    return uploadFormData<UserMe>('/accounts/me/', formData, 'patch');
   },
 
   async logout() {
@@ -294,9 +294,7 @@ export const applicationsApi = {
     formData.append('file_type', fileType);
     appendUploadFile(formData, 'file', file);
 
-    const { data } = await apiClient.post<ApplicationFile>(`/applications/${applicationId}/upload_file/`, formData);
-
-    return data;
+    return uploadFormData<ApplicationFile>(`/applications/${applicationId}/upload_file/`, formData);
   },
 };
 
@@ -310,8 +308,7 @@ export const documentsApi = {
     const formData = new FormData();
     appendUploadFile(formData, 'file', file);
 
-    const { data } = await apiClient.post<MyDocument>(`/documents/my-documents/${documentTypeId}/upload/`, formData);
-    return data;
+    return uploadFormData<MyDocument>(`/documents/my-documents/${documentTypeId}/upload/`, formData);
   },
 };
 
@@ -322,16 +319,25 @@ export const questionnaireApi = {
   },
 
   async saveMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
+    if (payload instanceof FormData) {
+      return uploadFormData<ApplicantQuestionnaire>('/questionnaire/my-application-form/', payload, 'patch');
+    }
     const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my-application-form/', payload);
     return data;
   },
 
   async saveMyQuestionnaireDraft(payload: Partial<ApplicantQuestionnaire> | FormData) {
+    if (payload instanceof FormData) {
+      return uploadFormData<ApplicantQuestionnaire>('/questionnaire/my-application-form/draft/', payload, 'patch');
+    }
     const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my-application-form/draft/', payload);
     return data;
   },
 
   async submitMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
+    if (payload instanceof FormData) {
+      return uploadFormData<ApplicantQuestionnaire>('/questionnaire/my-application-form/submit/', payload);
+    }
     const { data } = await apiClient.post<ApplicantQuestionnaire>('/questionnaire/my-application-form/submit/', payload);
     return data;
   },
@@ -344,8 +350,7 @@ export const questionnaireApi = {
   async uploadAttachment(file: UploadableFile) {
     const formData = new FormData();
     appendUploadFile(formData, 'file', file);
-    const { data } = await apiClient.post<QuestionnaireAttachment>('/questionnaire/my/attachments/', formData);
-    return data;
+    return uploadFormData<QuestionnaireAttachment>('/questionnaire/my/attachments/', formData);
   },
 };
 
@@ -379,8 +384,7 @@ export const chatApi = {
     }
     appendUploadFile(formData, 'image', file);
 
-    const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
-    return data;
+    return uploadFormData<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
   },
 
   async sendFile(roomId: number, file: UploadableFile, text = '') {
@@ -390,8 +394,7 @@ export const chatApi = {
     }
     appendUploadFile(formData, 'file', file);
 
-    const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
-    return data;
+    return uploadFormData<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
   },
 
   async markRead(roomId: number) {
