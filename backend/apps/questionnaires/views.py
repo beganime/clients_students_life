@@ -75,16 +75,18 @@ def save_questionnaire_payload(request, data, save_mode='draft'):
         return questionnaire, None
 
     missing_fields = questionnaire.missing_required_fields()
-    if missing_fields:
+    if 'data_processing_consent' in missing_fields:
         return questionnaire, {
-            'detail': 'Заполните обязательные поля перед отправкой анкеты.',
-            'missing_fields': missing_fields,
-            'missing_required_fields': missing_fields,
-            'missing_field_labels': questionnaire_field_labels(missing_fields),
-            'missing_required_field_labels': questionnaire_field_labels(missing_fields),
+            'detail': 'Перед отправкой анкеты подтвердите согласие на обработку персональных данных.',
+            'missing_fields': ['data_processing_consent'],
+            'missing_required_fields': ['data_processing_consent'],
+            'missing_field_labels': questionnaire_field_labels(['data_processing_consent']),
+            'missing_required_field_labels': questionnaire_field_labels(['data_processing_consent']),
         }
+
     questionnaire.mark_submitted()
-    questionnaire.generate_document()
+    if not missing_fields:
+        questionnaire.generate_document()
     questionnaire.save()
     sync_questionnaire_to_manager_sl(questionnaire, request=request)
     return questionnaire, None
