@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -9,6 +10,7 @@ from apps.accounts.views import LoginView
 from apps.common.views import privacy_policy_page
 
 urlpatterns = [
+    path('favicon.ico', RedirectView.as_view(url=f'{settings.STATIC_URL}favicon.png', permanent=True)),
     path('admin/', admin.site.urls),
     path('privacy-policy/', privacy_policy_page, name='privacy-policy'),
 
