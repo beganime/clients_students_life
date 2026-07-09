@@ -13,6 +13,7 @@ import { CTASection } from '../../components/CTASection';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { Loading } from '../../components/Loading';
+import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SectionHeader } from '../../components/SectionHeader';
@@ -33,9 +34,20 @@ export function UniversityDetailScreen() {
     queryFn: () => educationCatalogApi.getUniversity(route.params.id),
     staleTime: 1000 * 60 * 30,
   });
+  const programsQuery = useQuery({
+    queryKey: ['catalog', 'programs', { university: universityQuery.data?.id || route.params.id }],
+    queryFn: () => educationCatalogApi.getPrograms({ university: universityQuery.data?.id || route.params.id }),
+    enabled: Boolean(universityQuery.data?.id || route.params.id),
+    staleTime: 1000 * 60 * 30,
+  });
+  const universityPrograms = useMemo(() => {
+    const fetchedPrograms = programsQuery.data || [];
+    if (fetchedPrograms.length) return fetchedPrograms;
+    return universityQuery.data?.programs || [];
+  }, [programsQuery.data, universityQuery.data?.programs]);
   const visiblePrograms = useMemo(() => {
     const queryText = programSearch.trim().toLowerCase();
-    const programs = [...(universityQuery.data?.programs || [])].filter(program => {
+    const programs = [...universityPrograms].filter(program => {
       if (!queryText) return true;
       return [program.title, program.faculty, program.specialty, program.level, program.language]
         .filter(Boolean)
@@ -51,7 +63,7 @@ export function UniversityDetailScreen() {
       }
       return String(left.title || '').localeCompare(String(right.title || ''), 'ru');
     });
-  }, [programSearch, programSort, universityQuery.data?.programs]);
+  }, [programSearch, programSort, universityPrograms]);
 
   const handleApplyPress = () => navigation.navigate('ApplicationCreate', { universityId: universityQuery.data?.id });
 
@@ -74,8 +86,11 @@ export function UniversityDetailScreen() {
     <Screen
       scroll
       style={styles.screen}
-      refreshing={universityQuery.isRefetching}
-      onRefresh={() => universityQuery.refetch()}
+      refreshing={universityQuery.isRefetching || programsQuery.isRefetching}
+      onRefresh={() => {
+        universityQuery.refetch();
+        programsQuery.refetch();
+      }}
     >
       <RedGradientHero backgroundImage={imageUrl ? { uri: imageUrl } : bannerImages.university} style={styles.hero}>
         {data.logo ? <Image source={{ uri: data.logo }} style={styles.logoImage} resizeMode="cover" /> : null}
@@ -124,9 +139,11 @@ export function UniversityDetailScreen() {
       <TextBlock title="Документы" text={data.required_documents} />
 
       <SectionHeader eyebrow="Программы" title="Доступные программы" />
-      {!data.programs?.length ? (
+      {programsQuery.isLoading ? <LoadingSkeleton rows={3} height={150} /> : null}
+      {!programsQuery.isLoading && !universityPrograms.length ? (
         <EmptyState title="Программы пока не добавлены" description="Можно отправить заявку по вузу, менеджер уточнит детали." />
-      ) : (
+      ) : null}
+      {!programsQuery.isLoading && universityPrograms.length ? (
         <View style={styles.programsList}>
           <AppCard style={styles.programFilters}>
             <View style={styles.searchBox}>
@@ -161,7 +178,7 @@ export function UniversityDetailScreen() {
             </AppCard>
           ) : null}
         </View>
-      )}
+      ) : null}
 
       <CTASection
         eyebrow="Поступление"
