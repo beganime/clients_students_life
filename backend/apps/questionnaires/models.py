@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 
 from django.conf import settings
@@ -23,7 +24,23 @@ def questionnaire_attachment_upload_to(instance, filename):
 
 
 def questionnaire_document_upload_to(instance, filename):
-    return f'questionnaires/{instance.user_id}/generated/{uuid.uuid4().hex}-{filename}'
+    return f'questionnaires/{instance.user_id}/generated/{filename}'
+
+
+def questionnaire_document_filename(questionnaire, generated_at=None):
+    generated_at = timezone.localtime(generated_at or timezone.now())
+    full_name = (
+        questionnaire.full_name
+        or questionnaire.user.get_full_name()
+        or questionnaire.user.email
+        or 'Анкета'
+    )
+    words = [word for word in re.split(r'[\s\-]+', full_name.strip()) if word]
+    initials = ''.join(word[0].upper() for word in words[:3] if word[0].isalnum())
+    if not initials:
+        initials = 'АНК'
+    timestamp = generated_at.strftime('%d_%m_%Y_%H_%M')
+    return f'{initials}_{timestamp}.docx'
 
 
 class ApplicantQuestionnaire(TimeStampedModel):
@@ -214,10 +231,13 @@ class ApplicantQuestionnaire(TimeStampedModel):
 
         from .document_generator import generate_questionnaire_docx
 
-        content = generate_questionnaire_docx(self)
-        filename = 'school-student-application.docx' if self.form_type == self.FormType.SCHOOL_STUDENT else 'applicant-questionnaire.docx'
-        self.generated_document.save(filename, ContentFile(content), save=False)
+        old_name = self.generated_document.name if self.generated_document else ''
         self.generated_document_at = timezone.now()
+        content = generate_questionnaire_docx(self)
+        filename = questionnaire_document_filename(self, self.generated_document_at)
+        if old_name:
+            self.generated_document.storage.delete(old_name)
+        self.generated_document.save(filename, ContentFile(content), save=False)
         self.manager_sl_sync_status = 'pending'
         return self.generated_document
 

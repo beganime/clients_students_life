@@ -13,12 +13,13 @@ from .labels import questionnaire_field_label
 
 BRAND_BLUE = '0D416D'
 BRAND_RED = 'B8201A'
-BRAND_DARK_RED = '7F1D1D'
-BRAND_SOFT = 'FEF7F5'
-BLUE_SOFT = 'EEF6FB'
-TEXT_DARK = '172033'
-TEXT_MUTED = '64748B'
-LINE_SOFT = 'E6EEF5'
+BRAND_DARK = '172033'
+BRAND_MUTED = '64748B'
+SOFT_BLUE = 'EAF3FA'
+SOFT_RED = 'FFF0EF'
+SOFT_GRAY = 'F7FAFC'
+LINE = 'D9E4EE'
+WHITE = 'FFFFFF'
 
 
 VALUE_LABELS = {
@@ -38,16 +39,16 @@ VALUE_LABELS = {
 
 
 SECTIONS = (
-    ('01', 'Личные данные', ('full_name', 'birth_date', 'gender', 'citizenship', 'marital_status')),
-    ('02', 'Адрес проживания', ('residence_country', 'residence_region', 'residence_city', 'residence_street', 'residence_house', 'residence_postal_code')),
-    ('03', 'Паспортные данные', ('passport_number', 'passport_issued_by', 'passport_issue_date', 'passport_expiry_date', 'has_international_passport')),
-    ('04', 'Контакты', ('phone', 'email', 'extra_phone', 'imo', 'telegram', 'preferred_contact_method')),
-    ('05', 'Родители / представители', ('parent_full_name', 'parent_relation', 'parent_contacts', 'parent_workplace', 'family_members')),
-    ('06', 'Образование', ('education_status', 'education_level', 'school_class', 'school_name', 'school_country', 'school_city', 'graduation_year')),
-    ('07', 'Поступление', ('desired_program', 'admission_goal', 'desired_country', 'desired_city', 'desired_language', 'desired_education_level', 'admission_urgency', 'help_needed')),
-    ('08', 'Виза', ('has_visa', 'visa_country', 'visa_city', 'visa_valid_until')),
-    ('09', 'Достижения и языки', ('achievements', 'languages')),
-    ('10', 'Дополнительная информация', ('hobbies', 'applicant_comment', 'referral_source', 'data_processing_consent')),
+    ('Личные данные', ('full_name', 'birth_date', 'gender', 'citizenship', 'marital_status')),
+    ('Адрес проживания', ('residence_country', 'residence_region', 'residence_city', 'residence_street', 'residence_house', 'residence_postal_code')),
+    ('Паспортные данные', ('passport_number', 'passport_issued_by', 'passport_issue_date', 'passport_expiry_date', 'has_international_passport')),
+    ('Контакты', ('phone', 'email', 'extra_phone', 'imo', 'telegram', 'preferred_contact_method')),
+    ('Родители / представители', ('parent_full_name', 'parent_relation', 'parent_contacts', 'parent_workplace', 'family_members')),
+    ('Образование', ('education_status', 'education_level', 'school_class', 'school_name', 'school_country', 'school_city', 'graduation_year')),
+    ('Поступление', ('desired_program', 'admission_goal', 'desired_country', 'desired_city', 'desired_language', 'desired_education_level', 'admission_urgency', 'help_needed')),
+    ('Виза', ('has_visa', 'visa_country', 'visa_city', 'visa_valid_until')),
+    ('Достижения и языки', ('achievements', 'languages')),
+    ('Дополнительная информация', ('hobbies', 'applicant_comment', 'referral_source', 'data_processing_consent')),
 )
 
 
@@ -83,24 +84,28 @@ SCHOOL_STUDENT_FIELDS = {
 def generate_questionnaire_docx(questionnaire):
     document = Document()
     _setup_document(document)
-    _build_cover(document, questionnaire)
+    _add_header(document, questionnaire)
+    _add_profile_card(document, questionnaire)
+    _add_summary_strip(document, questionnaire)
 
-    for number, title, fields in SECTIONS:
+    section_number = 1
+    for title, fields in SECTIONS:
         rows = _section_rows(questionnaire, fields)
         if rows:
-            _add_section(document, number, title, rows)
+            _add_section_card(document, section_number, title, rows)
+            section_number += 1
 
     attachments = list(questionnaire.attachments.all()) if questionnaire.pk else []
     if attachments:
-        _add_section(
-            document,
-            '11',
-            'Вложения анкеты',
-            [(attachment.original_name or f'Файл {index}', attachment.file_type or 'Файл') for index, attachment in enumerate(attachments, start=1)],
-        )
+        rows = [
+            (attachment.original_name or f'Файл {index}', attachment.file_type or 'Файл')
+            for index, attachment in enumerate(attachments, start=1)
+        ]
+        _add_section_card(document, section_number, 'Вложения анкеты', rows)
+        section_number += 1
 
-    _add_manager_block(document, questionnaire)
-    _add_footer_note(document)
+    _add_manager_notes(document, section_number, questionnaire)
+    _add_footer(document)
 
     output = BytesIO()
     document.save(output)
@@ -109,104 +114,132 @@ def generate_questionnaire_docx(questionnaire):
 
 def _setup_document(document):
     section = document.sections[0]
-    section.top_margin = Inches(0.62)
-    section.bottom_margin = Inches(0.62)
-    section.left_margin = Inches(0.72)
-    section.right_margin = Inches(0.72)
+    section.top_margin = Inches(0.52)
+    section.bottom_margin = Inches(0.52)
+    section.left_margin = Inches(0.58)
+    section.right_margin = Inches(0.58)
 
     normal = document.styles['Normal']
     normal.font.name = 'Arial'
-    normal.font.size = Pt(10)
-    normal.font.color.rgb = RGBColor.from_string(TEXT_DARK)
-    normal.paragraph_format.space_after = Pt(4)
+    normal.font.size = Pt(9.5)
+    normal.font.color.rgb = RGBColor.from_string(BRAND_DARK)
     normal.paragraph_format.line_spacing = 1.08
+    normal.paragraph_format.space_after = Pt(3)
 
 
-def _build_cover(document, questionnaire):
+def _add_header(document, questionnaire):
     title = (
         'Предварительная заявка школьника'
         if questionnaire.form_type == questionnaire.FormType.SCHOOL_STUDENT
         else 'Анкета абитуриента'
     )
+    generated_at = timezone.localtime(questionnaire.generated_document_at or timezone.now())
 
-    cover = document.add_table(rows=1, cols=2)
-    cover.autofit = False
-    _set_table_width(cover, 8500)
-    _remove_table_borders(cover)
-    cover.columns[0].width = Inches(5.35)
-    cover.columns[1].width = Inches(1.55)
+    table = document.add_table(rows=1, cols=2)
+    table.autofit = False
+    _set_table_width(table, 9000)
+    _remove_table_borders(table)
+    table.columns[0].width = Inches(5.2)
+    table.columns[1].width = Inches(1.75)
 
-    left = cover.cell(0, 0)
-    right = cover.cell(0, 1)
+    left = table.cell(0, 0)
+    right = table.cell(0, 1)
     _set_cell_fill(left, BRAND_BLUE)
     _set_cell_fill(right, BRAND_RED)
-    _set_cell_margin(left, 260, 240, 260, 240)
-    _set_cell_margin(right, 220, 180, 220, 180)
+    _set_cell_margin(left, 330, 320, 310, 320)
+    _set_cell_margin(right, 220, 160, 220, 160)
 
     _clear_cell(left)
     brand = left.paragraphs[0]
-    brand.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    _add_run(brand, "Student's Life", bold=True, size=20, color='FFFFFF')
-    subtitle = left.add_paragraph()
-    subtitle.paragraph_format.space_before = Pt(8)
-    _add_run(subtitle, title, bold=True, size=17, color='FFFFFF')
-    note = left.add_paragraph()
-    _add_run(note, 'Персональная карточка для поступления и сопровождения', size=9.5, color='D9EAF7')
-    date = left.add_paragraph()
-    _add_run(date, f'Сформировано: {timezone.localtime(timezone.now()):%d.%m.%Y %H:%M}', size=8.5, color='D9EAF7')
+    _add_run(brand, "Student's Life", bold=True, size=21, color=WHITE)
+    p = left.add_paragraph()
+    p.paragraph_format.space_before = Pt(8)
+    _add_run(p, title, bold=True, size=18, color=WHITE)
+    p = left.add_paragraph()
+    _add_run(
+        p,
+        'Персональное досье для поступления, консультации и сопровождения клиента',
+        size=9.5,
+        color='DDEAF4',
+    )
+    p = left.add_paragraph()
+    p.paragraph_format.space_before = Pt(8)
+    _add_run(p, f'Сформировано: {generated_at:%d.%m.%Y %H:%M}', bold=True, size=8.5, color='DDEAF4')
 
     _clear_cell(right)
     right.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-    photo = right.paragraphs[0]
-    photo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p = right.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if questionnaire.face_photo:
         try:
-            photo.add_run().add_picture(questionnaire.face_photo.path, width=Inches(1.08), height=Inches(1.32))
+            p.add_run().add_picture(questionnaire.face_photo.path, width=Inches(1.22), height=Inches(1.45))
         except (OSError, ValueError):
-            _add_run(photo, 'ФОТО\n3 x 4 см', bold=True, size=9, color='FFFFFF')
+            _add_photo_placeholder(p)
     else:
-        _add_run(photo, 'ФОТО\n3 x 4 см', bold=True, size=9, color='FFFFFF')
+        _add_photo_placeholder(p)
 
-    document.add_paragraph()
-    _add_summary_cards(document, questionnaire)
-    _add_intro_note(document, questionnaire)
+    _add_spacer(document, 7)
 
 
-def _add_summary_cards(document, questionnaire):
-    cards = document.add_table(rows=1, cols=3)
-    cards.autofit = False
-    _set_table_width(cards, 8500)
-    _remove_table_borders(cards)
+def _add_profile_card(document, questionnaire):
+    table = document.add_table(rows=1, cols=2)
+    table.autofit = False
+    _set_table_width(table, 9000)
+    _set_table_borders(table, LINE)
+    table.columns[0].width = Inches(4.55)
+    table.columns[1].width = Inches(2.35)
 
+    left = table.cell(0, 0)
+    right = table.cell(0, 1)
+    _set_cell_fill(left, SOFT_GRAY)
+    _set_cell_fill(right, SOFT_RED)
+    _set_cell_margin(left, 220, 250, 220, 250)
+    _set_cell_margin(right, 220, 220, 220, 220)
+
+    _clear_cell(left)
+    p = left.paragraphs[0]
+    _add_run(p, 'КЛИЕНТ', bold=True, size=7.8, color=BRAND_MUTED)
+    p = left.add_paragraph()
+    _add_run(p, questionnaire.full_name or 'ФИО не указано', bold=True, size=17, color=BRAND_BLUE)
+    p = left.add_paragraph()
+    _add_run(p, _compact_line(questionnaire.phone, questionnaire.email, questionnaire.telegram), size=9.2, color=BRAND_DARK)
+    p = left.add_paragraph()
+    _add_run(p, _compact_line(questionnaire.desired_program, questionnaire.desired_country, questionnaire.desired_city), size=9.2, color=BRAND_DARK)
+
+    _clear_cell(right)
+    p = right.paragraphs[0]
+    _add_run(p, 'СТАТУС', bold=True, size=7.8, color=BRAND_MUTED)
+    p = right.add_paragraph()
+    _add_run(p, questionnaire.get_status_display(), bold=True, size=12, color=BRAND_RED)
+    p = right.add_paragraph()
+    p.paragraph_format.space_before = Pt(6)
+    _add_run(p, 'Тип заявки', bold=True, size=7.8, color=BRAND_MUTED)
+    p = right.add_paragraph()
+    _add_run(p, questionnaire.get_form_type_display(), bold=True, size=9.5, color=BRAND_BLUE)
+    _add_spacer(document, 8)
+
+
+def _add_summary_strip(document, questionnaire):
     items = (
-        ('ФИО', questionnaire.full_name or 'Не указано'),
-        ('Статус', questionnaire.get_status_display()),
-        ('Тип заявки', questionnaire.get_form_type_display()),
+        ('Гражданство', questionnaire.citizenship),
+        ('Город', questionnaire.residence_city),
+        ('Образование', questionnaire.education_status or questionnaire.education_level),
+        ('Год окончания', questionnaire.graduation_year),
     )
+    table = document.add_table(rows=1, cols=4)
+    table.autofit = False
+    _set_table_width(table, 9000)
+    _remove_table_borders(table)
     for index, (label, value) in enumerate(items):
-        cell = cards.cell(0, index)
-        _set_cell_fill(cell, BLUE_SOFT if index != 1 else BRAND_SOFT)
-        _set_cell_margin(cell, 150, 150, 150, 150)
+        cell = table.cell(0, index)
+        _set_cell_fill(cell, SOFT_BLUE if index % 2 == 0 else SOFT_GRAY)
+        _set_cell_margin(cell, 120, 120, 120, 120)
         _clear_cell(cell)
         p = cell.paragraphs[0]
-        _add_run(p, label.upper(), bold=True, size=7.5, color=TEXT_MUTED)
+        _add_run(p, label.upper(), bold=True, size=7.1, color=BRAND_MUTED)
         p = cell.add_paragraph()
-        _add_run(p, _format_value(value), bold=True, size=10.5, color=BRAND_BLUE if index != 1 else BRAND_RED)
-
-
-def _add_intro_note(document, questionnaire):
-    p = document.add_paragraph()
-    p.paragraph_format.space_before = Pt(10)
-    p.paragraph_format.space_after = Pt(10)
-    _set_paragraph_shading(p, BRAND_SOFT)
-    _set_paragraph_border(p, BRAND_RED)
-    text = (
-        'Эта анкета содержит предварительные данные школьника. Менеджер использует её, чтобы заранее '
-        'подсказать документы, сроки и подходящие направления.'
-        if questionnaire.form_type == questionnaire.FormType.SCHOOL_STUDENT
-        else 'Эта анкета содержит данные абитуриента для подготовки документов, консультации и сопровождения поступления.'
-    )
-    _add_run(p, text, size=9.5, color=TEXT_DARK)
+        _add_run(p, _format_value(value), bold=True, size=8.6, color=BRAND_BLUE)
+    _add_spacer(document, 5)
 
 
 def _section_rows(questionnaire, fields):
@@ -221,53 +254,68 @@ def _section_rows(questionnaire, fields):
     return rows
 
 
-def _add_section(document, number, title, rows):
-    heading = document.add_paragraph()
-    heading.paragraph_format.space_before = Pt(8)
-    heading.paragraph_format.space_after = Pt(6)
-    _set_paragraph_shading(heading, BRAND_BLUE)
-    _add_run(heading, f'{number}  {title.upper()}', bold=True, size=10.5, color='FFFFFF')
+def _add_section_card(document, number, title, rows):
+    table = document.add_table(rows=1, cols=1)
+    table.autofit = False
+    _set_table_width(table, 9000)
+    _set_table_borders(table, LINE)
 
-    for label, value in rows:
-        label_p = document.add_paragraph()
-        label_p.paragraph_format.space_before = Pt(2)
-        label_p.paragraph_format.space_after = Pt(1)
-        _add_run(label_p, label.upper(), bold=True, size=7.4, color=BRAND_RED)
+    cell = table.cell(0, 0)
+    _set_cell_fill(cell, WHITE)
+    _set_cell_margin(cell, 170, 210, 160, 210)
+    _clear_cell(cell)
 
-        value_p = document.add_paragraph()
-        value_p.paragraph_format.left_indent = Inches(0.16)
-        value_p.paragraph_format.space_after = Pt(7)
-        _set_paragraph_border(value_p, LINE_SOFT)
-        _add_run(value_p, value, size=9.6, color=TEXT_DARK)
+    heading = cell.paragraphs[0]
+    heading.paragraph_format.space_after = Pt(8)
+    _add_run(heading, f'{number:02d}', bold=True, size=8.4, color=BRAND_RED)
+    _add_run(heading, f'   {title}', bold=True, size=12.5, color=BRAND_BLUE)
+
+    grid = cell.add_table(rows=0, cols=2)
+    grid.autofit = False
+    _remove_table_borders(grid)
+    for index in range(0, len(rows), 2):
+        row = grid.add_row().cells
+        _fill_field_cell(row[0], rows[index])
+        if index + 1 < len(rows):
+            _fill_field_cell(row[1], rows[index + 1])
+        else:
+            _clear_cell(row[1])
+    _add_spacer(document, 7)
 
 
-def _add_manager_block(document, questionnaire):
-    heading = document.add_paragraph()
-    heading.paragraph_format.space_before = Pt(10)
-    heading.paragraph_format.space_after = Pt(6)
-    _set_paragraph_shading(heading, BRAND_DARK_RED)
-    _add_run(heading, '12  ОТМЕТКИ МЕНЕДЖЕРА', bold=True, size=10.5, color='FFFFFF')
+def _fill_field_cell(cell, pair):
+    label, value = pair
+    _set_cell_margin(cell, 70, 80, 85, 80)
+    _clear_cell(cell)
+    p = cell.paragraphs[0]
+    _add_run(p, label.upper(), bold=True, size=7.2, color=BRAND_MUTED)
+    p = cell.add_paragraph()
+    p.paragraph_format.space_before = Pt(1)
+    _add_run(p, value, size=9.2, color=BRAND_DARK)
 
-    lines = (
+
+def _add_manager_notes(document, number, questionnaire):
+    rows = (
         ('Ответственный менеджер', '________________________________'),
         ('Дата проверки', '________________________________'),
         ('Статус анкеты', questionnaire.get_status_display()),
         ('Комментарий', '________________________________'),
         ('Подпись менеджера', '________________________________'),
-        ('Подпись абитуриента / представителя', '________________________________'),
+        ('Подпись клиента / представителя', '________________________________'),
     )
-    for label, value in lines:
-        p = document.add_paragraph()
-        p.paragraph_format.space_after = Pt(5)
-        _add_run(p, f'{label}: ', bold=True, size=9, color=BRAND_BLUE)
-        _add_run(p, _format_value(value), size=9, color=TEXT_DARK)
+    _add_section_card(document, number, 'Отметки менеджера', rows)
 
 
-def _add_footer_note(document):
+def _add_footer(document):
     p = document.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.paragraph_format.space_before = Pt(12)
-    _add_run(p, "Student's Life - сопровождение поступления, документов и связи с менеджером", size=8, color=TEXT_MUTED)
+    p.paragraph_format.space_before = Pt(4)
+    _add_run(
+        p,
+        "Student's Life • сопровождение поступления • документы • связь с менеджером",
+        size=8,
+        color=BRAND_MUTED,
+    )
 
 
 def _field_value(questionnaire, field):
@@ -288,11 +336,19 @@ def _format_value(value):
     if value in (None, '', [], {}):
         return 'Не указано'
     if hasattr(value, 'strftime'):
-        return timezone.localtime(value).strftime('%d.%m.%Y %H:%M') if hasattr(value, 'tzinfo') and value.tzinfo else value.strftime('%d.%m.%Y')
+        if hasattr(value, 'tzinfo') and value.tzinfo:
+            return timezone.localtime(value).strftime('%d.%m.%Y %H:%M')
+        return value.strftime('%d.%m.%Y')
     if isinstance(value, list):
-        return '\n'.join(f'- {_format_list_item(item)}' for item in value) or 'Не указано'
+        items = [_format_list_item(item) for item in value]
+        return '\n'.join(f'• {item}' for item in items if item) or 'Не указано'
     if isinstance(value, dict):
-        return ', '.join(f'{questionnaire_field_label(str(key))}: {_format_value(item)}' for key, item in value.items())
+        items = [
+            f'{questionnaire_field_label(str(key))}: {_format_value(item)}'
+            for key, item in value.items()
+            if item not in (None, '', [], {})
+        ]
+        return '\n'.join(items) or 'Не указано'
     return str(value)
 
 
@@ -301,12 +357,27 @@ def _format_list_item(item):
         language = item.get('language') or item.get('name') or item.get('title')
         level = item.get('level')
         if language and level:
-            return f'{language} - {level}'
+            return f'{language} — {level}'
         return str(language or item)
     return str(item)
 
 
-def _add_run(paragraph, text, bold=False, size=9, color=TEXT_DARK):
+def _compact_line(*values):
+    items = [str(value).strip() for value in values if value]
+    return ' • '.join(items) if items else 'Не указано'
+
+
+def _add_photo_placeholder(paragraph):
+    _add_run(paragraph, 'ФОТО\n3 x 4', bold=True, size=10, color=WHITE)
+
+
+def _add_spacer(document, points):
+    p = document.add_paragraph()
+    p.paragraph_format.space_after = Pt(points)
+    p.paragraph_format.space_before = Pt(0)
+
+
+def _add_run(paragraph, text, bold=False, size=9, color=BRAND_DARK):
     run = paragraph.add_run(str(text))
     run.bold = bold
     run.font.name = 'Arial'
@@ -362,34 +433,31 @@ def _remove_table_borders(table):
         borders = OxmlElement('w:tblBorders')
         tbl_pr.append(borders)
     for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
-        tag = f'w:{edge}'
-        node = borders.find(qn(tag))
+        node = borders.find(qn(f'w:{edge}'))
         if node is None:
-            node = OxmlElement(tag)
+            node = OxmlElement(f'w:{edge}')
             borders.append(node)
         node.set(qn('w:val'), 'nil')
 
 
-def _set_paragraph_shading(paragraph, fill):
-    p_pr = paragraph._p.get_or_add_pPr()
-    shd = p_pr.find(qn('w:shd'))
-    if shd is None:
-        shd = OxmlElement('w:shd')
-        p_pr.append(shd)
-    shd.set(qn('w:fill'), fill)
-
-
-def _set_paragraph_border(paragraph, color):
-    p_pr = paragraph._p.get_or_add_pPr()
-    borders = p_pr.find(qn('w:pBdr'))
+def _set_table_borders(table, color):
+    tbl_pr = table._tbl.tblPr
+    borders = tbl_pr.first_child_found_in('w:tblBorders')
     if borders is None:
-        borders = OxmlElement('w:pBdr')
-        p_pr.append(borders)
-    bottom = borders.find(qn('w:bottom'))
-    if bottom is None:
-        bottom = OxmlElement('w:bottom')
-        borders.append(bottom)
-    bottom.set(qn('w:val'), 'single')
-    bottom.set(qn('w:sz'), '4')
-    bottom.set(qn('w:space'), '2')
-    bottom.set(qn('w:color'), color)
+        borders = OxmlElement('w:tblBorders')
+        tbl_pr.append(borders)
+    for edge in ('top', 'left', 'bottom', 'right'):
+        node = borders.find(qn(f'w:{edge}'))
+        if node is None:
+            node = OxmlElement(f'w:{edge}')
+            borders.append(node)
+        node.set(qn('w:val'), 'single')
+        node.set(qn('w:sz'), '8')
+        node.set(qn('w:space'), '0')
+        node.set(qn('w:color'), color)
+    for edge in ('insideH', 'insideV'):
+        node = borders.find(qn(f'w:{edge}'))
+        if node is None:
+            node = OxmlElement(f'w:{edge}')
+            borders.append(node)
+        node.set(qn('w:val'), 'nil')

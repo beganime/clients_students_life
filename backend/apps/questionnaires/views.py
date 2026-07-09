@@ -184,7 +184,6 @@ class ServiceQuestionnaireRegenerateDocumentView(APIView):
             )
         questionnaire.generate_document()
         questionnaire.save(update_fields=['generated_document', 'generated_document_at', 'manager_sl_sync_status', 'updated_at'])
-        sync_questionnaire_to_manager_sl(questionnaire, request=request)
         serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
         return Response(serializer.data)
 
