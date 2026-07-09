@@ -105,9 +105,21 @@ function inferFileType(file: { name?: string; type?: string }) {
   return explicit || 'application/octet-stream';
 }
 
+function normalizeUploadFileName(file: UploadableFile, fallbackPrefix = 'upload') {
+  const rawName = String(file.name || '').trim() || `${fallbackPrefix}-${Date.now()}`;
+  const safeName = rawName.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim() || `${fallbackPrefix}-${Date.now()}`;
+
+  if (safeName.length <= 255) return safeName;
+
+  const dotIndex = safeName.lastIndexOf('.');
+  const extension = dotIndex > 0 ? safeName.slice(dotIndex) : '';
+  const maxBaseLength = Math.max(1, 255 - extension.length);
+  return `${safeName.slice(0, maxBaseLength)}${extension}`;
+}
+
 export function appendUploadFile(formData: FormData, field: string, file: UploadableFile) {
   const type = inferFileType(file);
-  const name = file.name?.trim() || `upload-${Date.now()}`;
+  const name = normalizeUploadFileName(file);
   const webFile = (file as any).file;
 
   if (typeof Blob !== 'undefined' && webFile instanceof Blob) {

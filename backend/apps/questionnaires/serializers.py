@@ -50,6 +50,18 @@ def normalize_json_field_value(value):
     return value
 
 
+def normalize_multipart_data(data):
+    if not hasattr(data, 'lists'):
+        return data.copy() if hasattr(data, 'copy') else dict(data)
+
+    normalized = {}
+    for key, values in data.lists():
+        if not values:
+            continue
+        normalized[key] = values if len(values) > 1 else values[0]
+    return normalized
+
+
 def absolute_file_url(request, file_field):
     if not file_field:
         return None
@@ -184,15 +196,11 @@ class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
         )
 
     def to_internal_value(self, data):
-        mutable = data.copy() if hasattr(data, 'copy') else dict(data)
+        mutable = normalize_multipart_data(data)
         for alias, field in FIELD_ALIASES.items():
             if alias in mutable and field not in mutable:
                 mutable[field] = mutable.get(alias)
         for field in ('achievements', 'languages', 'help_needed'):
-            if hasattr(data, 'getlist') and field in data:
-                values = data.getlist(field)
-                mutable[field] = normalize_json_field_value(values[0] if len(values) == 1 else values)
-                continue
             if field in mutable:
                 mutable[field] = normalize_json_field_value(mutable.get(field))
         return super().to_internal_value(mutable)

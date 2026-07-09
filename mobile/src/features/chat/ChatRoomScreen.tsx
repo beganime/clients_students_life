@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Easing, FlatList, Keyboard, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chatApi } from '../../api/endpoints';
@@ -26,7 +26,7 @@ export function ChatRoomScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList<ChatMessage> | null>(null);
-  const keyboardOffset = Platform.OS === 'ios' ? 90 : 0;
+  const keyboardShift = useRef(new Animated.Value(0)).current;
   const [text, setText] = useState('');
   const [sendingText, setSendingText] = useState(false);
   const [sendingFile, setSendingFile] = useState(false);
@@ -50,6 +50,35 @@ export function ChatRoomScreen() {
     if (!messages.length) return;
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   }, [messages.length]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSubscription = Keyboard.addListener(showEvent, event => {
+      const keyboardHeight = Math.max(0, (event.endCoordinates?.height || 0) - insets.bottom);
+      Animated.timing(keyboardShift, {
+        toValue: -keyboardHeight,
+        duration: event.duration || 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start(() => requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true })));
+    });
+
+    const hideSubscription = Keyboard.addListener(hideEvent, event => {
+      Animated.timing(keyboardShift, {
+        toValue: 0,
+        duration: event.duration || 180,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [insets.bottom, keyboardShift]);
 
   const appendMessage = (message: ChatMessage) => {
     queryClient.setQueryData<ChatMessage[]>(['chat-messages', route.params.id], old => {
@@ -120,11 +149,8 @@ export function ChatRoomScreen() {
   if (messagesQuery.isLoading) return <Loading />;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={keyboardOffset}
-    >
+    <View style={styles.container}>
+      <Animated.View style={[styles.keyboardContent, { transform: [{ translateY: keyboardShift }] }]}>
       <View style={[styles.header, shadows.soft]}>
         <View style={styles.headerIcon}><SvgIcon name="chat" size={22} color={colors.primary} /></View>
         <View style={styles.headerTextBox}>
@@ -167,7 +193,8 @@ export function ChatRoomScreen() {
           <SvgIcon name="chevronRight" size={23} color={colors.white} strokeWidth={2.8} />
         </Pressable>
       </AppCard>
-    </KeyboardAvoidingView>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -201,6 +228,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  keyboardContent: { flex: 1 },
   header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headerIcon: { width: 46, height: 46, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   headerTextBox: { flex: 1 },

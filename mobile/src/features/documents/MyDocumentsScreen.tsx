@@ -185,7 +185,8 @@ export function MyDocumentsScreen() {
           <DocumentCard
             key={document.id}
             document={document}
-            onUpload={() => handlePendingUpload(document)}
+            onUpload={() => handlePick(document)}
+            onRetryPending={() => handlePendingUpload(document)}
             uploading={uploadMutation.isPending && uploadMutation.variables?.documentTypeId === document.id}
             pendingUpload={Boolean(pendingUploads[document.id])}
           />
@@ -207,18 +208,18 @@ function SummaryCard({ value, label }: { value: string; label: string }) {
 function DocumentCard({
   document,
   onUpload,
+  onRetryPending,
   uploading,
   pendingUpload,
 }: {
   document: MyDocument;
   onUpload: () => void;
+  onRetryPending: () => void;
   uploading: boolean;
   pendingUpload: boolean;
 }) {
   const rejected = document.status === 'rejected';
-  const buttonTitle = pendingUpload
-    ? 'Повторить загрузку'
-    : document.status === 'not_uploaded'
+  const buttonTitle = document.status === 'not_uploaded'
       ? 'Загрузить файл'
       : rejected
         ? 'Загрузить исправленный файл'
@@ -262,6 +263,15 @@ function DocumentCard({
       ) : null}
 
       <AppButton title={buttonTitle} onPress={onUpload} loading={uploading} style={styles.uploadButton} />
+      {pendingUpload ? (
+        <AppButton
+          title="Повторить сохранённую загрузку"
+          variant="outline"
+          onPress={onRetryPending}
+          loading={uploading}
+          style={styles.retryButton}
+        />
+      ) : null}
     </AppCard>
   );
 }
@@ -306,4 +316,5 @@ const styles = StyleSheet.create({
   commentTitle: { color: colors.danger, fontWeight: typography.weights.heavy },
   commentText: { color: colors.text, lineHeight: 21, marginTop: spacing.xs, fontWeight: typography.weights.medium },
   uploadButton: { marginTop: spacing.lg },
+  retryButton: { marginTop: spacing.sm },
 });

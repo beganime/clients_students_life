@@ -422,7 +422,7 @@ async function getAllPages<T>(
   let offset = Number(params?.offset || 0);
   let guard = 0;
 
-  while (guard < 30) {
+  while (guard < 80) {
     const data = page(await request<ListResponse<any>>(path, { ...(params || {}), limit, offset }));
     results.push(...data.results.map(mapper));
     if (!data.next || data.results.length === 0) break;
