@@ -83,7 +83,7 @@ export function CountryDetailScreen() {
 
       <AppButton
         title="Показать все вузы страны"
-        onPress={() => navigation.navigate('App', { screen: 'Universities', params: { country: id } })}
+        onPress={() => navigation.navigate('App', { screen: 'Universities', params: { country: String(id) }, merge: true })}
         style={styles.primaryAction}
       />
 

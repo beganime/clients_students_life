@@ -5,7 +5,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Loading } from '../components/Loading';
 import { useAuthStore } from '../store/authStore';
 
-import { ManagerLoginScreen } from '../features/auth/ManagerLoginScreen';
 import { ApplicationCreateScreen } from '../features/applications/ApplicationCreateScreen';
 import { MyApplicationsScreen } from '../features/applications/MyApplicationsScreen';
 import { ChatListScreen } from '../features/chat/ChatListScreen';
@@ -62,7 +61,6 @@ export function RootNavigator() {
         <Stack.Screen name="KnowledgeDetail" component={KnowledgeDetailScreen} options={{ title: 'Материал' }} />
         <Stack.Screen name="Staff" component={StaffScreen} options={{ title: 'Команда' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Настройки' }} />
-        <Stack.Screen name="ManagerLogin" component={ManagerLoginScreen} options={{ title: 'Вход менеджера' }} />
         <Stack.Screen name="VisaInfo" component={VisaInfoScreen} options={{ title: 'Виза' }} />
         <Stack.Screen name="ToursInfo" component={ToursInfoScreen} options={{ title: 'Туры' }} />
         <Stack.Screen name="AdmissionInfo" component={AdmissionInfoScreen} options={{ title: 'Поступление' }} />

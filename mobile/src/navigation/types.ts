@@ -29,7 +29,6 @@ export type RootStackParamList = {
   KnowledgeDetail: { slug: string };
   Staff: undefined;
   Settings: undefined;
-  ManagerLogin: undefined;
   VisaInfo: undefined;
   ToursInfo: undefined;
   AdmissionInfo: undefined;

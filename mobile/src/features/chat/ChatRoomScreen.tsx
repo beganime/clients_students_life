@@ -90,12 +90,13 @@ export function ChatRoomScreen() {
     if (result.canceled || !result.assets?.length) return;
 
     const asset = result.assets[0];
-    const file = await cacheLocalUploadFile({
+    const file = {
       uri: asset.uri,
       name: asset.name || `chat-file-${Date.now()}`,
       type: asset.mimeType || 'application/octet-stream',
       file: (asset as any).file,
-    }, 'chat');
+    };
+    await cacheLocalUploadFile(file, 'chat');
 
     try {
       setSendError('');

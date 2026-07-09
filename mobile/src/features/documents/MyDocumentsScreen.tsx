@@ -105,7 +105,7 @@ export function MyDocumentsScreen() {
       return;
     }
 
-    uploadMutation.mutate({ documentTypeId, file: cachedFile });
+    uploadMutation.mutate({ documentTypeId, file });
   };
 
   const handlePick = async (document: MyDocument) => {
@@ -307,4 +307,3 @@ const styles = StyleSheet.create({
   commentText: { color: colors.text, lineHeight: 21, marginTop: spacing.xs, fontWeight: typography.weights.medium },
   uploadButton: { marginTop: spacing.lg },
 });
-

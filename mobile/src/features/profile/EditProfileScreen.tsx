@@ -53,7 +53,7 @@ export function EditProfileScreen() {
         file: (asset as any).file,
       };
       const cachedFile = await saveLocalAvatarFile(file);
-      setAvatarFile(cachedFile);
+      setAvatarFile(file);
       setLocalAvatarUri(cachedFile.uri);
     }
   };

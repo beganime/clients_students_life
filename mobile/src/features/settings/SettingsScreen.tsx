@@ -1,6 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
@@ -18,10 +16,8 @@ import {
   PRIVACY_POLICY_URL,
 } from '../../constants/config';
 import { colors, radius, spacing, typography } from '../../constants/colors';
-import { RootStackParamList } from '../../navigation/types';
 
 export function SettingsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [clearing, setClearing] = useState(false);
 
   const clearCatalogCache = async () => {
@@ -69,14 +65,6 @@ export function SettingsScreen() {
         text="Сейчас используется светлая тема. Структура настроек готова к будущей тёмной теме."
       >
         <Badge label="Светлая" variant="neutral" icon="check" />
-      </SettingsBlock>
-
-      <SettingsBlock
-        icon="lock"
-        title="Вход для сотрудника"
-        text="Отдельный вход для сотрудников Student's Life. Доступ включается в админке через раздел Staff: сначала создайте пользователя, затем привяжите к нему активный профиль сотрудника."
-      >
-        <AppButton title="Войти как сотрудник" variant="secondary" onPress={() => navigation.navigate('ManagerLogin')} />
       </SettingsBlock>
 
       <SettingsBlock

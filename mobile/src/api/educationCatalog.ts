@@ -114,6 +114,78 @@ function withLimit(params: CatalogParams | undefined, limit: number): CatalogPar
   return { limit, ...(params || {}) };
 }
 
+function includesSearch(value: unknown, search: string) {
+  return String(value || '').toLowerCase().includes(search);
+}
+
+function numericPrice(value: unknown) {
+  const parsed = Number(String(value || '').replace(/\s/g, '').replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
+}
+
+function filterProgramsLocally(programs: any[], params?: CatalogParams) {
+  const search = String(params?.search || params?.q || '').trim().toLowerCase();
+  const country = params?.country ? String(params.country) : '';
+  const city = params?.city ? String(params.city) : '';
+  const university = params?.university ? String(params.university) : '';
+  const level = String(params?.level || params?.degree || '').trim().toLowerCase();
+  const language = String(params?.language || '').trim().toLowerCase();
+  const priceMin = params?.price_min !== undefined && params.price_min !== '' ? Number(params.price_min) : null;
+  const priceMax = params?.price_max !== undefined && params.price_max !== '' ? Number(params.price_max) : null;
+
+  return programs.filter(program => {
+    const text = [
+      program.title,
+      program.program_title,
+      program.university_name,
+      program.country_name,
+      program.city_name,
+      program.level,
+      program.language,
+      program.faculty,
+    ].filter(Boolean).join(' ').toLowerCase();
+    const price = numericPrice(program.tuition_fee);
+
+    return (!search || text.includes(search))
+      && (!country || String(program.country_id || program.country) === country || includesSearch(program.country_name, country))
+      && (!city || String(program.city_id || program.city) === city || includesSearch(program.city_name, city))
+      && (!university || String(program.university_id || program.university) === university || includesSearch(program.university_name, university))
+      && (!level || includesSearch(program.level, level) || includesSearch(program.degree, level))
+      && (!language || includesSearch(program.language, language))
+      && (priceMin === null || price >= priceMin)
+      && (priceMax === null || price <= priceMax);
+  });
+}
+
+function sortProgramsLocally(programs: any[], ordering?: string | number | boolean) {
+  const order = String(ordering || '');
+  const next = [...programs];
+
+  next.sort((a, b) => {
+    if (order === 'price_desc') return numericPrice(b.tuition_fee) - numericPrice(a.tuition_fee);
+    if (order === 'title_asc') return String(a.title || '').localeCompare(String(b.title || ''), 'ru');
+    if (order === 'country_asc') return String(a.country_name || '').localeCompare(String(b.country_name || ''), 'ru');
+    if (order === 'city_asc') return String(a.city_name || '').localeCompare(String(b.city_name || ''), 'ru');
+    if (order === 'deadline_asc') return String(a.application_deadline || '9999-12-31').localeCompare(String(b.application_deadline || '9999-12-31'));
+    return numericPrice(a.tuition_fee) - numericPrice(b.tuition_fee);
+  });
+
+  return next;
+}
+
+function paginateLocal<T>(items: T[], params?: CatalogParams): CatalogPage<T> {
+  const limit = Number(params?.limit || 12);
+  const offset = Number(params?.offset || 0);
+  const results = items.slice(offset, offset + limit);
+  const nextOffset = offset + limit;
+  return {
+    count: items.length,
+    next: nextOffset < items.length ? `local://programs?limit=${limit}&offset=${nextOffset}` : null,
+    previous: offset > 0 ? `local://programs?limit=${limit}&offset=${Math.max(0, offset - limit)}` : null,
+    results,
+  };
+}
+
 function toProgram(item: any): any {
   const firstFee = item.fees?.[0];
   const firstIntake = item.intakes?.[0];
@@ -123,6 +195,8 @@ function toProgram(item: any): any {
   const universityName = item.university_name || university.name || item.university_title;
   const countryName = item.country_name || item.country || university.country_name;
   const cityName = item.city_name || item.city || university.city_name;
+  const countryId = item.country_id || university.country || university.country_id;
+  const cityId = item.city_id || university.city || university.city_id;
 
   return {
     ...item,
@@ -132,6 +206,8 @@ function toProgram(item: any): any {
     university: universityId,
     university_id: universityId,
     university_name: universityName,
+    country_id: countryId,
+    city_id: cityId,
     title: item.program_title || item.title || item.name || 'Программа',
     level: degree || 'Уровень уточняется',
     country_name: countryName,
@@ -151,6 +227,28 @@ function toProgram(item: any): any {
     university_logo: resolveCatalogMediaUrl(item.university_logo || item.logo_url || item.logo),
     university_cover: resolveCatalogMediaUrl(item.university_cover || item.cover_image_url || item.cover),
   };
+}
+
+function toProgramFromUniversityFee(fee: any, university: any): any {
+  return toProgram({
+    id: fee.program_id,
+    program_id: fee.program_id,
+    program_title: fee.program_name,
+    name: fee.program_name,
+    university: university.id,
+    university_id: university.id,
+    university_name: university.name,
+    country_id: university.country,
+    country_name: university.country_name,
+    city_id: university.city,
+    city_name: university.city_name,
+    tuition_fee: fee.tuition_fee,
+    currency: fee.currency,
+    currency_symbol: fee.currency_symbol,
+    university_logo: university.logo,
+    university_cover: university.cover_image || university.cover,
+    fees: [fee],
+  });
 }
 
 function toCountry(item: any): any {
@@ -210,6 +308,35 @@ function toUniversity(item: any): any {
   };
 }
 
+function programsFromUniversities(universities: any[]) {
+  const byId = new Map<string, any>();
+
+  universities.forEach(university => {
+    (university.programs || []).forEach((program: any) => {
+      const normalized = toProgram({
+        ...program,
+        university: program.university || university.id,
+        university_id: program.university_id || university.id,
+        university_name: program.university_name || university.name,
+        country_id: program.country_id || university.country,
+        country_name: program.country_name || university.country_name,
+        city_id: program.city_id || university.city,
+        city_name: program.city_name || university.city_name,
+        university_logo: program.university_logo || university.logo,
+        university_cover: program.university_cover || university.cover_image || university.cover,
+      });
+      byId.set(String(normalized.id), normalized);
+    });
+
+    (university.fees_summary || []).forEach((fee: any) => {
+      const normalized = toProgramFromUniversityFee(fee, university);
+      byId.set(String(normalized.id), { ...byId.get(String(normalized.id)), ...normalized });
+    });
+  });
+
+  return Array.from(byId.values()).filter(item => item.id && item.title);
+}
+
 export const educationCatalogApi = {
   async getCountries(params?: CatalogParams) {
     return list(await request<ListResponse<any>>('/countries/', withLimit(params, 50))).map(toCountry);
@@ -245,16 +372,35 @@ export const educationCatalogApi = {
   },
 
   async getPrograms(params?: CatalogParams) {
-    return list(await request<ListResponse<any>>('/programs/', withLimit(params, 50))).map(toProgram);
+    try {
+      return list(await request<ListResponse<any>>('/programs/', withLimit(params, 50))).map(toProgram);
+    } catch {
+      const universities = await this.getAllUniversities();
+      return sortProgramsLocally(
+        filterProgramsLocally(programsFromUniversities(universities), withLimit(params, 50)),
+        params?.ordering,
+      );
+    }
   },
 
   async getAllPrograms(params?: CatalogParams) {
-    return getAllPages('/programs/', params, 100, toProgram);
+    try {
+      return await getAllPages('/programs/', params, 100, toProgram);
+    } catch {
+      const universities = await this.getAllUniversities();
+      return sortProgramsLocally(filterProgramsLocally(programsFromUniversities(universities), params), params?.ordering);
+    }
   },
 
   async getProgramsPage(params?: CatalogParams) {
-    const data = page(await request<ListResponse<any>>('/programs/', withLimit(params, 12)));
-    return { ...data, results: data.results.map(toProgram) };
+    try {
+      const data = page(await request<ListResponse<any>>('/programs/', withLimit(params, 12)));
+      return { ...data, results: data.results.map(toProgram) };
+    } catch {
+      const universities = await this.getAllUniversities();
+      const programs = sortProgramsLocally(filterProgramsLocally(programsFromUniversities(universities), params), params?.ordering);
+      return paginateLocal(programs, withLimit(params, 12));
+    }
   },
 
   async getProgram(id: number | string) {
