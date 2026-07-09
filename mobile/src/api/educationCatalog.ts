@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_ROOT_URL, MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/config';
+import { API_ROOT_URL, MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/config';
 
 export const EDUCATION_CATALOG_BASE_URL = MANAGER_SL_API_BASE_URL;
 
@@ -33,14 +33,13 @@ async function request<T>(
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
 ): Promise<T> {
-  return requestFromBase<T>(EDUCATION_CATALOG_BASE_URL, path, params, API_BASE_URL);
+  return requestFromBase<T>(EDUCATION_CATALOG_BASE_URL, path, params);
 }
 
 async function requestFromBase<T>(
   baseUrl: string,
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
-  fallbackBaseUrl?: string,
 ): Promise<T> {
   const query = new URLSearchParams();
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -51,9 +50,6 @@ async function requestFromBase<T>(
   const response = await fetch(url, { headers: { Accept: 'application/json' } });
 
   if (!response.ok) {
-    if (fallbackBaseUrl && fallbackBaseUrl !== baseUrl) {
-      return requestFromBase<T>(fallbackBaseUrl, path, params);
-    }
     throw new Error(`Catalog API error: ${response.status}`);
   }
 
