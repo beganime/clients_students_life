@@ -26,6 +26,7 @@ export function ChatRoomScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList<ChatMessage> | null>(null);
+  const keyboardOffset = Platform.OS === 'ios' ? 90 : 0;
   const [text, setText] = useState('');
   const [sendingText, setSendingText] = useState(false);
   const [sendingFile, setSendingFile] = useState(false);
@@ -119,7 +120,11 @@ export function ChatRoomScreen() {
   if (messagesQuery.isLoading) return <Loading />;
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={keyboardOffset}
+    >
       <View style={[styles.header, shadows.soft]}>
         <View style={styles.headerIcon}><SvgIcon name="chat" size={22} color={colors.primary} /></View>
         <View style={styles.headerTextBox}>
@@ -136,6 +141,8 @@ export function ChatRoomScreen() {
           contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + spacing.xl, spacing.xl) }]}
           data={messages}
           keyExtractor={item => String(item.id)}
+          keyboardDismissMode="interactive"
+          keyboardShouldPersistTaps="handled"
           refreshing={messagesQuery.isRefetching}
           onRefresh={messagesQuery.refetch}
           ListEmptyComponent={<EmptyState title="Пока нет сообщений" description="Напишите менеджеру, и мы поможем с поступлением, визой и документами." />}
