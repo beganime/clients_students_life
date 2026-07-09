@@ -1,4 +1,5 @@
 import { API_ROOT_URL, MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/config';
+import { getApiEndpointConfig, getApiEndpointConfigSync } from '../utils/apiProxySettings';
 
 export const EDUCATION_CATALOG_BASE_URL = MANAGER_SL_API_BASE_URL;
 
@@ -33,7 +34,8 @@ async function request<T>(
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
 ): Promise<T> {
-  return requestFromBase<T>(EDUCATION_CATALOG_BASE_URL, path, params);
+  const endpointConfig = await getApiEndpointConfig();
+  return requestFromBase<T>(endpointConfig.managerSlApiUrl, path, params);
 }
 
 async function requestFromBase<T>(
@@ -63,9 +65,10 @@ export function resolveCatalogMediaUrl(value?: string | null) {
   if (!cleanValue) return null;
   if (/^https?:\/\//i.test(cleanValue)) return cleanValue;
   if (cleanValue.startsWith('//')) return `https:${cleanValue}`;
-  if (cleanValue.startsWith('/media/') || cleanValue.startsWith('/static/')) return `${API_ROOT_URL}${cleanValue}`;
-  if (cleanValue.startsWith('/')) return `${MANAGER_SL_ROOT_URL || API_ROOT_URL}${cleanValue}`;
-  return `${MANAGER_SL_ROOT_URL || API_ROOT_URL}/${cleanValue}`;
+  const endpointConfig = getApiEndpointConfigSync();
+  if (cleanValue.startsWith('/media/') || cleanValue.startsWith('/static/')) return `${endpointConfig.managerSlRootUrl || MANAGER_SL_ROOT_URL || API_ROOT_URL}${cleanValue}`;
+  if (cleanValue.startsWith('/')) return `${endpointConfig.managerSlRootUrl || MANAGER_SL_ROOT_URL || API_ROOT_URL}${cleanValue}`;
+  return `${endpointConfig.managerSlRootUrl || MANAGER_SL_ROOT_URL || API_ROOT_URL}/${cleanValue}`;
 }
 
 function money(value?: string | number | null, currency?: string | null) {

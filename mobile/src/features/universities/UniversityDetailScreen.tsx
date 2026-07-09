@@ -95,7 +95,7 @@ export function UniversityDetailScreen() {
       <RedGradientHero backgroundImage={imageUrl ? { uri: imageUrl } : bannerImages.university} style={styles.hero}>
         {data.logo ? <Image source={{ uri: data.logo }} style={styles.logoImage} resizeMode="cover" /> : null}
         <View style={styles.badgeRow}>
-          <Badge label="manager-sl.ru" variant="mint" icon="check" />
+          <Badge label="Каталог через прокси" variant="mint" icon="check" />
           {data.programs_count ? <Badge label={`${data.programs_count} программ`} variant="neutral" icon="document" /> : null}
         </View>
         <Text style={styles.title}>{data.name}</Text>

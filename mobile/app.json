@@ -38,7 +38,8 @@
       "expo-notifications"
     ],
     "extra": {
-      "managerSlApiBaseUrl": "https://manager-sl.ru/api/client/v1",
+      "apiBaseUrl": "https://students-life.ru/api2/api/v1",
+      "managerSlApiBaseUrl": "https://students-life.ru/api1/api/client/v1",
       "eas": {
         "projectId": "7787dd53-8b3a-404a-ab14-10ee7bc45df2"
       }

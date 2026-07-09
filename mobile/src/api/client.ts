@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import { API_BASE_URL } from '../constants/config';
+import { getApiEndpointConfig } from '../utils/apiProxySettings';
 
 const ACCESS_TOKEN_KEY = 'students_life_access_token';
 const REFRESH_TOKEN_KEY = 'students_life_refresh_token';
@@ -111,6 +112,9 @@ function processQueue(error: unknown, token: string | null = null) {
 }
 
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  const endpointConfig = await getApiEndpointConfig();
+  config.baseURL = endpointConfig.studentLifeApiUrl;
+
   const token = await tokenStorage.getAccessToken();
 
   if (token) {
@@ -135,6 +139,7 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
 
 export async function uploadFormData<T>(url: string, formData: FormData, method: 'post' | 'patch' = 'post') {
   const token = await tokenStorage.getAccessToken();
+  const endpointConfig = await getApiEndpointConfig();
   const headers: Record<string, string> =
     Platform.OS === 'web'
       ? {}
@@ -148,7 +153,7 @@ export async function uploadFormData<T>(url: string, formData: FormData, method:
   }
 
   const { data } = await axios.request<T>({
-    baseURL: API_BASE_URL,
+    baseURL: endpointConfig.studentLifeApiUrl,
     url,
     method,
     data: formData,
@@ -195,7 +200,7 @@ apiClient.interceptors.response.use(
       }
 
       const { data } = await axios.post<{ access: string; refresh?: string }>(
-        `${API_BASE_URL}/auth/refresh/`,
+        `${(await getApiEndpointConfig()).studentLifeApiUrl}/auth/refresh/`,
         { refresh },
         {
           timeout: 20000,
