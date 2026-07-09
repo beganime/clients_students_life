@@ -19,12 +19,13 @@ export function useCatalogWarmup() {
 
     async function warmup() {
       try {
-        const [countries, cities, universities, programs] = await Promise.all([
+        const [countries, cities, universities, programsPage] = await Promise.all([
           educationCatalogApi.getCountries({ limit: 100 }),
           educationCatalogApi.getCities({ limit: 100 }),
           educationCatalogApi.getAllUniversities(),
-          educationCatalogApi.getAllPrograms(),
+          educationCatalogApi.getProgramsPage({ limit: 60, ordering: 'price_asc' }),
         ]);
+        const programs = programsPage.results;
 
         if (cancelled) return;
 

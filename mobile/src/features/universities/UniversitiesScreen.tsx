@@ -30,7 +30,14 @@ const PROGRAM_SORT_OPTIONS = [
   { label: 'По стране', value: 'country_asc' },
   { label: 'По дедлайну', value: 'deadline_asc' },
 ];
-const CURRENCIES = ['RUB', 'USD', 'EUR', 'TRY', 'TMT'];
+const CURRENCIES = [
+  { label: 'Все валюты', value: '' },
+  { label: 'RUB', value: 'RUB' },
+  { label: 'USD', value: 'USD' },
+  { label: 'EUR', value: 'EUR' },
+  { label: 'TRY', value: 'TRY' },
+  { label: 'TMT', value: 'TMT' },
+];
 
 export function UniversitiesScreen() {
   const navigation = useNavigation<any>();
@@ -41,7 +48,7 @@ export function UniversitiesScreen() {
   const [countryId, setCountryId] = useState<string | number | undefined>(route.params?.country);
   const [cityId, setCityId] = useState<string | number | undefined>(route.params?.city);
   const [sortOrder, setSortOrder] = useState('price_asc');
-  const [currency, setCurrency] = useState('RUB');
+  const [currency, setCurrency] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
   const [languageFilter, setLanguageFilter] = useState('');
   const [priceMin, setPriceMin] = useState('');
@@ -63,7 +70,14 @@ export function UniversitiesScreen() {
     staleTime: 1000 * 60 * 30,
   });
 
-  const hasProgramSearch = Boolean(search.trim());
+  const hasProgramSearch = Boolean(
+    search.trim()
+      || levelFilter.trim()
+      || languageFilter.trim()
+      || priceMin.trim()
+      || priceMax.trim()
+      || Boolean(currency),
+  );
 
   const universityFilters = useMemo(() => {
     const payload: Record<string, string | number | undefined> = {};
@@ -279,7 +293,7 @@ export function UniversitiesScreen() {
                   <Text style={styles.blockLabel}>Валюта</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
                     {CURRENCIES.map(item => (
-                      <FilterChip key={item} label={item} active={currency === item} onPress={() => setCurrency(item)} />
+                      <FilterChip key={item.value || 'all'} label={item.label} active={currency === item.value} onPress={() => setCurrency(item.value)} />
                     ))}
                   </ScrollView>
 
