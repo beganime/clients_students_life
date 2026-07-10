@@ -148,7 +148,7 @@ def send_exam_reminder(exam: ClientExam, *, force=False):
     if exam.comment:
         body = f'{body} {exam.comment}'
 
-    send_push_to_user(
+    UserNotification.objects.create(
         user=exam.user,
         title=title,
         body=body,
@@ -156,6 +156,30 @@ def send_exam_reminder(exam: ClientExam, *, force=False):
         related_object_type='client_exam',
         related_object_id=exam.id,
     )
+    selected_tokens = list(exam.target_devices.filter(is_active=True).values_list('token', flat=True))
+    if selected_tokens:
+        send_raw_push_to_tokens(
+            selected_tokens,
+            title,
+            body,
+            data={
+                'notification_type': 'exam',
+                'related_object_type': 'client_exam',
+                'related_object_id': exam.id,
+            },
+        )
+    else:
+        tokens = list(DeviceToken.objects.filter(user=exam.user, is_active=True).values_list('token', flat=True))
+        send_raw_push_to_tokens(
+            tokens,
+            title,
+            body,
+            data={
+                'notification_type': 'exam',
+                'related_object_type': 'client_exam',
+                'related_object_id': exam.id,
+            },
+        )
     exam.last_reminded_at = now
     exam.next_reminder_at = exam.compute_next_reminder_at(now)
     exam.save(update_fields=['last_reminded_at', 'next_reminder_at', 'updated_at'])

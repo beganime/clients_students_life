@@ -8,7 +8,7 @@ from django.utils import timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .models import AdminReminder, ClientExam, DeviceToken, PushNotification, UserNotification
-from .services import send_admin_reminder, send_push_notification
+from .services import send_admin_reminder, send_exam_reminder, send_push_notification
 
 
 class AdminReminderForm(forms.ModelForm):
@@ -30,6 +30,25 @@ class AdminReminderForm(forms.ModelForm):
         local_naive = timezone.make_naive(remind_at).replace(tzinfo=None) if timezone.is_aware(remind_at) else remind_at
         cleaned_data['remind_at'] = timezone.make_aware(local_naive, tz)
         return cleaned_data
+
+
+class ClientExamForm(forms.ModelForm):
+    class Meta:
+        model = ClientExam
+        fields = '__all__'
+        help_texts = {
+            'target_devices': 'Можно выбрать конкретные устройства. Если оставить пустым, push уйдёт на все активные устройства выбранного пользователя.',
+            'timezone': 'Для Туркменистана используйте Asia/Ashgabat.',
+            'reminder_start_at': 'Можно оставить пустым: первое уведомление отправится сразу при ручной отправке или по расписанию.',
+        }
+
+    def clean_timezone(self):
+        timezone_name = self.cleaned_data.get('timezone') or 'Asia/Ashgabat'
+        try:
+            ZoneInfo(timezone_name)
+        except ZoneInfoNotFoundError as exc:
+            raise forms.ValidationError('Укажите корректный timezone, например Asia/Ashgabat.') from exc
+        return timezone_name
 
 
 @admin.register(DeviceToken)
@@ -133,10 +152,121 @@ class UserNotificationAdmin(admin.ModelAdmin):
 
 @admin.register(ClientExam)
 class ClientExamAdmin(admin.ModelAdmin):
-    list_display = ('user', 'subject', 'exam_date', 'exam_time', 'acknowledged_by_user', 'is_active', 'next_reminder_at')
-    list_filter = ('is_active', 'acknowledged_by_user', 'exam_date')
-    search_fields = ('user__username', 'user__email', 'subject', 'comment')
-    readonly_fields = ('created_at', 'updated_at', 'last_reminded_at', 'next_reminder_at', 'acknowledged_at')
+    form = ClientExamForm
+    list_display = (
+        'user',
+        'subject',
+        'exam_date',
+        'exam_time',
+        'timezone',
+        'selected_devices_count',
+        'acknowledged_by_user',
+        'is_active',
+        'next_reminder_at',
+        'send_now_link',
+    )
+    list_filter = ('is_active', 'acknowledged_by_user', 'timezone', 'exam_date')
+    search_fields = ('user__username', 'user__email', 'subject', 'comment', 'target_devices__device_id', 'target_devices__token')
+    filter_horizontal = ('target_devices',)
+    readonly_fields = (
+        'created_at',
+        'updated_at',
+        'created_by_manager',
+        'last_reminded_at',
+        'next_reminder_at',
+        'acknowledged_at',
+        'send_now_link',
+    )
+    actions = ('send_selected_now', 'mark_selected_inactive')
+    fieldsets = (
+        ('Экзамен', {
+            'fields': ('user', 'subject', 'exam_date', 'exam_time', 'timezone', 'comment'),
+            'description': 'Создайте уведомление об экзамене для клиента. Время хранится с учётом выбранного timezone.',
+        }),
+        ('Кому отправить push', {
+            'fields': ('target_devices',),
+            'description': 'Если выбрать устройства, push уйдёт только туда. Если не выбрать ничего, push уйдёт на все активные устройства пользователя.',
+        }),
+        ('Напоминания', {
+            'fields': ('reminder_start_at', 'repeat_until_acknowledged', 'acknowledged_by_user', 'acknowledged_at', 'is_active'),
+            'description': 'Если пользователь не подтвердил уведомление, команда send_exam_reminders сможет повторять напоминание каждый час до экзамена.',
+        }),
+        ('Отправка', {
+            'fields': ('send_now_link', 'last_reminded_at', 'next_reminder_at'),
+        }),
+        ('Служебное', {
+            'classes': ('collapse',),
+            'fields': ('created_by_manager', 'manager_sl_exam_id', 'created_at', 'updated_at'),
+        }),
+    )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<path:object_id>/send-now/',
+                self.admin_site.admin_view(self.send_now_view),
+                name='notifications_clientexam_send_now',
+            ),
+        ]
+        return custom_urls + urls
+
+    def save_model(self, request, obj, form, change):
+        if not obj.created_by_manager_id:
+            obj.created_by_manager = request.user
+        super().save_model(request, obj, form, change)
+        if not obj.acknowledged_by_user:
+            obj.next_reminder_at = obj.compute_next_reminder_at()
+            obj.save(update_fields=['next_reminder_at', 'updated_at'])
+
+    def selected_devices_count(self, obj):
+        return obj.target_devices.count()
+
+    selected_devices_count.short_description = 'Устройств'
+
+    def send_now_link(self, obj):
+        if not obj or not obj.pk:
+            return 'Сначала сохраните экзамен.'
+        url = reverse('admin:notifications_clientexam_send_now', args=[obj.pk])
+        return format_html('<a class="button" href="{}">Отправить сейчас</a>', url)
+
+    send_now_link.short_description = 'Push'
+
+    def send_now_view(self, request, object_id):
+        exam = self.get_object(request, object_id)
+        if not exam:
+            self.message_user(request, 'Экзамен не найден.', level=messages.ERROR)
+            return redirect('admin:notifications_clientexam_changelist')
+        try:
+            sent = send_exam_reminder(exam, force=True)
+        except Exception as exc:
+            self.message_user(request, f'Не удалось отправить уведомление: {exc}', level=messages.ERROR)
+        else:
+            if sent:
+                device_note = exam.target_devices.count() or exam.user.device_tokens.filter(is_active=True).count()
+                self.message_user(request, f'Уведомление об экзамене отправлено. Активных устройств: {device_note}.', level=messages.SUCCESS)
+            else:
+                self.message_user(request, 'Уведомление не отправлено: экзамен неактивен, уже подтверждён или время прошло.', level=messages.WARNING)
+        return redirect('admin:notifications_clientexam_change', object_id)
+
+    @admin.action(description='Отправить выбранные уведомления об экзаменах сейчас')
+    def send_selected_now(self, request, queryset):
+        sent = 0
+        skipped = 0
+        for exam in queryset:
+            try:
+                if send_exam_reminder(exam, force=True):
+                    sent += 1
+                else:
+                    skipped += 1
+            except Exception:
+                skipped += 1
+        self.message_user(request, f'Отправлено: {sent}. Пропущено/ошибок: {skipped}.')
+
+    @admin.action(description='Деактивировать выбранные экзамены')
+    def mark_selected_inactive(self, request, queryset):
+        updated = queryset.update(is_active=False, next_reminder_at=None)
+        self.message_user(request, f'Деактивировано экзаменов: {updated}.')
 
 
 @admin.register(AdminReminder)

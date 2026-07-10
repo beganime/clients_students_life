@@ -95,33 +95,40 @@ class ClientExam(TimeStampedModel):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='client_exams',
-        verbose_name='User',
+        verbose_name='Пользователь',
     )
-    subject = models.CharField('Subject', max_length=255)
-    exam_date = models.DateField('Exam date')
-    exam_time = models.TimeField('Exam time')
-    timezone = models.CharField('Timezone', max_length=64, default='Europe/Moscow')
-    comment = models.TextField('Manager comment', blank=True)
-    reminder_start_at = models.DateTimeField('Reminder start at', null=True, blank=True)
-    repeat_until_acknowledged = models.BooleanField('Repeat until acknowledged', default=True)
-    acknowledged_at = models.DateTimeField('Acknowledged at', null=True, blank=True)
-    acknowledged_by_user = models.BooleanField('Acknowledged by user', default=False)
-    is_active = models.BooleanField('Active', default=True)
+    subject = models.CharField('Предмет экзамена', max_length=255)
+    exam_date = models.DateField('Дата экзамена')
+    exam_time = models.TimeField('Время экзамена')
+    timezone = models.CharField('Часовой пояс', max_length=64, default='Asia/Ashgabat')
+    comment = models.TextField('Комментарий менеджера', blank=True)
+    reminder_start_at = models.DateTimeField('Начать напоминать с', null=True, blank=True)
+    repeat_until_acknowledged = models.BooleanField('Повторять до подтверждения', default=True)
+    acknowledged_at = models.DateTimeField('Дата подтверждения', null=True, blank=True)
+    acknowledged_by_user = models.BooleanField('Пользователь подтвердил', default=False)
+    is_active = models.BooleanField('Активен', default=True)
+    target_devices = models.ManyToManyField(
+        DeviceToken,
+        blank=True,
+        related_name='client_exams',
+        verbose_name='Устройства для push',
+        help_text='Если выбрать устройства, push уйдёт только на них. Если оставить пустым, push уйдёт на все активные устройства пользователя.',
+    )
     created_by_manager = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='created_client_exams',
-        verbose_name='Created by manager',
+        verbose_name='Создал менеджер',
     )
     manager_sl_exam_id = models.CharField('Manager SL exam ID', max_length=100, blank=True)
-    last_reminded_at = models.DateTimeField('Last reminded at', null=True, blank=True)
-    next_reminder_at = models.DateTimeField('Next reminder at', null=True, blank=True)
+    last_reminded_at = models.DateTimeField('Последнее напоминание', null=True, blank=True)
+    next_reminder_at = models.DateTimeField('Следующее напоминание', null=True, blank=True)
 
     class Meta:
-        verbose_name = 'Client exam'
-        verbose_name_plural = 'Client exams'
+        verbose_name = 'Экзамен клиента'
+        verbose_name_plural = 'Экзамены клиентов'
         ordering = ['exam_date', 'exam_time', '-created_at']
         indexes = [
             models.Index(fields=['user', 'is_active', 'exam_date']),
@@ -133,9 +140,13 @@ class ClientExam(TimeStampedModel):
 
     @property
     def starts_at(self):
+        try:
+            tz = ZoneInfo(self.timezone)
+        except ZoneInfoNotFoundError:
+            tz = ZoneInfo('Asia/Ashgabat')
         return timezone.make_aware(
             timezone.datetime.combine(self.exam_date, self.exam_time),
-            timezone.get_current_timezone(),
+            tz,
         )
 
     def mark_acknowledged(self):
