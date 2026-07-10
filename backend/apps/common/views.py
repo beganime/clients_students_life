@@ -1,11 +1,19 @@
+from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.http import HttpResponse
+from django.shortcuts import render
 from django.utils.html import escape
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import AppSetting, HomeBanner, OfficeContact, PrivacyPolicy
+from apps.notifications.models import DeviceToken, UserNotification
+from apps.notifications.services import send_raw_push_to_tokens
+
+from .forms import DeveloperRequestForm
+from .models import AppSetting, DeveloperRequest, HomeBanner, OfficeContact, PrivacyPolicy
 from .serializers import AppSettingSerializer, HomeBannerSerializer, OfficeContactSerializer
 
 
@@ -16,6 +24,8 @@ We use this data to create and process applications, communicate with clients, p
 We do not ask users to submit passwords, access tokens, or payment secrets in chat. Push tokens are used only for notifications and can be refreshed or deactivated when a device changes.
 
 Users can contact Student's Life to request updates or removal of their personal data where applicable."""
+
+DEVELOPER_NOTIFICATION_USER = 'begenchyagmurow2008@gmail.com'
 
 
 def get_active_privacy_policy():
@@ -61,6 +71,85 @@ def privacy_policy_page(request):
 </body>
 </html>"""
     return HttpResponse(html)
+
+
+def _client_ip(request):
+    forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def _notify_developer_request(developer_request):
+    User = get_user_model()
+    user = User.objects.filter(
+        Q(email__iexact=DEVELOPER_NOTIFICATION_USER) | Q(username__iexact=DEVELOPER_NOTIFICATION_USER)
+    ).first()
+    if not user:
+        return
+
+    title = 'Новая заявка на разработку'
+    body = f'{developer_request.name}: {developer_request.get_project_type_display()}. Контакт: {developer_request.contact}'
+    UserNotification.objects.create(
+        user=user,
+        title=title,
+        body=body,
+        notification_type='developer_request',
+        related_object_type='developer_request',
+        related_object_id=developer_request.id,
+    )
+    latest_token = (
+        DeviceToken.objects
+        .filter(user=user, is_active=True)
+        .order_by('-updated_at', '-created_at')
+        .values_list('token', flat=True)
+        .first()
+    )
+    if latest_token:
+        send_raw_push_to_tokens(
+            [latest_token],
+            title,
+            body,
+            data={
+                'notification_type': 'developer_request',
+                'related_object_type': 'developer_request',
+                'related_object_id': developer_request.id,
+            },
+        )
+
+
+def developer_page(request):
+    settings = {item.key: item.value for item in AppSetting.objects.filter(
+        key__in=('developer_telegram', 'developer_phone', 'developer_email')
+    )}
+
+    if request.method == 'POST':
+        form = DeveloperRequestForm(request.POST)
+        if form.is_valid():
+            developer_request = form.save(commit=False)
+            developer_request.source_path = request.path
+            developer_request.user_agent = request.META.get('HTTP_USER_AGENT', '')
+            developer_request.ip_address = _client_ip(request)
+            developer_request.save()
+            _notify_developer_request(developer_request)
+            messages.success(request, 'Заявка отправлена. Я свяжусь с вами по указанному контакту.')
+            form = DeveloperRequestForm()
+    else:
+        form = DeveloperRequestForm()
+
+    return render(request, 'common/developer.html', {
+        'form': form,
+        'contacts': {
+            'telegram': settings.get('developer_telegram', ''),
+            'phone': settings.get('developer_phone', ''),
+            'email': settings.get('developer_email', ''),
+        },
+        'projects': (
+            ('students-life.ru', 'https://students-life.ru/'),
+            ('akyl-cheshmesi.ru', 'https://akyl-cheshmesi.ru/'),
+            ('medisinskayaodezhda.ru', 'https://medisinskayaodezhda.ru/'),
+        ),
+    })
 
 
 class AppSettingViewSet(viewsets.ReadOnlyModelViewSet):

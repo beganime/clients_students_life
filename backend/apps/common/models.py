@@ -39,6 +39,42 @@ class AppSetting(TimeStampedModel):
         return self.key
 
 
+class DeveloperRequest(TimeStampedModel):
+    class ProjectType(models.TextChoices):
+        WEBSITE = 'website', 'Сайт'
+        MOBILE_APP = 'mobile_app', 'Мобильное приложение'
+        CRM_ERP = 'crm_erp', 'CRM / ERP / HRM'
+        BOT_INTEGRATION = 'bot_integration', 'Telegram bot / Google Sheets'
+        SERVER_DEPLOY = 'server_deploy', 'Сервер / домен / деплой'
+        OTHER = 'other', 'Другое'
+
+    class Status(models.TextChoices):
+        NEW = 'new', 'Новая'
+        IN_PROGRESS = 'in_progress', 'В работе'
+        CONTACTED = 'contacted', 'Связались'
+        CLOSED = 'closed', 'Закрыта'
+
+    name = models.CharField('Имя', max_length=160)
+    contact = models.CharField('Контакт', max_length=180)
+    contact_method = models.CharField('Способ связи', max_length=40, blank=True, default='telegram')
+    project_type = models.CharField('Тип проекта', max_length=40, choices=ProjectType.choices, default=ProjectType.WEBSITE)
+    budget = models.CharField('Бюджет', max_length=120, blank=True)
+    timeline = models.CharField('Сроки', max_length=120, blank=True)
+    message = models.TextField('Описание задачи')
+    status = models.CharField('Статус', max_length=30, choices=Status.choices, default=Status.NEW)
+    source_path = models.CharField('Источник', max_length=255, blank=True, default='/developer/')
+    user_agent = models.TextField('User agent', blank=True)
+    ip_address = models.GenericIPAddressField('IP адрес', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Заявка на разработку'
+        verbose_name_plural = 'Заявки на разработку'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.name} — {self.get_project_type_display()}'
+
+
 class PrivacyPolicy(TimeStampedModel):
     title = models.CharField('Title', max_length=255, default='Privacy Policy')
     content = models.TextField('Content')

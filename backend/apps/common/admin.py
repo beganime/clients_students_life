@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
 
-from .models import AppSetting, HomeBanner, OfficeContact, PrivacyPolicy
+from .models import AppSetting, DeveloperRequest, HomeBanner, OfficeContact, PrivacyPolicy
 
 
 @admin.register(AppSetting)
@@ -79,6 +79,26 @@ class OfficeContactAdmin(ModelAdmin):
     )
     list_editable = ('is_active', 'sort_order')
     list_per_page = 30
+
+
+@admin.register(DeveloperRequest)
+class DeveloperRequestAdmin(ModelAdmin):
+    list_display = ('name', 'project_type', 'contact', 'status', 'created_at')
+    list_filter = ('project_type', 'status', 'created_at')
+    search_fields = ('name', 'contact', 'message', 'budget', 'timeline')
+    list_editable = ('status',)
+    readonly_fields = ('created_at', 'updated_at', 'source_path', 'user_agent', 'ip_address')
+    list_per_page = 30
+
+    fieldsets = (
+        ('Заявка', {
+            'fields': ('status', 'project_type', 'name', 'contact', 'contact_method', 'budget', 'timeline', 'message')
+        }),
+        ('Техническая информация', {
+            'classes': ('collapse',),
+            'fields': ('source_path', 'ip_address', 'user_agent', 'created_at', 'updated_at'),
+        }),
+    )
 
 
 @admin.register(PrivacyPolicy)

@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Заказать сайт или приложение — Ягмуров Бегенч</title>
+  <meta name="description" content="Разработка сайтов, мобильных приложений, CRM, ERP, HRM, Telegram-ботов, интеграций и деплой на сервер.">
+  <style>
+    :root {
+      --canvas: #05060f;
+      --plate: #2f343e;
+      --fog: #9da7ba;
+      --mist: #c7d3ea;
+      --frost: #d1e4fa;
+      --ice: #d8ecf8;
+      --white: #ffffff;
+      --violet: #663af3;
+      --edge: rgba(186, 215, 247, 0.12);
+      --fill: rgba(186, 214, 247, 0.04);
+      --fill-strong: rgba(199, 211, 234, 0.08);
+      --shadow-card: inset 0 1px 1px rgba(199, 211, 234, 0.12), inset 0 24px 48px rgba(199, 211, 234, 0.05), 0 24px 32px rgba(6, 6, 14, 0.7);
+      --shadow-modal: inset 0 1px 1px rgba(216, 236, 248, 0.2), inset 0 24px 48px rgba(168, 216, 245, 0.06), 0 16px 32px rgba(0, 0, 0, 0.3);
+      --font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-display: "Space Grotesk", Inter, ui-sans-serif, system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--frost);
+      background:
+        radial-gradient(circle at 50% -12%, rgba(124,145,182,0.48), transparent 34%),
+        radial-gradient(circle at 78% 18%, rgba(102,58,243,0.16), transparent 28%),
+        var(--canvas);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(186,215,247,0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(186,215,247,0.055) 1px, transparent 1px);
+      background-size: 86px 86px;
+      mask-image: radial-gradient(circle at top, #000 0%, transparent 78%);
+      z-index: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    .page { position: relative; z-index: 1; overflow: hidden; }
+    .container { width: min(1200px, calc(100% - 40px)); margin: 0 auto; }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 24px 0;
+    }
+    .brand, .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 999px;
+      background: rgba(186,214,247,0.06);
+      box-shadow: inset 0 0 0 1px var(--edge);
+      color: var(--white);
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .brand-mark {
+      width: 22px;
+      height: 22px;
+      border-radius: 9999px;
+      background: linear-gradient(145deg, var(--ice), #98c0ef);
+      box-shadow: 0 0 20px rgba(186,207,247,0.28);
+    }
+    .nav-links { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .pill { color: var(--frost); font-weight: 500; }
+    .pill:hover { background: rgba(186,214,247,0.12); }
+
+    .hero {
+      padding: 88px 0 64px;
+      text-align: center;
+    }
+    .eyebrow {
+      display: grid;
+      grid-template-columns: minmax(28px, 1fr) auto minmax(28px, 1fr);
+      align-items: center;
+      gap: 18px;
+      color: var(--mist);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 0 auto 22px;
+      max-width: 620px;
+    }
+    .eyebrow::before,
+    .eyebrow::after {
+      content: "";
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--edge), transparent);
+    }
+    h1 {
+      margin: 0 auto;
+      max-width: 980px;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(44px, 8vw, 92px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      background: linear-gradient(0deg, #d8ecf8 0%, #98c0ef 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 24px rgba(186,207,247,0.18);
+    }
+    .lead {
+      max-width: 760px;
+      margin: 24px auto 0;
+      color: var(--mist);
+      font-size: clamp(16px, 2vw, 18px);
+      line-height: 1.58;
+    }
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 34px;
+    }
+    .btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      min-height: 44px;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 20px;
+      font: 600 14px/1 var(--font-body);
+      color: var(--white);
+      background: rgba(186,214,247,0.06);
+      box-shadow: inset 0 0 0 1px var(--edge);
+      cursor: pointer;
+    }
+    .btn:hover { background: rgba(186,214,247,0.12); }
+    .btn-primary {
+      background: var(--violet);
+      box-shadow: inset 0 1px 1px rgba(216,236,248,0.22), 0 0 28px rgba(102,58,243,0.32);
+    }
+
+    .floating-stack {
+      position: relative;
+      min-height: 260px;
+      margin: 64px auto 0;
+      max-width: 960px;
+    }
+    .glass-card {
+      border-radius: 16px;
+      background: var(--fill);
+      box-shadow: var(--shadow-card);
+      backdrop-filter: blur(18px);
+      border: 1px solid transparent;
+    }
+    .showcase-main {
+      position: relative;
+      z-index: 2;
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 26px;
+      background: rgba(5,6,15,0.92);
+      box-shadow: var(--shadow-modal);
+      text-align: left;
+    }
+    .showcase-main h2 { margin: 0 0 10px; color: var(--white); font-size: 24px; font-weight: 600; }
+    .showcase-main p { margin: 0; color: var(--fog); line-height: 1.55; }
+    .mock-input {
+      margin-top: 16px;
+      border-radius: 6px;
+      background: rgba(199,211,234,0.06);
+      color: var(--mist);
+      box-shadow: inset 0 0 0 1px var(--edge);
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+    .side-card {
+      position: absolute;
+      width: 290px;
+      padding: 20px;
+      color: var(--mist);
+    }
+    .side-card.left { left: 0; top: 26px; transform: rotate(-4deg); }
+    .side-card.right { right: 0; top: 42px; transform: rotate(4deg); }
+    .side-card strong { display: block; color: var(--white); margin-bottom: 8px; }
+
+    .section { padding: 70px 0; }
+    .section h2 {
+      margin: 18px auto 14px;
+      max-width: 760px;
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 48px);
+      font-weight: 500;
+      line-height: 1.12;
+      color: var(--ice);
+    }
+    .section-copy {
+      max-width: 690px;
+      margin: 0 auto 32px;
+      text-align: center;
+      color: var(--mist);
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .service-card, .project-card, .contact-card {
+      padding: 24px;
+      min-height: 180px;
+    }
+    .icon-tile {
+      width: 58px;
+      height: 58px;
+      border-radius: 9999px;
+      display: grid;
+      place-items: center;
+      color: var(--frost);
+      background: rgba(186,214,247,0.06);
+      box-shadow: inset 0 0 0 1px var(--edge);
+      margin-bottom: 20px;
+      font-size: 22px;
+    }
+    .service-card h3, .project-card h3, .contact-card h3 {
+      margin: 0 0 10px;
+      color: var(--white);
+      font-size: 18px;
+    }
+    .service-card p, .project-card p, .contact-card p {
+      margin: 0;
+      color: var(--fog);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    .project-card { min-height: 132px; }
+    .project-card span {
+      color: var(--mist);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .form-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .contact-panel, .form-panel {
+      padding: 28px;
+      background: rgba(5,6,15,0.78);
+      box-shadow: var(--shadow-modal);
+    }
+    .contact-list { display: grid; gap: 12px; margin-top: 20px; }
+    .contact-item {
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--fill-strong);
+      box-shadow: inset 0 0 0 1px var(--edge);
+      color: var(--frost);
+      overflow-wrap: anywhere;
+    }
+    .contact-item small { display: block; color: var(--fog); margin-bottom: 4px; }
+    form { display: grid; gap: 14px; }
+    .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--mist);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    input, textarea, select {
+      width: 100%;
+      border: 0;
+      outline: none;
+      border-radius: 6px;
+      padding: 12px 13px;
+      background: rgba(199,211,234,0.06);
+      color: var(--white);
+      box-shadow: inset 0 0 0 1px var(--edge);
+      font: 500 15px/1.35 var(--font-body);
+    }
+    select option { color: #101828; }
+    textarea { resize: vertical; min-height: 144px; }
+    input:focus, textarea:focus, select:focus { box-shadow: inset 0 0 0 1px rgba(186,215,247,0.28), 0 0 0 3px rgba(102,58,243,0.18); }
+    .errorlist {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: #ffb4a6;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .message {
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: rgba(38,150,132,0.14);
+      box-shadow: inset 0 0 0 1px rgba(209,228,250,0.15);
+      color: var(--white);
+      margin-bottom: 16px;
+    }
+    .footer {
+      padding: 40px 0 56px;
+      color: var(--fog);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    @media (max-width: 920px) {
+      .nav { align-items: flex-start; flex-direction: column; }
+      .floating-stack { min-height: auto; }
+      .side-card { position: relative; width: auto; inset: auto; transform: none !important; margin-top: 14px; }
+      .grid, .form-layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 620px) {
+      .container { width: min(100% - 28px, 1200px); }
+      .hero { padding-top: 52px; }
+      .field-row { grid-template-columns: 1fr; }
+      h1 { font-size: 43px; }
+      .service-card, .project-card, .contact-panel, .form-panel { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="container nav">
+      <a class="brand" href="/developer/"><span class="brand-mark"></span> Ягмуров Бегенч</a>
+      <nav class="nav-links" aria-label="Навигация">
+        <a class="pill" href="#services">Что делаю</a>
+        <a class="pill" href="#projects">Проекты</a>
+        <a class="pill" href="#request">Оставить заявку</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="container hero">
+        <div class="eyebrow"><span>Developer for business</span></div>
+        <h1>Сайт, приложение и система для вашего бизнеса</h1>
+        <p class="lead">
+          Меня зовут Ягмуров Бегенч. Я программист и айтишник: помогаю бизнесу получить своё место в интернете,
+          запустить сайт любой сложности, мобильное приложение для Android и iOS, CRM, ERP или HRM систему.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#request">Заказать разработку</a>
+          <a class="btn" href="https://play.google.com/store/apps/developer?id=SL_projects" target="_blank" rel="noopener">Приложения в Google Play</a>
+          <a class="btn" href="https://github.com/beganime/" target="_blank" rel="noopener">GitHub</a>
+        </div>
+
+        <div class="floating-stack" aria-hidden="true">
+          <div class="side-card left glass-card">
+            <strong>Интеграции</strong>
+            Telegram-боты, Google Sheets, базы данных, push-уведомления и автоматизация процессов.
+          </div>
+          <div class="showcase-main glass-card">
+            <h2>Проект под ключ</h2>
+            <p>От покупки сервера и домена до деплоя, подключения HTTPS, базы данных и стабильного запуска.</p>
+            <div class="mock-input">example.com → backend → database → push notifications</div>
+          </div>
+          <div class="side-card right glass-card">
+            <strong>Команда</strong>
+            Есть команда из нескольких разработчиков для задач, где нужен дизайн, backend, frontend и мобильная разработка.
+          </div>
+        </div>
+      </section>
+
+      <section class="container section" id="services">
+        <div class="eyebrow"><span>Возможности</span></div>
+        <h2>Разработка от идеи до запуска на сервере</h2>
+        <p class="section-copy">Можно начать с простого сайта и постепенно вырастить его в полноценную бизнес-систему.</p>
+        <div class="grid">
+          <article class="service-card glass-card"><div class="icon-tile">⌘</div><h3>Сайты любой сложности</h3><p>Лендинги, корпоративные сайты, каталоги, личные кабинеты, формы заявок и SEO-готовая структура.</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">▣</div><h3>Мобильные приложения</h3><p>Android и iOS приложения, авторизация, профили, загрузка файлов, push-уведомления и API-интеграции.</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">◈</div><h3>CRM / ERP / HRM</h3><p>Системы для клиентов, сотрудников, заявок, документов, продаж, склада, задач и аналитики.</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">✦</div><h3>Telegram и Google Sheets</h3><p>Боты, уведомления, формы, автоматические таблицы, синхронизация и рабочие сценарии для менеджеров.</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">⬡</div><h3>Сервер и домен</h3><p>Помощь с покупкой сервера и домена, настройкой базы данных, деплоем, SSL и прокси.</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">◌</div><h3>Поддержка проекта</h3><p>Доработки, исправления, мониторинг, обновления, переносы, оптимизация скорости и стабильности.</p></article>
+        </div>
+      </section>
+
+      <section class="container section" id="projects">
+        <div class="eyebrow"><span>Опыт</span></div>
+        <h2>Проекты и публичные ссылки</h2>
+        <p class="section-copy">Уже запускал приложения и сайты, а также делал внутренние программы и бизнес-системы.</p>
+        <div class="grid">
+          {% for title, url in projects %}
+            <a class="project-card glass-card" href="{{ url }}" target="_blank" rel="noopener">
+              <span>Проект</span>
+              <h3>{{ title }}</h3>
+              <p>{{ url }}</p>
+            </a>
+          {% endfor %}
+          <a class="project-card glass-card" href="https://play.google.com/store/apps/developer?id=SL_projects" target="_blank" rel="noopener">
+            <span>Google Play</span>
+            <h3>SL_projects</h3>
+            <p>Опубликованные приложения в Google Play.</p>
+          </a>
+          <a class="project-card glass-card" href="https://github.com/beganime/" target="_blank" rel="noopener">
+            <span>GitHub</span>
+            <h3>beganime</h3>
+            <p>Личные проекты и репозитории.</p>
+          </a>
+        </div>
+      </section>
+
+      <section class="container section" id="request">
+        <div class="eyebrow"><span>Order request</span></div>
+        <h2>Расскажите, что нужно разработать</h2>
+        <p class="section-copy">Заявка сохранится в базе, а мне придёт push-уведомление на последний активный токен аккаунта.</p>
+
+        <div class="form-layout">
+          <aside class="contact-panel glass-card">
+            <h3>Контакты</h3>
+            <p>Эти поля можно заполнить через админку: <strong>Настройки приложения</strong> → ключи <strong>developer_telegram</strong>, <strong>developer_phone</strong>, <strong>developer_email</strong>.</p>
+            <div class="contact-list">
+              <div class="contact-item"><small>Telegram</small>{{ contacts.telegram|default:"Добавьте developer_telegram в админке" }}</div>
+              <div class="contact-item"><small>Телефон</small>{{ contacts.phone|default:"Добавьте developer_phone в админке" }}</div>
+              <div class="contact-item"><small>Email</small>{{ contacts.email|default:"Добавьте developer_email в админке" }}</div>
+            </div>
+          </aside>
+
+          <section class="form-panel glass-card">
+            {% if messages %}
+              {% for message in messages %}
+                <div class="message">{{ message }}</div>
+              {% endfor %}
+            {% endif %}
+            <form method="post" action="/developer/">
+              {% csrf_token %}
+              <div class="field-row">
+                <label>Имя {{ form.name }} {{ form.name.errors }}</label>
+                <label>Контакт {{ form.contact }} {{ form.contact.errors }}</label>
+              </div>
+              <div class="field-row">
+                <label>Куда написать {{ form.contact_method }} {{ form.contact_method.errors }}</label>
+                <label>Тип проекта {{ form.project_type }} {{ form.project_type.errors }}</label>
+              </div>
+              <div class="field-row">
+                <label>Бюджет {{ form.budget }} {{ form.budget.errors }}</label>
+                <label>Сроки {{ form.timeline }} {{ form.timeline.errors }}</label>
+              </div>
+              <label>Описание задачи {{ form.message }} {{ form.message.errors }}</label>
+              <button class="btn btn-primary" type="submit">Отправить заявку</button>
+            </form>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="container footer">
+      © Ягмуров Бегенч. Разработка сайтов, приложений и бизнес-систем.
+    </footer>
+  </div>
+</body>
+</html>
