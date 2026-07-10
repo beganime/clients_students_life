@@ -32,7 +32,9 @@ class DeviceToken(TimeStampedModel):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.platform} — {self.user or "anonymous"}'
+        user_label = self.user or 'anonymous'
+        device_label = f' · {self.device_id}' if self.device_id else ''
+        return f'{self.get_platform_display()} — {user_label}{device_label}'
 
 
 class PushNotification(TimeStampedModel):

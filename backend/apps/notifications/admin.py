@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils import timezone
+from unfold.admin import ModelAdmin
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .models import AdminReminder, ClientExam, DeviceToken, PushNotification, UserNotification
@@ -52,19 +53,25 @@ class ClientExamForm(forms.ModelForm):
 
 
 @admin.register(DeviceToken)
-class DeviceTokenAdmin(admin.ModelAdmin):
+class DeviceTokenAdmin(ModelAdmin):
     list_display = ('user', 'platform', 'device_id', 'is_active', 'created_at')
     list_filter = ('platform', 'is_active', 'created_at')
     search_fields = ('user__username', 'user__email', 'token', 'device_id')
     readonly_fields = ('created_at', 'updated_at')
 
+    def get_search_results(self, request, queryset, search_term):
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+        if request.path.endswith('/autocomplete/'):
+            queryset = queryset.filter(is_active=True)
+        return queryset, use_distinct
+
 
 @admin.register(PushNotification)
-class PushNotificationAdmin(admin.ModelAdmin):
+class PushNotificationAdmin(ModelAdmin):
     list_display = ('title', 'target_type', 'status', 'sent_at', 'created_at', 'send_now_link')
     list_filter = ('target_type', 'status', 'created_at')
     search_fields = ('title', 'body')
-    filter_horizontal = ('target_users',)
+    autocomplete_fields = ('target_users',)
     actions = ('send_now',)
     readonly_fields = ('status', 'sent_at', 'created_at', 'updated_at', 'send_now_link')
     fieldsets = (
@@ -144,14 +151,14 @@ class PushNotificationAdmin(admin.ModelAdmin):
         )
     
 @admin.register(UserNotification)
-class UserNotificationAdmin(admin.ModelAdmin):
+class UserNotificationAdmin(ModelAdmin):
     list_display = ('user', 'title', 'notification_type', 'is_read', 'created_at')
     list_filter = ('notification_type', 'is_read', 'created_at')
     search_fields = ('user__username', 'user__email', 'title', 'body')
 
 
 @admin.register(ClientExam)
-class ClientExamAdmin(admin.ModelAdmin):
+class ClientExamAdmin(ModelAdmin):
     form = ClientExamForm
     list_display = (
         'user',
@@ -167,7 +174,7 @@ class ClientExamAdmin(admin.ModelAdmin):
     )
     list_filter = ('is_active', 'acknowledged_by_user', 'timezone', 'exam_date')
     search_fields = ('user__username', 'user__email', 'subject', 'comment', 'target_devices__device_id', 'target_devices__token')
-    filter_horizontal = ('target_devices',)
+    autocomplete_fields = ('user', 'target_devices')
     readonly_fields = (
         'created_at',
         'updated_at',
@@ -200,6 +207,11 @@ class ClientExamAdmin(admin.ModelAdmin):
         }),
     )
 
+    class Media:
+        css = {
+            'all': ('admin/css/student-life-exam-admin.css',),
+        }
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -210,6 +222,11 @@ class ClientExamAdmin(admin.ModelAdmin):
             ),
         ]
         return custom_urls + urls
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == 'target_devices':
+            kwargs['queryset'] = DeviceToken.objects.filter(is_active=True).select_related('user')
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
         if not obj.created_by_manager_id:
@@ -270,7 +287,7 @@ class ClientExamAdmin(admin.ModelAdmin):
 
 
 @admin.register(AdminReminder)
-class AdminReminderAdmin(admin.ModelAdmin):
+class AdminReminderAdmin(ModelAdmin):
     form = AdminReminderForm
     list_display = ('title', 'owner', 'remind_at_local', 'timezone', 'status', 'sent_at', 'test_link', 'send_now_link')
     list_filter = ('status', 'timezone', 'remind_at', 'sent_at')

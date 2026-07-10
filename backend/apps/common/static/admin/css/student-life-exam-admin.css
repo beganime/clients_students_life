@@ -1,0 +1,79 @@
+.change-form .form-row {
+  max-width: 980px;
+}
+
+.change-form .form-row .related-widget-wrapper {
+  width: min(100%, 560px);
+}
+
+.change-form .form-row .related-widget-wrapper select,
+.change-form .form-row input[type="text"],
+.change-form .form-row input[type="date"],
+.change-form .form-row input[type="time"],
+.change-form .form-row textarea {
+  width: min(100%, 560px);
+  border-radius: 12px;
+}
+
+.change-form .select2-container,
+.change-form .select2-container--admin-autocomplete,
+.change-form .select2-container--default {
+  width: min(100%, 560px) !important;
+  max-width: 100%;
+}
+
+.change-form .select2-selection {
+  min-height: 48px;
+  border-radius: 12px !important;
+}
+
+.change-form .select2-selection__rendered {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+.change-form .select2-selection__arrow {
+  min-height: 48px;
+}
+
+.change-form .related-widget-wrapper-link {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  border-radius: 10px;
+  vertical-align: middle;
+  overflow: hidden;
+  font-size: 0;
+}
+
+.change-form .related-widget-wrapper-link::before {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.change-form .related-widget-wrapper-change-link::before {
+  content: "E";
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.change-form .related-widget-wrapper-add-link::before {
+  content: "+";
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.change-form .related-widget-wrapper-view-link::before {
+  content: "i";
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.change-form .help,
+.change-form .helptext {
+  max-width: 760px;
+  line-height: 1.55;
+}
