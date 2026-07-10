@@ -273,6 +273,32 @@
       letter-spacing: .06em;
       text-transform: uppercase;
     }
+    .tech-panel {
+      padding: 28px;
+      background: rgba(5,6,15,0.78);
+      box-shadow: var(--shadow-modal);
+    }
+    .tech-stack {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 26px;
+    }
+    .tech-chip {
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: var(--frost);
+      background: rgba(186,214,247,0.06);
+      box-shadow: inset 0 0 0 1px var(--edge);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .tech-chip.featured {
+      color: var(--white);
+      background: rgba(102,58,243,0.28);
+      box-shadow: inset 0 0 0 1px rgba(216,236,248,0.2), 0 0 22px rgba(102,58,243,0.16);
+    }
     .form-layout {
       display: grid;
       grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
@@ -393,6 +419,7 @@
       <a class="brand" href="/developer/"><span class="brand-mark"></span> Ягмуров Бегенч</a>
       <nav class="nav-links" aria-label="Навигация">
         <a class="pill" href="#services">Что делаю</a>
+        <a class="pill" href="#tech">Стек</a>
         <a class="pill" href="#projects">Проекты</a>
         <a class="pill" href="#request">Оставить заявку</a>
         <a class="pill" href="/developer/business-card/">Визитка</a>
@@ -441,6 +468,31 @@
           <article class="service-card glass-card"><div class="icon-tile">✦</div><h3>Telegram и Google Sheets</h3><p>Боты, уведомления, формы, автоматические таблицы, синхронизация и рабочие сценарии для менеджеров.</p></article>
           <article class="service-card glass-card"><div class="icon-tile">⬡</div><h3>Сервер и домен</h3><p>Помощь с покупкой сервера и домена, настройкой базы данных, деплоем, SSL и прокси.</p></article>
           <article class="service-card glass-card"><div class="icon-tile">◌</div><h3>Поддержка проекта</h3><p>Доработки, исправления, мониторинг, обновления, переносы, оптимизация скорости и стабильности.</p></article>
+        </div>
+      </section>
+
+      <section class="container section" id="tech">
+        <div class="tech-panel glass-card">
+          <div class="eyebrow"><span>Tech stack</span></div>
+          <h2>Пишу backend, frontend и мобильные интерфейсы на современных технологиях</h2>
+          <p class="section-copy">Могу собрать проект полностью: от API и базы данных до красивого интерфейса, админки, интеграций, деплоя и сопровождения.</p>
+          <div class="tech-stack" aria-label="Технологии">
+            <span class="tech-chip featured">Python</span>
+            <span class="tech-chip featured">Go</span>
+            <span class="tech-chip featured">JavaScript</span>
+            <span class="tech-chip featured">Node.js</span>
+            <span class="tech-chip">Django</span>
+            <span class="tech-chip">FastAPI</span>
+            <span class="tech-chip">React</span>
+            <span class="tech-chip">Vue</span>
+            <span class="tech-chip">Next.js</span>
+            <span class="tech-chip">Nuxt</span>
+            <span class="tech-chip">Tailwind CSS</span>
+            <span class="tech-chip">Bootstrap</span>
+            <span class="tech-chip">REST API</span>
+            <span class="tech-chip">PostgreSQL</span>
+            <span class="tech-chip">Docker</span>
+          </div>
         </div>
       </section>
 
