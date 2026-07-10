@@ -26,6 +26,7 @@ We do not ask users to submit passwords, access tokens, or payment secrets in ch
 Users can contact Student's Life to request updates or removal of their personal data where applicable."""
 
 DEVELOPER_NOTIFICATION_USER = 'begenchyagmurow2008@gmail.com'
+DEVELOPER_PAGE_URL = 'https://students-life.ru/developer/'
 
 
 def get_active_privacy_policy():
@@ -118,11 +119,18 @@ def _notify_developer_request(developer_request):
         )
 
 
-def developer_page(request):
+def _developer_contacts():
     settings = {item.key: item.value for item in AppSetting.objects.filter(
         key__in=('developer_telegram', 'developer_phone', 'developer_email')
     )}
+    return {
+        'telegram': settings.get('developer_telegram', ''),
+        'phone': settings.get('developer_phone', ''),
+        'email': settings.get('developer_email', ''),
+    }
 
+
+def developer_page(request):
     if request.method == 'POST':
         form = DeveloperRequestForm(request.POST)
         if form.is_valid():
@@ -132,23 +140,26 @@ def developer_page(request):
             developer_request.ip_address = _client_ip(request)
             developer_request.save()
             _notify_developer_request(developer_request)
-            messages.success(request, 'Заявка отправлена. Я свяжусь с вами по указанному контакту.')
+            messages.success(request, 'Спасибо, что оставили заявку! Я свяжусь с вами по указанному контакту.')
             form = DeveloperRequestForm()
     else:
         form = DeveloperRequestForm()
 
     return render(request, 'common/developer.html', {
         'form': form,
-        'contacts': {
-            'telegram': settings.get('developer_telegram', ''),
-            'phone': settings.get('developer_phone', ''),
-            'email': settings.get('developer_email', ''),
-        },
+        'contacts': _developer_contacts(),
         'projects': (
             ('students-life.ru', 'https://students-life.ru/'),
             ('akyl-cheshmesi.ru', 'https://akyl-cheshmesi.ru/'),
             ('medisinskayaodezhda.ru', 'https://medisinskayaodezhda.ru/'),
         ),
+    })
+
+
+def developer_business_card(request):
+    return render(request, 'common/developer_business_card.html', {
+        'contacts': _developer_contacts(),
+        'developer_url': DEVELOPER_PAGE_URL,
     })
 
 

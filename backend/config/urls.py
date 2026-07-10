@@ -7,13 +7,14 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts.views import LoginView
-from apps.common.views import developer_page, privacy_policy_page
+from apps.common.views import developer_business_card, developer_page, privacy_policy_page
 
 urlpatterns = [
     path('favicon.ico', RedirectView.as_view(url=f'{settings.STATIC_URL}favicon.png', permanent=True)),
     path('admin/', admin.site.urls),
     path('privacy-policy/', privacy_policy_page, name='privacy-policy'),
     path('developer/', developer_page, name='developer-page'),
+    path('developer/business-card/', developer_business_card, name='developer-business-card'),
 
     path('api/v1/auth/login/', LoginView.as_view(), name='token_obtain_pair'),
     path('api/v1/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

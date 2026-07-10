@@ -54,6 +54,21 @@
     a { color: inherit; text-decoration: none; }
     .page { position: relative; z-index: 1; overflow: hidden; }
     .container { width: min(1200px, calc(100% - 40px)); margin: 0 auto; }
+    .hero, .section, .floating-stack, .glass-card {
+      animation: glassDrop 780ms cubic-bezier(.2, .8, .2, 1) both;
+    }
+    .section:nth-of-type(2) { animation-delay: 80ms; }
+    .section:nth-of-type(3) { animation-delay: 140ms; }
+    .section:nth-of-type(4) { animation-delay: 200ms; }
+    .service-card:nth-child(2), .project-card:nth-child(2) { animation-delay: 70ms; }
+    .service-card:nth-child(3), .project-card:nth-child(3) { animation-delay: 120ms; }
+    .service-card:nth-child(4), .project-card:nth-child(4) { animation-delay: 170ms; }
+    .service-card:nth-child(5), .project-card:nth-child(5) { animation-delay: 220ms; }
+    .service-card:nth-child(6), .project-card:nth-child(6) { animation-delay: 270ms; }
+    @keyframes glassDrop {
+      from { opacity: 0; transform: translateY(-18px); filter: blur(10px); }
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
     .nav {
       display: flex;
       align-items: center;
@@ -298,7 +313,22 @@
       color: var(--white);
       box-shadow: inset 0 0 0 1px var(--edge);
       font: 500 15px/1.35 var(--font-body);
+      transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
     }
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 42px;
+      cursor: pointer;
+      background:
+        linear-gradient(45deg, transparent 50%, rgba(216,236,248,0.86) 50%),
+        linear-gradient(135deg, rgba(216,236,248,0.86) 50%, transparent 50%),
+        rgba(199,211,234,0.06);
+      background-position: calc(100% - 20px) 52%, calc(100% - 14px) 52%, 0 0;
+      background-size: 6px 6px, 6px 6px, auto;
+      background-repeat: no-repeat;
+    }
+    input:hover, textarea:hover, select:hover { background-color: rgba(199,211,234,0.09); }
     select option { color: #101828; }
     textarea { resize: vertical; min-height: 144px; }
     input:focus, textarea:focus, select:focus { box-shadow: inset 0 0 0 1px rgba(186,215,247,0.28), 0 0 0 3px rgba(102,58,243,0.18); }
@@ -317,6 +347,16 @@
       box-shadow: inset 0 0 0 1px rgba(209,228,250,0.15);
       color: var(--white);
       margin-bottom: 16px;
+      animation: successIn 520ms cubic-bezier(.2, .8, .2, 1) both;
+    }
+    .message strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ice);
+    }
+    @keyframes successIn {
+      from { opacity: 0; transform: translateY(-10px) scale(.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
     .footer {
       padding: 40px 0 56px;
@@ -338,6 +378,13 @@
       h1 { font-size: 43px; }
       .service-card, .project-card, .contact-panel, .form-panel { padding: 20px; }
     }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 1ms !important;
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -348,6 +395,7 @@
         <a class="pill" href="#services">Что делаю</a>
         <a class="pill" href="#projects">Проекты</a>
         <a class="pill" href="#request">Оставить заявку</a>
+        <a class="pill" href="/developer/business-card/">Визитка</a>
       </nav>
     </header>
 
@@ -429,18 +477,18 @@
         <div class="form-layout">
           <aside class="contact-panel glass-card">
             <h3>Контакты</h3>
-            <p>Эти поля можно заполнить через админку: <strong>Настройки приложения</strong> → ключи <strong>developer_telegram</strong>, <strong>developer_phone</strong>, <strong>developer_email</strong>.</p>
+            <p>Оставьте короткое описание задачи, и я отвечу в удобном для вас мессенджере или по почте.</p>
             <div class="contact-list">
-              <div class="contact-item"><small>Telegram</small>{{ contacts.telegram|default:"Добавьте developer_telegram в админке" }}</div>
-              <div class="contact-item"><small>Телефон</small>{{ contacts.phone|default:"Добавьте developer_phone в админке" }}</div>
-              <div class="contact-item"><small>Email</small>{{ contacts.email|default:"Добавьте developer_email в админке" }}</div>
+              <div class="contact-item"><small>Telegram</small>{{ contacts.telegram|default:"Telegram будет добавлен" }}</div>
+              <div class="contact-item"><small>Телефон</small>{{ contacts.phone|default:"Телефон будет добавлен" }}</div>
+              <div class="contact-item"><small>Email</small>{{ contacts.email|default:"Email будет добавлен" }}</div>
             </div>
           </aside>
 
           <section class="form-panel glass-card">
             {% if messages %}
               {% for message in messages %}
-                <div class="message">{{ message }}</div>
+                <div class="message"><strong>Готово</strong>{{ message }}</div>
               {% endfor %}
             {% endif %}
             <form method="post" action="/developer/">
