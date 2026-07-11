@@ -16,6 +16,28 @@ import { useAuthStore } from '../../store/authStore';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 type StatusState = { type: 'success' | 'error' | 'info'; text: string } | null;
 
+const COMMON_WEAK_PASSWORDS = new Set([
+  '12345678',
+  '123456789',
+  '1234567890',
+  'password',
+  'password1',
+  'qwerty123',
+  '11111111',
+  '00000000',
+]);
+
+function isStrongEnoughPassword(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (value.length < 8) return false;
+  if (COMMON_WEAK_PASSWORDS.has(normalized)) return false;
+  if (/^(.)\1+$/.test(value)) return false;
+
+  const hasLetter = /[a-zA-Z]/.test(value);
+  const hasNumber = /\d/.test(value);
+  return hasLetter && hasNumber;
+}
+
 export function RegisterScreen({ navigation }: Props) {
   const registerAndLogin = useAuthStore(state => state.registerAndLogin);
   const [firstName, setFirstName] = useState('');
@@ -28,12 +50,12 @@ export function RegisterScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
 
-  const passwordValid = password.length >= 6;
+  const passwordValid = isStrongEnoughPassword(password);
   const passwordsMatch = password.length > 0 && password === passwordConfirm;
 
   const passwordMessage = useMemo(() => {
-    if (!password && !passwordConfirm) return 'Зарегистрированные пользователи видят историю заявок и получают персональные предложения.';
-    if (!passwordValid) return 'Пароль должен быть минимум 6 символов.';
+    if (!password && !passwordConfirm) return 'Регистрация нужна только клиентам, которые хотят поступать, отправлять документы и отслеживать свои заявки в приложении.';
+    if (!passwordValid) return 'Пароль должен быть минимум 8 символов, содержать буквы и цифры и не быть слишком простым. Password или 12345678 не подойдут.';
     if (passwordConfirm && !passwordsMatch) return 'Пароли не совпадают.';
     if (passwordsMatch) return 'Пароль подтверждён правильно.';
     return 'Повторите пароль для проверки.';
@@ -48,7 +70,7 @@ export function RegisterScreen({ navigation }: Props) {
       return;
     }
     if (!passwordValid) {
-      setStatus({ type: 'error', text: 'Пароль должен быть минимум 6 символов.' });
+      setStatus({ type: 'error', text: 'Пароль должен быть минимум 8 символов, содержать буквы и цифры и не быть слишком простым.' });
       return;
     }
     if (!passwordsMatch) {
@@ -85,13 +107,17 @@ export function RegisterScreen({ navigation }: Props) {
       </RedGradientHero>
 
       <AppCard style={styles.formCard}>
+        <StatusBox
+          type="info"
+          text="Регистрация нужна только если вы клиент и хотите поступать, отправлять документы и отслеживать свои заявки в Student’s Life."
+        />
         <View style={styles.nameRow}>
           <AppInput wrapperStyle={styles.nameInput} label="Имя" value={firstName} onChangeText={text => { setFirstName(text); setStatus(null); }} placeholder="Ali" />
           <AppInput wrapperStyle={styles.nameInput} label="Фамилия" value={lastName} onChangeText={text => { setLastName(text); setStatus(null); }} placeholder="Myradov" />
         </View>
         <AppInput label="Email" value={email} onChangeText={text => { setEmail(text); setStatus(null); }} autoCapitalize="none" keyboardType="email-address" placeholder="student@example.com" />
         <AppInput label="Телефон / WhatsApp" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+993..." />
-        <AppInput label="Пароль" value={password} onChangeText={text => { setPassword(text); setStatus(null); }} secureTextEntry={!showPassword} placeholder="Минимум 6 символов" right={<Pressable onPress={() => setShowPassword(!showPassword)}><Text style={styles.toggleText}>{showPassword ? 'Скрыть' : 'Показать'}</Text></Pressable>} />
+        <AppInput label="Пароль" value={password} onChangeText={text => { setPassword(text); setStatus(null); }} secureTextEntry={!showPassword} placeholder="Минимум 8 символов, буквы и цифры" right={<Pressable onPress={() => setShowPassword(!showPassword)}><Text style={styles.toggleText}>{showPassword ? 'Скрыть' : 'Показать'}</Text></Pressable>} />
         <AppInput label="Повторите пароль" value={passwordConfirm} onChangeText={text => { setPasswordConfirm(text); setStatus(null); }} secureTextEntry={!showPassword} placeholder="Повторите пароль" helper={passwordMessage} />
         {status ? <StatusBox type={status.type} text={status.text} /> : null}
         <AppButton title="Создать аккаунт" onPress={handleRegister} loading={loading} />

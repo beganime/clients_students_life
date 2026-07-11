@@ -22,12 +22,13 @@ type Props = {
 
 export function Screen({ children, scroll = false, style, refreshing = false, onRefresh }: Props) {
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(insets.bottom + 28, 44);
+  const bottomPadding = Math.max(insets.bottom + 48, 88);
 
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }, style]}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       showsVerticalScrollIndicator={false}
       refreshControl={
         onRefresh ? (
@@ -47,7 +48,8 @@ export function Screen({ children, scroll = false, style, refreshing = false, on
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
       >
         {content}
       </KeyboardAvoidingView>
