@@ -101,6 +101,59 @@ class UserMeSerializer(serializers.ModelSerializer):
         return instance
 
 
+class UserListSerializer(serializers.ModelSerializer):
+    profile = ClientProfileSerializer(source='client_profile', read_only=True)
+    role = serializers.SerializerMethodField()
+    is_manager = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'is_active',
+            'is_staff',
+            'date_joined',
+            'role',
+            'is_manager',
+            'profile',
+        )
+
+    def get_role(self, obj):
+        return get_app_role_code(obj)
+
+    def get_is_manager(self, obj):
+        return is_manager_user(obj)
+
+
+class ClientProfileAdminSerializer(serializers.ModelSerializer):
+    user = UserListSerializer(read_only=True)
+    role_code = serializers.CharField(source='role.code', read_only=True)
+    role_name = serializers.CharField(source='role.name', read_only=True)
+
+    class Meta:
+        model = ClientProfile
+        fields = (
+            'id',
+            'user',
+            'phone',
+            'whatsapp',
+            'telegram',
+            'country',
+            'city',
+            'citizenship',
+            'avatar',
+            'language',
+            'role_code',
+            'role_name',
+            'created_at',
+            'updated_at',
+        )
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)

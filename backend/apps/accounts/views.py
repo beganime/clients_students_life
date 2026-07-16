@@ -1,14 +1,27 @@
+from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import generics, permissions, status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 
-from .models import AppRole, AppUserActivity, ensure_client_profile
+from apps.documents.views import has_manager_or_service_access
+
+from .models import AppRole, AppUserActivity, ClientProfile, ensure_client_profile
 from .manager_sl_sync import sync_mobile_client_to_manager_sl
-from .serializers import LoginSerializer, RegisterSerializer, UserMeSerializer
+from .serializers import (
+    ClientProfileAdminSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    UserListSerializer,
+    UserMeSerializer,
+)
+
+User = get_user_model()
 
 
 def clean_device_value(value, max_length=255):
@@ -184,3 +197,108 @@ class ActivityView(APIView):
             'last_seen': activity.last_seen,
             'last_active_at': activity.last_active_at,
         })
+
+
+class ManagerDataPagination(PageNumberPagination):
+    page_size_query_param = 'limit'
+    max_page_size = 200
+
+
+class ManagerUsersListView(generics.ListAPIView):
+    serializer_class = UserListSerializer
+    pagination_class = ManagerDataPagination
+
+    def get_queryset(self):
+        queryset = User.objects.select_related('client_profile', 'client_profile__role').order_by('-date_joined')
+        search = str(self.request.query_params.get('search') or '').strip()
+        role = str(self.request.query_params.get('role') or '').strip().lower()
+        is_manager = str(self.request.query_params.get('is_manager') or '').strip().lower()
+
+        if search:
+            queryset = queryset.filter(
+                Q(username__icontains=search)
+                | Q(email__icontains=search)
+                | Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(client_profile__phone__icontains=search)
+                | Q(client_profile__whatsapp__icontains=search)
+                | Q(client_profile__telegram__icontains=search)
+            )
+
+        if role:
+            queryset = queryset.filter(client_profile__role__code=role)
+
+        if is_manager in {'true', '1', 'yes'}:
+            queryset = queryset.filter(Q(is_staff=True) | Q(client_profile__role__is_manager=True))
+        elif is_manager in {'false', '0', 'no'}:
+            queryset = queryset.exclude(Q(is_staff=True) | Q(client_profile__role__is_manager=True))
+
+        return queryset.distinct()
+
+    def list(self, request, *args, **kwargs):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().list(request, *args, **kwargs)
+
+
+class ManagerUserDetailView(generics.RetrieveAPIView):
+    serializer_class = UserListSerializer
+    lookup_url_kwarg = 'user_id'
+
+    def get_queryset(self):
+        return User.objects.select_related('client_profile', 'client_profile__role')
+
+    def retrieve(self, request, *args, **kwargs):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().retrieve(request, *args, **kwargs)
+
+
+class ManagerClientProfileListView(generics.ListAPIView):
+    serializer_class = ClientProfileAdminSerializer
+    pagination_class = ManagerDataPagination
+
+    def get_queryset(self):
+        queryset = ClientProfile.objects.select_related('user', 'role').order_by('-created_at')
+        search = str(self.request.query_params.get('search') or '').strip()
+        country = str(self.request.query_params.get('country') or '').strip()
+        city = str(self.request.query_params.get('city') or '').strip()
+        citizenship = str(self.request.query_params.get('citizenship') or '').strip()
+
+        if search:
+            queryset = queryset.filter(
+                Q(user__username__icontains=search)
+                | Q(user__email__icontains=search)
+                | Q(user__first_name__icontains=search)
+                | Q(user__last_name__icontains=search)
+                | Q(phone__icontains=search)
+                | Q(whatsapp__icontains=search)
+                | Q(telegram__icontains=search)
+            )
+
+        if country:
+            queryset = queryset.filter(country__icontains=country)
+        if city:
+            queryset = queryset.filter(city__icontains=city)
+        if citizenship:
+            queryset = queryset.filter(citizenship__icontains=citizenship)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().list(request, *args, **kwargs)
+
+
+class ManagerClientProfileDetailView(generics.RetrieveAPIView):
+    serializer_class = ClientProfileAdminSerializer
+    lookup_url_kwarg = 'profile_id'
+
+    def get_queryset(self):
+        return ClientProfile.objects.select_related('user', 'role')
+
+    def retrieve(self, request, *args, **kwargs):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().retrieve(request, *args, **kwargs)

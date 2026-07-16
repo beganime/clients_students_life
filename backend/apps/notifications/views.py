@@ -8,7 +8,7 @@ from .models import ClientExam, DeviceToken, PushNotification, UserNotification
 from .serializers import ClientExamSerializer, DeviceTokenSerializer, PushNotificationSerializer, UserNotificationSerializer
 from .services import send_exam_reminder
 from apps.accounts.models import is_manager_user
-from apps.documents.views import has_manager_or_service_access
+from apps.documents.views import has_manager_or_service_access, has_service_api_access
 
 
 User = get_user_model()
@@ -28,12 +28,24 @@ class DeviceTokenViewSet(mixins.CreateModelMixin,
     def get_permissions(self):
         if self.action == 'create':
             return [permissions.IsAuthenticated()]
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     def get_queryset(self):
+        if has_service_api_access(self.request):
+            return DeviceToken.objects.select_related('user').all().order_by('-created_at')
         if is_manager_user(self.request.user):
-            return DeviceToken.objects.all().order_by('-created_at')
-        return DeviceToken.objects.filter(user=self.request.user).order_by('-created_at')
+            return DeviceToken.objects.select_related('user').all().order_by('-created_at')
+        return DeviceToken.objects.select_related('user').filter(user=self.request.user).order_by('-created_at')
+
+    def list(self, request, *args, **kwargs):
+        if not (has_service_api_access(request) or (request.user and request.user.is_authenticated)):
+            return Response({'detail': 'Authentication or service API key required.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().list(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        if not (has_service_api_access(request) or (request.user and request.user.is_authenticated)):
+            return Response({'detail': 'Authentication or service API key required.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         user = self.request.user if self.request.user.is_authenticated else None

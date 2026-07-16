@@ -1,13 +1,36 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import ClientExam, DeviceToken, PushNotification, UserNotification
 
+User = get_user_model()
+
+
+class DeviceTokenOwnerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name')
+
 
 class DeviceTokenSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+    user = serializers.IntegerField(source='user.id', read_only=True)
+    owner = DeviceTokenOwnerSerializer(source='user', read_only=True)
+
     class Meta:
         model = DeviceToken
-        fields = ('id', 'token', 'platform', 'device_id', 'is_active', 'created_at')
-        read_only_fields = ('id', 'is_active', 'created_at')
+        fields = (
+            'id',
+            'token',
+            'platform',
+            'device_id',
+            'is_active',
+            'created_at',
+            'user_id',
+            'user',
+            'owner',
+        )
+        read_only_fields = ('id', 'is_active', 'created_at', 'user_id', 'user', 'owner')
 
     def validate_token(self, value):
         value = str(value or '').strip()
