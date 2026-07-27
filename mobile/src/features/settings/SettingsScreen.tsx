@@ -26,10 +26,14 @@ import {
   getApiEndpointMode,
   setApiEndpointMode,
 } from '../../utils/apiProxySettings';
+import { useAuthStore } from '../../store/authStore';
 
 export function SettingsScreen() {
   const [clearing, setClearing] = useState(false);
   const [endpointMode, setEndpointMode] = useState<ApiEndpointMode>('proxy');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const deleteAccount = useAuthStore(state => state.deleteAccount);
 
   useEffect(() => {
     getApiEndpointMode().then(setEndpointMode).catch(() => setEndpointMode('proxy'));
@@ -57,6 +61,44 @@ export function SettingsScreen() {
       mode === 'proxy'
         ? 'Теперь приложение использует прокси students-life.ru без VPN.'
         : 'Теперь приложение использует оригинальные серверы напрямую.',
+    );
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Удалить аккаунт?',
+      'Аккаунт будет удалён без возможности восстановления. После этого вход в него станет недоступен.',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Продолжить',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Подтверждение удаления',
+              'Подтвердите удаление аккаунта Student’s Life. Это действие нельзя отменить.',
+              [
+                { text: 'Назад', style: 'cancel' },
+                {
+                  text: 'Удалить аккаунт',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setDeletingAccount(true);
+                      await deleteAccount();
+                      Alert.alert('Аккаунт удалён', 'Ваш аккаунт удалён. При необходимости вы сможете зарегистрироваться заново.');
+                    } catch {
+                      Alert.alert('Не удалось удалить аккаунт', 'Попробуйте ещё раз чуть позже.');
+                    } finally {
+                      setDeletingAccount(false);
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
     );
   };
 
@@ -134,6 +176,21 @@ export function SettingsScreen() {
       >
         <AppButton title="Открыть политику" variant="outline" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
       </SettingsBlock>
+
+      {isAuthenticated ? (
+        <SettingsBlock
+          icon="warning"
+          title="Удаление аккаунта"
+          text="Вы можете полностью удалить аккаунт прямо в приложении. После подтверждения доступ к аккаунту будет закрыт."
+        >
+          <AppButton
+            title="Удалить аккаунт"
+            variant="danger"
+            onPress={confirmDeleteAccount}
+            loading={deletingAccount}
+          />
+        </SettingsBlock>
+      ) : null}
 
       <AppCard style={styles.aboutCard}>
         <Text style={styles.aboutTitle}>{APP_NAME}</Text>

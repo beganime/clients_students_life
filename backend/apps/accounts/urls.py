@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     ActivityView,
+    DeleteAccountView,
     LogoutView,
     ManagerClientProfileDetailView,
     ManagerClientProfileListView,
@@ -22,5 +23,6 @@ urlpatterns = [
     path('client-profiles/', ManagerClientProfileListView.as_view(), name='client-profiles-list'),
     path('client-profiles/<int:profile_id>/', ManagerClientProfileDetailView.as_view(), name='client-profiles-detail'),
     path('activity/', ActivityView.as_view(), name='activity'),
+    path('delete/', DeleteAccountView.as_view(), name='delete-account'),
     path('logout/', LogoutView.as_view(), name='logout'),
 ]

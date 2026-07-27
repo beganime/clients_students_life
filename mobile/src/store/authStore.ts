@@ -14,6 +14,7 @@ type AuthState = {
   managerLogin: (username: string, password: string) => Promise<void>;
   registerAndLogin: (payload: Parameters<typeof authApi.register>[0]) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refreshMe: () => Promise<void>;
 };
 
@@ -60,6 +61,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   async logout() {
     await authApi.logout();
+    await clearLocalAvatarUri();
+    set({ user: null, isAuthenticated: false });
+  },
+
+  async deleteAccount() {
+    await authApi.deleteAccount();
     await clearLocalAvatarUri();
     set({ user: null, isAuthenticated: false });
   },

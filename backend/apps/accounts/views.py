@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import generics, permissions, status
@@ -156,6 +157,42 @@ class LogoutView(APIView):
             return Response({'detail': 'Некорректный refresh token.'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'detail': 'Выход выполнен.'}, status=status.HTTP_200_OK)
+
+
+class DeleteAccountView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        user = request.user
+        refresh_token = request.data.get('refresh')
+
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception:
+                pass
+
+        profile = getattr(user, 'client_profile', None)
+        if profile and getattr(profile, 'avatar', None):
+            try:
+                profile.avatar.delete(save=False)
+            except Exception:
+                pass
+
+        questionnaire = getattr(user, 'applicant_questionnaire', None)
+        if questionnaire:
+            for file_field in ('face_photo', 'generated_document'):
+                field = getattr(questionnaire, file_field, None)
+                if field:
+                    try:
+                        field.delete(save=False)
+                    except Exception:
+                        pass
+
+        user.delete()
+        return Response({'detail': 'Account deleted successfully.'}, status=status.HTTP_200_OK)
 
 
 class ActivityView(APIView):

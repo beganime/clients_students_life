@@ -190,6 +190,13 @@ export const authApi = {
     }
   },
 
+  async deleteAccount() {
+    const refresh = await tokenStorage.getRefreshToken();
+    const { data } = await apiClient.post<{ detail: string }>('/accounts/delete/', refresh ? { refresh } : {});
+    await tokenStorage.clearTokens();
+    return data;
+  },
+
   async updateActivity(payload: {
     state: 'active' | 'inactive' | 'background';
     is_online?: boolean;
