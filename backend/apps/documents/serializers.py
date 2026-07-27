@@ -18,6 +18,10 @@ class MyDocumentSerializer(serializers.Serializer):
     uploaded_at = serializers.DateTimeField(allow_null=True)
     reviewed_at = serializers.DateTimeField(allow_null=True)
     updated_at = serializers.DateTimeField(allow_null=True)
+    reviewed_by_id = serializers.IntegerField(source='reviewed_by.id', allow_null=True, required=False)
+    reviewed_by_name = serializers.CharField(required=False, allow_blank=True)
+    reviewed_by_email = serializers.CharField(required=False, allow_blank=True)
+    reviewed_by_display = serializers.CharField(required=False, allow_blank=True)
 
 
 class UserDocumentUploadSerializer(serializers.ModelSerializer):

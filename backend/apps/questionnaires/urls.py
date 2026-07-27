@@ -7,7 +7,10 @@ from .views import (
     MyQuestionnaireRegenerateDocumentView,
     MyQuestionnaireSubmitView,
     MyQuestionnaireView,
+    ServiceQuestionnaireApproveView,
+    ServiceQuestionnaireRejectView,
     ServiceQuestionnaireRegenerateDocumentView,
+    ServiceQuestionnaireStatusView,
 )
 
 
@@ -21,5 +24,8 @@ urlpatterns = [
     path('my-application-form/submit/', MyQuestionnaireSubmitView.as_view(), name='my-application-form-submit'),
     path('my-application-form/regenerate-document/', MyQuestionnaireRegenerateDocumentView.as_view(), name='my-application-form-regenerate-document'),
     path('my-application-form/document/', MyQuestionnaireDownloadView.as_view(), name='my-application-form-document'),
+    path('application-forms/<int:questionnaire_id>/approve/', ServiceQuestionnaireApproveView.as_view(), name='service-application-form-approve'),
+    path('application-forms/<int:questionnaire_id>/reject/', ServiceQuestionnaireRejectView.as_view(), name='service-application-form-reject'),
+    path('application-forms/<int:questionnaire_id>/status/', ServiceQuestionnaireStatusView.as_view(), name='service-application-form-status'),
     path('application-forms/<int:questionnaire_id>/regenerate-document/', ServiceQuestionnaireRegenerateDocumentView.as_view(), name='service-application-form-regenerate-document'),
 ]

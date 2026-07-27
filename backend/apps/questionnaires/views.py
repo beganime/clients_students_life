@@ -1,12 +1,14 @@
 from django.http import FileResponse
 from django.shortcuts import redirect
+from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import ensure_client_profile
-from apps.documents.views import has_service_api_access
+from apps.documents.views import has_manager_or_service_access, has_service_api_access
+from apps.notifications.services import send_push_to_user
 
 from .labels import questionnaire_field_labels
 from .manager_sl_sync import sync_questionnaire_to_manager_sl
@@ -90,6 +92,94 @@ def save_questionnaire_payload(request, data, save_mode='draft'):
     questionnaire.save()
     sync_questionnaire_to_manager_sl(questionnaire, request=request)
     return questionnaire, None
+
+
+def resolve_questionnaire_reviewer_metadata(request=None, reviewer=None):
+    if reviewer and getattr(reviewer, 'is_authenticated', False):
+        return (
+            reviewer,
+            reviewer.get_full_name().strip() or reviewer.email or reviewer.username,
+            reviewer.email or '',
+        )
+
+    request_data = getattr(request, 'data', {}) if request is not None else {}
+    reviewer_name = (
+        request_data.get('reviewed_by_name')
+        or request_data.get('manager_name')
+        or request_data.get('reviewer_name')
+        or ''
+    )
+    reviewer_email = (
+        request_data.get('reviewed_by_email')
+        or request_data.get('manager_email')
+        or request_data.get('reviewer_email')
+        or ''
+    )
+    return None, str(reviewer_name).strip(), str(reviewer_email).strip()
+
+
+def send_questionnaire_review_notification(questionnaire):
+    if questionnaire.status == ApplicantQuestionnaire.Status.APPROVED:
+        title = 'Анкета принята'
+        body = 'Ваша анкета успешно проверена и принята.'
+    elif questionnaire.status == ApplicantQuestionnaire.Status.REJECTED:
+        title = 'Анкета требует правок'
+        body = 'Ваша анкета не принята. Откройте анкету, чтобы посмотреть комментарий менеджера.'
+    else:
+        return
+
+    send_push_to_user(
+        user=questionnaire.user,
+        title=title,
+        body=body,
+        notification_type='questionnaire_review',
+        related_object_type='applicant_questionnaire',
+        related_object_id=questionnaire.id,
+    )
+
+
+def review_questionnaire(questionnaire, status_value, request=None, reviewer=None, comment=''):
+    allowed_statuses = {
+        ApplicantQuestionnaire.Status.APPROVED,
+        ApplicantQuestionnaire.Status.REJECTED,
+        ApplicantQuestionnaire.Status.SUBMITTED,
+        ApplicantQuestionnaire.Status.UPDATED,
+        ApplicantQuestionnaire.Status.DRAFT,
+    }
+    if status_value not in allowed_statuses:
+        return {'status': 'Invalid questionnaire status.'}
+    if status_value == ApplicantQuestionnaire.Status.REJECTED and not str(comment or '').strip():
+        return {'comment': 'Укажите причину отклонения анкеты.'}
+
+    reviewer_obj, reviewer_name, reviewer_email = resolve_questionnaire_reviewer_metadata(
+        request=request,
+        reviewer=reviewer,
+    )
+    questionnaire.status = status_value
+    questionnaire.reviewed_by = reviewer_obj
+    questionnaire.reviewed_by_name = reviewer_name
+    questionnaire.reviewed_by_email = reviewer_email
+    questionnaire.reviewed_at = timezone.now() if status_value in {
+        ApplicantQuestionnaire.Status.APPROVED,
+        ApplicantQuestionnaire.Status.REJECTED,
+    } else None
+    questionnaire.review_comment = '' if status_value == ApplicantQuestionnaire.Status.APPROVED else str(comment or '').strip()
+    questionnaire.manager_sl_sync_status = 'pending'
+    questionnaire.save(
+        update_fields=[
+            'status',
+            'reviewed_by',
+            'reviewed_by_name',
+            'reviewed_by_email',
+            'reviewed_at',
+            'review_comment',
+            'manager_sl_sync_status',
+            'updated_at',
+        ]
+    )
+    sync_questionnaire_to_manager_sl(questionnaire, request=request)
+    send_questionnaire_review_notification(questionnaire)
+    return None
 
 
 class MyQuestionnaireView(APIView):
@@ -184,6 +274,71 @@ class ServiceQuestionnaireRegenerateDocumentView(APIView):
             )
         questionnaire.generate_document()
         questionnaire.save(update_fields=['generated_document', 'generated_document_at', 'manager_sl_sync_status', 'updated_at'])
+        serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
+        return Response(serializer.data)
+
+
+class ServiceQuestionnaireApproveView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, questionnaire_id):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        questionnaire = ApplicantQuestionnaire.objects.select_related('user', 'reviewed_by').filter(pk=questionnaire_id).first()
+        if not questionnaire:
+            return Response({'detail': 'Questionnaire not found.'}, status=status.HTTP_404_NOT_FOUND)
+        error = review_questionnaire(
+            questionnaire,
+            ApplicantQuestionnaire.Status.APPROVED,
+            request=request,
+            reviewer=request.user,
+        )
+        if error:
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
+        return Response(serializer.data)
+
+
+class ServiceQuestionnaireRejectView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, questionnaire_id):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        questionnaire = ApplicantQuestionnaire.objects.select_related('user', 'reviewed_by').filter(pk=questionnaire_id).first()
+        if not questionnaire:
+            return Response({'detail': 'Questionnaire not found.'}, status=status.HTTP_404_NOT_FOUND)
+        error = review_questionnaire(
+            questionnaire,
+            ApplicantQuestionnaire.Status.REJECTED,
+            request=request,
+            reviewer=request.user,
+            comment=request.data.get('comment') or request.data.get('review_comment') or '',
+        )
+        if error:
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
+        return Response(serializer.data)
+
+
+class ServiceQuestionnaireStatusView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def patch(self, request, questionnaire_id):
+        if not has_manager_or_service_access(request):
+            return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
+        questionnaire = ApplicantQuestionnaire.objects.select_related('user', 'reviewed_by').filter(pk=questionnaire_id).first()
+        if not questionnaire:
+            return Response({'detail': 'Questionnaire not found.'}, status=status.HTTP_404_NOT_FOUND)
+        error = review_questionnaire(
+            questionnaire,
+            request.data.get('status'),
+            request=request,
+            reviewer=request.user,
+            comment=request.data.get('comment') or request.data.get('review_comment') or '',
+        )
+        if error:
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
         serializer = ApplicantQuestionnaireSerializer(questionnaire, context={'request': request})
         return Response(serializer.data)
 

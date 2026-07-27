@@ -1,17 +1,17 @@
-from django.utils import timezone
 from django.conf import settings
+from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.views import APIView
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.accounts.models import is_manager_user
 from apps.applications.models import ApplicationFile
 from apps.notifications.services import send_push_to_user
 
-from .models import RequiredDocumentType, UserDocument
 from .manager_sl_sync import sync_user_document_to_manager_sl
+from .models import RequiredDocumentType, UserDocument
 from .serializers import MyDocumentSerializer, RequiredDocumentTypeSerializer, UserDocumentUploadSerializer
 
 
@@ -69,20 +69,57 @@ def has_manager_or_service_access(request):
     return bool(request.user and request.user.is_authenticated and (request.user.is_staff or is_manager_user(request.user)))
 
 
+def resolve_reviewer_metadata(request=None, reviewer=None):
+    if reviewer and getattr(reviewer, 'is_authenticated', False):
+        return (
+            reviewer,
+            reviewer.get_full_name().strip() or reviewer.email or reviewer.username,
+            reviewer.email or '',
+        )
+
+    request_data = getattr(request, 'data', {}) if request is not None else {}
+    reviewer_name = (
+        request_data.get('reviewed_by_name')
+        or request_data.get('manager_name')
+        or request_data.get('reviewer_name')
+        or ''
+    )
+    reviewer_email = (
+        request_data.get('reviewed_by_email')
+        or request_data.get('manager_email')
+        or request_data.get('reviewer_email')
+        or ''
+    )
+    return None, str(reviewer_name).strip(), str(reviewer_email).strip()
+
+
 def review_user_document(document, status_value, comment='', reviewer=None, request=None):
     if status_value == UserDocument.Status.REJECTED and not str(comment or '').strip():
         return {'comment': 'Укажите причину отказа.'}
     if status_value not in {UserDocument.Status.APPROVED, UserDocument.Status.REJECTED, UserDocument.Status.PENDING}:
         return {'status': 'Invalid document status.'}
 
+    reviewer_obj, reviewer_name, reviewer_email = resolve_reviewer_metadata(request=request, reviewer=reviewer)
     document.status = status_value
     document.admin_comment = '' if status_value == UserDocument.Status.APPROVED else str(comment or '').strip()
-    document.reviewed_by = reviewer if reviewer and reviewer.is_authenticated else None
+    document.reviewed_by = reviewer_obj
+    document.reviewed_by_name = reviewer_name
+    document.reviewed_by_email = reviewer_email
     document.reviewed_at = timezone.now() if status_value in {UserDocument.Status.APPROVED, UserDocument.Status.REJECTED} else None
-    document.save(update_fields=['status', 'admin_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
+    document.save(
+        update_fields=[
+            'status',
+            'admin_comment',
+            'reviewed_by',
+            'reviewed_by_name',
+            'reviewed_by_email',
+            'reviewed_at',
+            'updated_at',
+        ]
+    )
+
     if status_value in {UserDocument.Status.APPROVED, UserDocument.Status.REJECTED}:
         from apps.notifications.models import UserNotification
-        from apps.notifications.services import send_push_to_user
 
         if status_value == UserDocument.Status.APPROVED:
             title = 'Документ принят'
@@ -107,6 +144,7 @@ def review_user_document(document, status_value, comment='', reviewer=None, requ
                 related_object_type='user_document',
                 related_object_id=document.id,
             )
+
     sync_user_document_to_manager_sl(document, request=request)
     return None
 
@@ -145,13 +183,10 @@ class MyDocumentViewSet(viewsets.GenericViewSet):
         return UserDocument.objects.select_related('document_type', 'user', 'reviewed_by').filter(user=self.request.user)
 
     def get_document_rows(self):
-        types = RequiredDocumentType.objects.filter(is_active=True).select_related('service', 'country').order_by('sort_order', 'title')
-        existing = {
-            item.document_type_id: item
-            for item in self.get_queryset().filter(document_type__in=types)
-        }
+        document_types = RequiredDocumentType.objects.filter(is_active=True).select_related('service', 'country').order_by('sort_order', 'title')
+        existing = {item.document_type_id: item for item in self.get_queryset().filter(document_type__in=document_types)}
         rows = []
-        for document_type in types:
+        for document_type in document_types:
             document = existing.get(document_type.id)
             if not document:
                 document = UserDocument(
@@ -186,10 +221,10 @@ class UserDocumentReviewViewSet(viewsets.ModelViewSet):
     parser_classes = [JSONParser, FormParser, MultiPartParser]
 
     def get_queryset(self):
-        qs = UserDocument.objects.select_related('document_type', 'user', 'reviewed_by').order_by('-updated_at')
+        queryset = UserDocument.objects.select_related('document_type', 'user', 'reviewed_by').order_by('-updated_at')
         if is_manager_user(self.request.user):
-            return qs
-        return qs.filter(user=self.request.user)
+            return queryset
+        return queryset.filter(user=self.request.user)
 
     @action(detail=True, methods=['post'], url_path='review')
     def review(self, request, pk=None):
@@ -215,7 +250,7 @@ class UserDocumentApproveView(APIView):
     def post(self, request, document_id):
         if not has_manager_or_service_access(request):
             return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
-        document = UserDocument.objects.select_related('document_type', 'user').filter(pk=document_id).first()
+        document = UserDocument.objects.select_related('document_type', 'user', 'reviewed_by').filter(pk=document_id).first()
         if not document:
             return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
         error = review_user_document(document, UserDocument.Status.APPROVED, reviewer=request.user, request=request)
@@ -230,7 +265,7 @@ class UserDocumentRejectView(APIView):
     def post(self, request, document_id):
         if not has_manager_or_service_access(request):
             return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
-        document = UserDocument.objects.select_related('document_type', 'user').filter(pk=document_id).first()
+        document = UserDocument.objects.select_related('document_type', 'user', 'reviewed_by').filter(pk=document_id).first()
         if not document:
             return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
         error = review_user_document(
@@ -251,7 +286,7 @@ class UserDocumentStatusView(APIView):
     def patch(self, request, document_id):
         if not has_manager_or_service_access(request):
             return Response({'detail': 'Manager or service access required.'}, status=status.HTTP_403_FORBIDDEN)
-        document = UserDocument.objects.select_related('document_type', 'user').filter(pk=document_id).first()
+        document = UserDocument.objects.select_related('document_type', 'user', 'reviewed_by').filter(pk=document_id).first()
         if not document:
             return Response({'detail': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)
         error = review_user_document(
@@ -294,21 +329,17 @@ class ExternalDocumentReviewView(APIView):
 
         comment = str(request.data.get('admin_comment') or request.data.get('comment') or '').strip()
 
-        document = UserDocument.objects.select_related('document_type', 'user').filter(pk=document_id).first()
+        document = UserDocument.objects.select_related('document_type', 'user', 'reviewed_by').filter(pk=document_id).first()
         if document:
-            document.status = status_value
-            document.admin_comment = comment
-            document.reviewed_at = timezone.now()
-            document.save(update_fields=['status', 'admin_comment', 'reviewed_at', 'updated_at'])
+            error = review_user_document(document, status_value, comment=comment, reviewer=request.user, request=request)
+            if error:
+                return Response(error, status=status.HTTP_400_BAD_REQUEST)
             return Response(MyDocumentSerializer(document, context={'request': request}).data)
 
         application_file_id = request.data.get('application_file_id') or request.data.get('application_document_id') or document_id
         if application_file_id:
             application_file = (
-                ApplicationFile.objects
-                .select_related('application', 'application__user', 'uploaded_by')
-                .filter(pk=application_file_id)
-                .first()
+                ApplicationFile.objects.select_related('application', 'application__user', 'uploaded_by').filter(pk=application_file_id).first()
             )
             if application_file:
                 return Response(update_application_file_review(application_file, status_value, comment))

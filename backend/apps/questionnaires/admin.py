@@ -15,13 +15,28 @@ class QuestionnaireAttachmentInline(TabularInline):
 @admin.register(ApplicantQuestionnaire)
 class ApplicantQuestionnaireAdmin(ModelAdmin):
     actions = ('regenerate_documents',)
-    list_display = ('user', 'full_name', 'phone', 'citizenship', 'status', 'submitted_at', 'generated_document_at', 'manager_sl_sync_status')
-    list_filter = ('status', 'gender', 'data_processing_consent', 'manager_sl_sync_status', 'submitted_at')
+    list_display = (
+        'user',
+        'full_name',
+        'phone',
+        'citizenship',
+        'status',
+        'reviewed_by_display',
+        'reviewed_at',
+        'submitted_at',
+        'generated_document_at',
+        'manager_sl_sync_status',
+    )
+    list_filter = ('status', 'gender', 'data_processing_consent', 'manager_sl_sync_status', 'submitted_at', 'reviewed_at')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'full_name', 'phone', 'email', 'desired_program')
     readonly_fields = (
         'created_at',
         'updated_at',
         'submitted_at',
+        'reviewed_at',
+        'reviewed_by',
+        'reviewed_by_name',
+        'reviewed_by_email',
         'generated_document',
         'generated_document_at',
         'manager_sl_questionnaire_id',
@@ -30,6 +45,10 @@ class ApplicantQuestionnaireAdmin(ModelAdmin):
         'manager_sl_sync_error',
     )
     inlines = [QuestionnaireAttachmentInline]
+
+    @admin.display(description='Проверил')
+    def reviewed_by_display(self, obj):
+        return obj.reviewed_by_display or '-'
 
     @admin.action(description='Перегенерировать документы анкет')
     def regenerate_documents(self, request, queryset):

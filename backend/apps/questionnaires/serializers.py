@@ -90,6 +90,10 @@ class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
     document_file = serializers.SerializerMethodField()
     missing_required_fields = serializers.SerializerMethodField()
     missing_required_field_labels = serializers.SerializerMethodField()
+    reviewed_by_id = serializers.IntegerField(source='reviewed_by.id', allow_null=True, required=False)
+    reviewed_by_name = serializers.CharField(required=False, allow_blank=True)
+    reviewed_by_email = serializers.CharField(required=False, allow_blank=True)
+    reviewed_by_display = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = ApplicantQuestionnaire
@@ -151,6 +155,12 @@ class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
             'referral_source',
             'data_processing_consent',
             'submitted_at',
+            'reviewed_at',
+            'reviewed_by_id',
+            'reviewed_by_name',
+            'reviewed_by_email',
+            'reviewed_by_display',
+            'review_comment',
             'attachments',
             'generated_document_url',
             'document_file',
@@ -159,7 +169,24 @@ class ApplicantQuestionnaireSerializer(serializers.ModelSerializer):
             'missing_required_field_labels',
             'updated_at',
         )
-        read_only_fields = ('id', 'status', 'submitted_at', 'attachments', 'generated_document_url', 'document_file', 'generated_document_at', 'missing_required_fields', 'missing_required_field_labels', 'updated_at')
+        read_only_fields = (
+            'id',
+            'status',
+            'submitted_at',
+            'reviewed_at',
+            'reviewed_by_id',
+            'reviewed_by_name',
+            'reviewed_by_email',
+            'reviewed_by_display',
+            'review_comment',
+            'attachments',
+            'generated_document_url',
+            'document_file',
+            'generated_document_at',
+            'missing_required_fields',
+            'missing_required_field_labels',
+            'updated_at',
+        )
 
     def get_face_photo(self, obj):
         return absolute_file_url(self.context.get('request'), obj.face_photo)
@@ -189,6 +216,11 @@ class ApplicantQuestionnaireUpdateSerializer(serializers.ModelSerializer):
             'updated_at',
             'submitted_at',
             'status',
+            'reviewed_at',
+            'reviewed_by',
+            'reviewed_by_name',
+            'reviewed_by_email',
+            'review_comment',
             'manager_sl_questionnaire_id',
             'manager_sl_document_url',
             'manager_sl_sync_status',

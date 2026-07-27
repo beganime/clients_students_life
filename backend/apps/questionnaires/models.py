@@ -133,6 +133,18 @@ class ApplicantQuestionnaire(TimeStampedModel):
     referral_source = models.CharField('Откуда узнали о Student’s Life', max_length=120, blank=True)
     data_processing_consent = models.BooleanField('Согласие на обработку данных', default=False)
     submitted_at = models.DateTimeField('Дата заполнения', null=True, blank=True)
+    reviewed_at = models.DateTimeField('Дата проверки', null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_applicant_questionnaires',
+        verbose_name='Проверил',
+    )
+    reviewed_by_name = models.CharField('Имя проверившего', max_length=255, blank=True)
+    reviewed_by_email = models.EmailField('Email проверившего', blank=True)
+    review_comment = models.TextField('Комментарий менеджера', blank=True)
 
     manager_sl_questionnaire_id = models.CharField('Manager SL questionnaire ID', max_length=100, blank=True)
     manager_sl_document_url = models.URLField('Manager SL generated document URL', max_length=1000, blank=True)
@@ -154,11 +166,23 @@ class ApplicantQuestionnaire(TimeStampedModel):
     def __str__(self):
         return self.full_name or self.user.get_full_name() or self.user.email or str(self.user)
 
+    @property
+    def reviewed_by_display(self):
+        if self.reviewed_by_id:
+            full_name = self.reviewed_by.get_full_name().strip()
+            return full_name or self.reviewed_by.email or self.reviewed_by.username
+        return self.reviewed_by_name or self.reviewed_by_email or ''
+
     def mark_submitted(self):
         self.status = self.Status.UPDATED if self.submitted_at else self.Status.SUBMITTED
         if not self.submitted_at:
             self.submitted_at = timezone.now()
         self.manager_sl_sync_status = 'pending'
+        self.reviewed_at = None
+        self.reviewed_by = None
+        self.reviewed_by_name = ''
+        self.reviewed_by_email = ''
+        self.review_comment = ''
 
     def mark_completed(self):
         self.mark_submitted()

@@ -3,11 +3,11 @@ import uuid
 
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from apps.common.models import TimeStampedModel, SortableModel
+from apps.common.models import SortableModel, TimeStampedModel
 
 
 def user_document_upload_to(instance, filename):
@@ -83,6 +83,8 @@ class UserDocument(TimeStampedModel):
         related_name='reviewed_user_documents',
         verbose_name='Проверил',
     )
+    reviewed_by_name = models.CharField('Имя проверившего', max_length=255, blank=True)
+    reviewed_by_email = models.EmailField('Email проверившего', blank=True)
     manager_sl_document_id = models.CharField('Manager SL document ID', max_length=100, blank=True)
     manager_sl_sync_status = models.CharField(
         'Manager SL sync status',
@@ -103,6 +105,13 @@ class UserDocument(TimeStampedModel):
     def __str__(self):
         return f'{self.user} — {self.document_type}'
 
+    @property
+    def reviewed_by_display(self):
+        if self.reviewed_by_id:
+            full_name = self.reviewed_by.get_full_name().strip()
+            return full_name or self.reviewed_by.email or self.reviewed_by.username
+        return self.reviewed_by_name or self.reviewed_by_email or ''
+
     def mark_uploaded(self, original_name=''):
         self.original_name = original_name[:255]
         self.status = self.Status.PENDING
@@ -110,6 +119,8 @@ class UserDocument(TimeStampedModel):
         self.uploaded_at = timezone.now()
         self.reviewed_at = None
         self.reviewed_by = None
+        self.reviewed_by_name = ''
+        self.reviewed_by_email = ''
         self.manager_sl_sync_status = 'pending'
 
 
@@ -138,8 +149,8 @@ def notify_user_document_review(sender, instance, created, **kwargs):
             title = 'Документ принят'
             body = 'Ваш документ успешно проверен и принят.'
         else:
-            title = 'Документ не подходит'
             body = 'Ваш документ не принят. Посмотрите комментарий менеджера и загрузите исправленный файл.'
+            title = 'Документ не подходит'
 
         send_push_to_user(
             user=instance.user,
