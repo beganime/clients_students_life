@@ -334,6 +334,8 @@ export type QuestionnaireAttachment = {
 };
 
 export type ApplicantQuestionnaire = {
+  academic_year?: string;
+  university_choices?: UniversityChoiceDraft[];
   id: number;
   status: 'draft' | 'completed' | 'submitted' | 'approved' | 'rejected' | 'updated';
   form_type?: 'school_student' | 'applicant';
@@ -398,6 +400,22 @@ export type ApplicantQuestionnaire = {
   missing_required_fields?: string[];
   missing_required_field_labels?: string[];
   updated_at?: string;
+};
+
+export type UniversityChoiceDraft = {
+  university_id: number;
+  university_name: string;
+  program_ids: number[];
+  program_names: string[];
+};
+
+export type OnboardingSubmissionStatus = {
+  public_id: string;
+  status: 'submitted' | 'changes_requested' | 'approved' | 'rejected';
+  review_comment?: string;
+  sl_id?: string | null;
+  submitted_at: string;
+  reviewed_at?: string | null;
 };
 
 export type HomeBanner = {

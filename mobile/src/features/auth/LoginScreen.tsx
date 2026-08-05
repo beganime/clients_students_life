@@ -27,9 +27,9 @@ export function LoginScreen({ navigation }: Props) {
   const closeAuth = () => navigation.getParent<any>()?.navigate('App');
 
   const handleLogin = async () => {
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = email.trim();
     if (!cleanEmail || !password) {
-      setStatus({ type: 'error', text: 'Введите email и пароль.' });
+      setStatus({ type: 'error', text: 'Введите SL-ID или текущий логин и пароль.' });
       return;
     }
     if (password.length < 6) {
@@ -61,21 +61,20 @@ export function LoginScreen({ navigation }: Props) {
       <RedGradientHero backgroundImage={bannerImages.profile} style={styles.heroCard}>
         <Text style={styles.title}>Вход в Student's Life</Text>
         <Text style={styles.subtitle}>
-          Войдите, чтобы сохранять заявки, писать менеджеру и быстрее оформлять новые услуги.
+          Войдите по SL-ID, который менеджер передаст после одобрения анкеты.
         </Text>
       </RedGradientHero>
 
       <AppCard style={styles.formCard}>
         <AppInput
-          label="Email"
+          label="SL-ID или текущий логин"
           value={email}
           onChangeText={text => {
             setEmail(text);
             setStatus(null);
           }}
           autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="student@example.com"
+          placeholder="SL-2027-001"
         />
         <AppInput
           label="Пароль"
@@ -94,9 +93,9 @@ export function LoginScreen({ navigation }: Props) {
         />
         {status ? <StatusBox type={status.type} text={status.text} /> : null}
         <AppButton title="Войти" onPress={handleLogin} loading={loading} />
-        <Pressable style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.registerText}>Нет аккаунта? Зарегистрироваться</Text>
-        </Pressable>
+        <Text style={styles.accountHint}>
+          Аккаунт создаётся после одобрения анкеты менеджером. Чтобы поступить через нас, закройте окно входа и заполните анкету.
+        </Text>
       </AppCard>
     </Screen>
   );
@@ -133,6 +132,5 @@ const styles = StyleSheet.create({
   toggleText: { color: colors.secondary, fontWeight: typography.weights.heavy },
   statusBox: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1 },
   statusText: { flex: 1, fontWeight: typography.weights.bold, lineHeight: 20 },
-  registerLink: { marginTop: spacing.lg, alignItems: 'center' },
-  registerText: { color: colors.secondary, fontSize: typography.body, fontWeight: typography.weights.bold },
+  accountHint: { color: colors.muted, fontSize: typography.small, lineHeight: 20, marginTop: spacing.lg, textAlign: 'center' },
 });

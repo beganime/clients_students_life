@@ -5,7 +5,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Loading } from '../components/Loading';
 import { useAuthStore } from '../store/authStore';
 
-import { ApplicationCreateScreen } from '../features/applications/ApplicationCreateScreen';
 import { MyApplicationsScreen } from '../features/applications/MyApplicationsScreen';
 import { ChatListScreen } from '../features/chat/ChatListScreen';
 import { ChatRoomScreen } from '../features/chat/ChatRoomScreen';
@@ -64,7 +63,6 @@ export function RootNavigator() {
         <Stack.Screen name="VisaInfo" component={VisaInfoScreen} options={{ title: 'Виза' }} />
         <Stack.Screen name="ToursInfo" component={ToursInfoScreen} options={{ title: 'Туры' }} />
         <Stack.Screen name="AdmissionInfo" component={AdmissionInfoScreen} options={{ title: 'Поступление' }} />
-        <Stack.Screen name="ApplicationCreate" component={ApplicationCreateScreen} options={{ title: 'Подать заявку' }} />
         <Stack.Screen name="Chat" component={ChatListScreen} options={{ title: 'Чат с менеджером' }} />
         <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'Мои заявки' }} />
         <Stack.Screen name="MyDocuments" component={MyDocumentsScreen} options={{ title: 'Мои документы' }} />

@@ -75,7 +75,7 @@ export function ProgramDetailScreen() {
       <View style={styles.actions}>
         <AppButton
           title="Подать заявку на программу"
-          onPress={() => navigation.navigate('ApplicationCreate', { universityId: program.university, programId: program.id })}
+          onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant', universityId: program.university, programId: program.id })}
         />
         {program.university ? (
           <AppButton

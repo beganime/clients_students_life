@@ -2,7 +2,6 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type AuthStackParamList = {
   Login: undefined;
-  Register: undefined;
 };
 
 export type MainTabParamList = {
@@ -35,20 +34,16 @@ export type RootStackParamList = {
 
   MyApplications: undefined;
   MyDocuments: undefined;
-  ApplicantQuestionnaire: { formType?: 'school_student' | 'applicant' } | undefined;
+  ApplicantQuestionnaire: {
+    formType?: 'school_student' | 'applicant';
+    universityId?: number;
+    programId?: number;
+  } | undefined;
   DataConsent: undefined;
   FavoriteUniversities: undefined;
   Notifications: undefined;
   Chat: undefined;
   ChatRoom: { id: number };
-
-  ApplicationCreate:
-    | {
-        serviceId?: number;
-        universityId?: number;
-        programId?: number;
-      }
-    | undefined;
 
   EditProfile: undefined;
 };
