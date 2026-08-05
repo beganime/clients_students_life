@@ -12,7 +12,6 @@ type AuthState = {
   bootstrap: () => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   managerLogin: (username: string, password: string) => Promise<void>;
-  registerAndLogin: (payload: Parameters<typeof authApi.register>[0]) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   refreshMe: () => Promise<void>;
@@ -49,13 +48,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   async managerLogin(username: string, password: string) {
     const response = await authApi.managerLogin({ username, password });
     const user = response.user || await authApi.me();
-    set({ user, isAuthenticated: true });
-  },
-
-  async registerAndLogin(payload) {
-    await authApi.register(payload);
-    await authApi.login({ username: payload.email, password: payload.password });
-    const user = await authApi.me();
     set({ user, isAuthenticated: true });
   },
 

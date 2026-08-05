@@ -48,13 +48,13 @@ export function ProfileScreen() {
           <Text style={styles.guestTitle}>Гостевой режим</Text>
           <Text style={styles.guestText}>
             Можно смотреть услуги, страны, университеты и новости. Для заявок, чата, избранного и
-            персональных предложений лучше войти или зарегистрироваться.
+            персональных предложений войдите по SL-ID после одобрения анкеты.
           </Text>
         </RedGradientHero>
 
         <AppCard style={styles.benefitCard}>
-          <Badge label="Преимущества аккаунта" variant="mint" icon="check" />
-          <Text style={styles.benefitTitle}>Регистрация экономит время</Text>
+          <Badge label="Поступление" variant="mint" icon="check" />
+          <Text style={styles.benefitTitle}>Аккаунт создаётся после анкеты</Text>
           <Text style={styles.benefitText}>
             Вы сможете видеть историю заявок, получать ответы менеджера, сохранять университеты и
             быстрее оформлять новые услуги.
@@ -63,7 +63,7 @@ export function ProfileScreen() {
 
         <View style={styles.actions}>
           <AppButton title="Войти" onPress={() => navigation.navigate('Auth', { screen: 'Login' })} />
-          <AppButton title="Зарегистрироваться" variant="outline" onPress={() => navigation.navigate('Auth', { screen: 'Register' })} />
+          <AppButton title="Заполнить анкету" variant="outline" onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} />
           <AppButton title="Политика конфиденциальности" variant="ghost" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
         </View>
       </Screen>
@@ -122,7 +122,7 @@ export function ProfileScreen() {
         <ProfileMenuItem icon="document" title={isManager ? 'Заявки клиентов' : 'Мои заявки'} onPress={() => navigation.navigate('MyApplications')} />
         <ProfileMenuItem icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
         <ProfileMenuItem icon="application" title="Анкета абитуриента" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
-        {!isManager ? <ProfileMenuItem icon="application" title="Подать новую заявку" onPress={() => navigation.navigate('ApplicationCreate')} /> : null}
+        {!isManager ? <ProfileMenuItem icon="application" title="Заполнить анкету" onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} /> : null}
         <ProfileMenuItem icon="chat" title={isManager ? 'Входящие чаты клиентов' : 'Чат с менеджером'} onPress={() => navigation.navigate('Chat')} />
         <ProfileMenuItem icon="services" title="Настройки" onPress={() => navigation.navigate('Settings')} />
         <ProfileMenuItem icon="lock" title="Согласие на обработку данных" onPress={() => navigation.navigate('DataConsent')} />
@@ -136,7 +136,7 @@ export function ProfileScreen() {
         primaryText="Открыть чат"
         onPrimaryPress={() => navigation.navigate('Chat')}
         secondaryText="Новая заявка"
-        onSecondaryPress={() => navigation.navigate('ApplicationCreate')}
+        onSecondaryPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
       />
       <AppButton title="Выйти" variant="danger" onPress={confirmLogout} style={styles.logoutButton} />
     </Screen>

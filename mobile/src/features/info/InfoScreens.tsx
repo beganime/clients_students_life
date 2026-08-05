@@ -101,7 +101,7 @@ function InfoScreen({ data }: { data: InfoData }) {
         title="Обсудить с менеджером"
         description="Оставьте заявку или напишите в чат, чтобы получить персональную консультацию."
         primaryText="Оставить заявку"
-        onPrimaryPress={() => navigation.navigate('ApplicationCreate')}
+        onPrimaryPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
         secondaryText="Открыть чат"
         onSecondaryPress={() => navigation.navigate('Chat')}
       />

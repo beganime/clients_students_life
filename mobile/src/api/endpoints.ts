@@ -14,8 +14,6 @@ import {
   NewsPost,
   PaginatedResponse,
   Program,
-  ApplicantQuestionnaire,
-  QuestionnaireAttachment,
   Service,
   StaffProfile,
   University,
@@ -32,48 +30,6 @@ export type LoginResponse = {
   access: string;
   refresh: string;
   user?: UserMe;
-};
-
-export type RegisterPayload = {
-  email: string;
-  first_name: string;
-  last_name: string;
-  password: string;
-  password_confirm: string;
-  phone?: string;
-  whatsapp?: string;
-  country?: string;
-  city?: string;
-  citizenship?: string;
-  language?: string;
-};
-
-export type ApplicationCreatePayload = {
-  service?: number | null;
-  idempotency_key?: string;
-  full_name: string;
-  birth_date?: string;
-  citizenship?: string;
-  country?: string;
-  city?: string;
-  phone?: string;
-  whatsapp?: string;
-  telegram?: string;
-  email?: string;
-  preferred_contact_method?: 'phone' | 'whatsapp' | 'telegram' | 'email';
-  target_country?: number | null;
-  target_country_name?: string;
-  target_city?: number | null;
-  target_city_name?: string;
-  target_university?: number | null;
-  target_university_name?: string;
-  target_program?: number | null;
-  target_program_title?: string;
-  education_level?: string;
-  specialty?: string;
-  study_language?: string;
-  start_year?: string;
-  comment?: string;
 };
 
 export type UniversityFilters = {
@@ -154,11 +110,6 @@ export const authApi = {
   async managerLogin(payload: LoginPayload) {
     const { data } = await apiClient.post<LoginResponse>('/accounts/staff-login/', payload);
     await tokenStorage.setTokens(data.access, data.refresh);
-    return data;
-  },
-
-  async register(payload: RegisterPayload) {
-    const { data } = await apiClient.post<UserMe>('/accounts/register/', payload);
     return data;
   },
 
@@ -289,14 +240,6 @@ export const contentApi = {
 };
 
 export const applicationsApi = {
-  async createApplication(payload: ApplicationCreatePayload) {
-    const idempotencyKey = payload.idempotency_key;
-    const { data } = await apiClient.post<Application>('/applications/', payload, {
-      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
-    });
-    return data;
-  },
-
   async getMyApplications() {
     const { data } = await apiClient.get<PaginatedResponse<Application>>('/applications/my/');
     return data.results;
@@ -328,48 +271,6 @@ export const documentsApi = {
     appendUploadFile(formData, 'file', file);
 
     return uploadFormData<MyDocument>(`/documents/my-documents/${documentTypeId}/upload/`, formData);
-  },
-};
-
-export const questionnaireApi = {
-  async getMyQuestionnaire() {
-    const { data } = await apiClient.get<ApplicantQuestionnaire>('/questionnaire/my-application-form/');
-    return data;
-  },
-
-  async saveMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
-    if (payload instanceof FormData) {
-      return uploadFormData<ApplicantQuestionnaire>('/questionnaire/my-application-form/', payload, 'patch');
-    }
-    const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my-application-form/', payload);
-    return data;
-  },
-
-  async saveMyQuestionnaireDraft(payload: Partial<ApplicantQuestionnaire> | FormData) {
-    if (payload instanceof FormData) {
-      return uploadFormData<ApplicantQuestionnaire>('/questionnaire/my-application-form/draft/', payload, 'patch');
-    }
-    const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my-application-form/draft/', payload);
-    return data;
-  },
-
-  async submitMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
-    if (payload instanceof FormData) {
-      return uploadFormData<ApplicantQuestionnaire>('/questionnaire/my-application-form/submit/', payload);
-    }
-    const { data } = await apiClient.post<ApplicantQuestionnaire>('/questionnaire/my-application-form/submit/', payload);
-    return data;
-  },
-
-  async regenerateMyQuestionnaireDocument() {
-    const { data } = await apiClient.post<ApplicantQuestionnaire>('/questionnaire/my-application-form/regenerate-document/');
-    return data;
-  },
-
-  async uploadAttachment(file: UploadableFile) {
-    const formData = new FormData();
-    appendUploadFile(formData, 'file', file);
-    return uploadFormData<QuestionnaireAttachment>('/questionnaire/my/attachments/', formData);
   },
 };
 

@@ -66,7 +66,7 @@ export function HomeScreen() {
           <AppButton
             title="Оставить заявку"
             variant="outline"
-            onPress={() => navigation.navigate('ApplicationCreate')}
+            onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
           />
         </View>
       </RedGradientHero>
@@ -93,23 +93,24 @@ export function HomeScreen() {
               style={styles.documentsButton}
             />
           </AppCard>
-          <AppCard style={styles.documentsCard}>
-            <View style={styles.documentsIcon}>
-              <SvgIcon name="application" size={23} color={colors.secondary} />
-            </View>
-            <View style={styles.documentsTextBox}>
-              <Text style={styles.documentsTitle}>Анкета абитуриента</Text>
-              <Text style={styles.documentsText}>Заполните данные для подготовки документов</Text>
-            </View>
-            <AppButton
-              title="Открыть анкету"
-              variant="outline"
-              onPress={() => navigation.navigate('ApplicantQuestionnaire')}
-              style={styles.documentsButton}
-            />
-          </AppCard>
         </>
       ) : null}
+
+      <AppCard style={styles.documentsCard}>
+        <View style={styles.documentsIcon}>
+          <SvgIcon name="application" size={23} color={colors.secondary} />
+        </View>
+        <View style={styles.documentsTextBox}>
+          <Text style={styles.documentsTitle}>Поступить через нас</Text>
+          <Text style={styles.documentsText}>Заполните анкету без предварительной регистрации</Text>
+        </View>
+        <AppButton
+          title="Заполнить анкету"
+          variant="outline"
+          onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+          style={styles.documentsButton}
+        />
+      </AppCard>
 
       <AppCard style={styles.schoolCard}>
         <View style={styles.documentsIcon}>
@@ -197,11 +198,10 @@ export function HomeScreen() {
       </View>
 
       <AppCard style={styles.registerCard}>
-        <Badge label="Личный кабинет" variant="mint" icon="check" />
-        <Text style={styles.registerTitle}>Аккаунт ускоряет оформление</Text>
+        <Badge label="Поступление" variant="mint" icon="check" />
+        <Text style={styles.registerTitle}>Сначала анкета, затем аккаунт</Text>
         <Text style={styles.registerText}>
-          Зарегистрированные клиенты видят историю заявок, чаты, персональные предложения и скидки
-          в одном месте.
+          Регистрация заранее не нужна. После проверки анкеты менеджер передаст SL-ID и данные для входа.
         </Text>
       </AppCard>
 
@@ -212,7 +212,7 @@ export function HomeScreen() {
         primaryText="Открыть чат"
         onPrimaryPress={() => navigation.navigate('Chat')}
         secondaryText="Оставить заявку"
-        onSecondaryPress={() => navigation.navigate('ApplicationCreate')}
+        onSecondaryPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
       />
     </Screen>
   );

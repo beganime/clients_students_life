@@ -1,84 +1,32 @@
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
-import { appendUploadFile, questionnaireApi, UploadableFile } from '../../api/endpoints';
+import { educationCatalogApi } from '../../api/educationCatalog';
+import {
+  buildOnboardingPayload,
+  onboardingApi,
+  onboardingSubmissionStorage,
+  StoredOnboardingSubmission,
+} from '../../api/onboarding';
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
 import { Badge } from '../../components/Badge';
-import { ErrorState } from '../../components/ErrorState';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
 import { colors, radius, spacing, typography } from '../../constants/colors';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
-import { ApplicantQuestionnaire } from '../../types/api';
+import { ApplicantQuestionnaire, OnboardingSubmissionStatus, Program, UniversityChoiceDraft } from '../../types/api';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
-  clearOfflineQuestionnaireDraft,
   loadOfflineQuestionnaireDraft,
   saveOfflineQuestionnaireDraft,
 } from '../../utils/offlineStorage';
-import { getMediaUrl } from '../../utils/media';
-import { cacheLocalUploadFile } from '../../utils/localMediaCache';
-
-const TEXT_FIELDS: Array<keyof ApplicantQuestionnaire> = [
-  'form_type',
-  'full_name',
-  'birth_date',
-  'gender',
-  'citizenship',
-  'marital_status',
-  'residence_country',
-  'residence_region',
-  'residence_city',
-  'residence_street',
-  'residence_house',
-  'residence_postal_code',
-  'passport_number',
-  'passport_issued_by',
-  'passport_issue_date',
-  'passport_expiry_date',
-  'phone',
-  'email',
-  'extra_phone',
-  'imo',
-  'telegram',
-  'preferred_contact_method',
-  'parent_full_name',
-  'parent_relation',
-  'parent_contacts',
-  'parent_workplace',
-  'family_members',
-  'education_level',
-  'school_class',
-  'school_name',
-  'school_country',
-  'school_city',
-  'graduation_year',
-  'education_status',
-  'desired_program',
-  'admission_goal',
-  'desired_city',
-  'desired_country',
-  'desired_language',
-  'desired_education_level',
-  'admission_urgency',
-  'has_visa',
-  'visa_country',
-  'visa_city',
-  'visa_valid_until',
-  'has_international_passport',
-  'hobbies',
-  'applicant_comment',
-  'referral_source',
-];
 
 const EDUCATION_LEVELS = ['Учусь в школе', 'Среднее общее образование', 'Среднее специальное образование', 'Среднее профессиональное образование', 'Бакалавриат', 'Специалитет', 'Магистратура', 'Другое'];
 const SCHOOL_CLASSES = ['6 класс', '7 класс', '8 класс', '9 класс', '10 класс', '11 класс', '12 класс'];
@@ -150,19 +98,17 @@ const QUESTIONNAIRE_FIELD_LABELS: Record<string, string> = {
 export function ApplicantQuestionnaireScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const queryClient = useQueryClient();
   const { isOnline } = useNetworkStatus();
   const initialFormType = route.params?.formType === 'school_student' ? 'school_student' : 'applicant';
-  const [form, setForm] = useState<Partial<ApplicantQuestionnaire>>({ form_type: initialFormType });
-  const [facePhoto, setFacePhoto] = useState<UploadableFile | null>(null);
+  const [form, setForm] = useState<Partial<ApplicantQuestionnaire>>({
+    form_type: initialFormType,
+    academic_year: String(new Date().getFullYear() + 1),
+    university_choices: [],
+  });
   const [offlineDraftSavedAt, setOfflineDraftSavedAt] = useState<string | null>(null);
   const [offlineDraftChecked, setOfflineDraftChecked] = useState(false);
-
-  const questionnaireQuery = useQuery({
-    queryKey: ['my-questionnaire'],
-    queryFn: questionnaireApi.getMyQuestionnaire,
-    staleTime: 1000 * 60 * 5,
-  });
+  const [storedSubmission, setStoredSubmission] = useState<StoredOnboardingSubmission | null>(null);
+  const [submissionStatus, setSubmissionStatus] = useState<OnboardingSubmissionStatus | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -181,10 +127,13 @@ export function ApplicantQuestionnaireScreen() {
   }, []);
 
   useEffect(() => {
-    if (questionnaireQuery.data && offlineDraftChecked && !offlineDraftSavedAt) {
-      setForm({ form_type: initialFormType, ...questionnaireQuery.data });
-    }
-  }, [questionnaireQuery.data, offlineDraftChecked, offlineDraftSavedAt]);
+    onboardingSubmissionStorage.get().then(stored => {
+      setStoredSubmission(stored);
+      if (stored) {
+        onboardingApi.getStatus(stored).then(setSubmissionStatus).catch(() => undefined);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (route.params?.formType) {
@@ -197,42 +146,22 @@ export function ApplicantQuestionnaireScreen() {
   }, [route.params?.formType]);
 
   const saveMutation = useMutation({
-    mutationFn: (saveMode: QuestionnaireSaveMode) =>
-      saveMode === 'draft'
-        ? questionnaireApi.saveMyQuestionnaireDraft(buildPayload(form, facePhoto, saveMode))
-        : questionnaireApi.submitMyQuestionnaire(buildPayload(form, facePhoto, saveMode)),
-    onSuccess: async (data, saveMode) => {
-      setFacePhoto(null);
-      setForm(data);
-      setOfflineDraftSavedAt(null);
-      await clearOfflineQuestionnaireDraft();
-      queryClient.setQueryData(['my-questionnaire'], data);
-      if (saveMode === 'draft') {
-        Alert.alert('Черновик сохранён', 'Анкету можно продолжить заполнять позже.');
-      } else {
-        Alert.alert('Анкета отправлена', 'Данные отправлены менеджеру на проверку.');
+    mutationFn: async () => {
+      const payload = buildOnboardingPayload(form);
+      if (storedSubmission && storedSubmission.kind === payload.kind && submissionStatus?.status === 'changes_requested') {
+        return onboardingApi.resubmit(storedSubmission, payload);
       }
+      return onboardingApi.submit(payload);
+    },
+    onSuccess: async data => {
+      const stored = await onboardingSubmissionStorage.get();
+      setStoredSubmission(stored);
+      setSubmissionStatus(data);
+      const draft = await saveOfflineQuestionnaireDraft(form);
+      setOfflineDraftSavedAt(draft.saved_at);
+      Alert.alert('Анкета отправлена', 'Данные отправлены менеджеру на проверку. Статус можно смотреть на этом экране.');
     },
     onError: error => Alert.alert('Не удалось сохранить анкету', formatQuestionnaireError(error)),
-  });
-
-  const regenerateMutation = useMutation({
-    mutationFn: questionnaireApi.regenerateMyQuestionnaireDocument,
-    onSuccess: data => {
-      setForm(data);
-      queryClient.setQueryData(['my-questionnaire'], data);
-      Alert.alert('Документ обновлён', 'Документ анкеты перегенерирован по актуальным данным.');
-    },
-    onError: error => Alert.alert('Не удалось обновить документ', formatQuestionnaireError(error)),
-  });
-
-  const attachmentMutation = useMutation({
-    mutationFn: questionnaireApi.uploadAttachment,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-questionnaire'] });
-      Alert.alert('Файл загружен', 'Файл прикреплён к черновику анкеты. На проверку он уйдёт после отправки анкеты.');
-    },
-    onError: error => Alert.alert('Не удалось загрузить файл', getApiErrorMessage(error)),
   });
 
   const update = (field: keyof ApplicantQuestionnaire, value: string | boolean | string[] | ApplicantQuestionnaire['languages']) => {
@@ -261,71 +190,38 @@ export function ApplicantQuestionnaireScreen() {
     update('languages', current.map(item => item.language === language ? { ...item, level } : item));
   };
 
-  const pickFacePhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Нет доступа', 'Разрешите доступ к фото, чтобы загрузить изображение лица.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.82,
-    });
-
-    if (!result.canceled && result.assets[0]?.uri) {
-      const asset = result.assets[0];
-      const file = {
-        uri: asset.uri,
-        name: asset.fileName || `face-photo-${Date.now()}.jpg`,
-        type: asset.mimeType || 'image/jpeg',
-        file: (asset as any).file,
-      };
-      await cacheLocalUploadFile(file, 'questionnaire');
-      setFacePhoto(file);
-    }
-  };
-
-  const pickAttachment = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
-      multiple: false,
-      copyToCacheDirectory: true,
-    });
-    if (result.canceled || !result.assets?.[0]) return;
-    const asset = result.assets[0];
-    const file = {
-      uri: asset.uri,
-      name: asset.name || `questionnaire-file-${Date.now()}`,
-      type: asset.mimeType || 'application/octet-stream',
-      file: (asset as any).file,
-    };
-    await cacheLocalUploadFile(file, 'questionnaire');
-    attachmentMutation.mutate(file);
-  };
-
-  const photoUrl = useMemo(
-    () => facePhoto?.uri || getMediaUrl(form.face_photo || null),
-    [facePhoto?.uri, form.face_photo],
-  );
-
   const handleSaveDraft = async () => {
-    if (!isOnline) {
-      const draft = await saveOfflineQuestionnaireDraft(form);
-      setForm(draft.form);
-      setOfflineDraftSavedAt(draft.saved_at);
-      Alert.alert('Черновик сохранён offline', 'Данные будут синхронизированы после подключения к интернету.');
-      return;
-    }
-    saveMutation.mutate('draft');
+    const draft = await saveOfflineQuestionnaireDraft(form);
+    setForm(draft.form);
+    setOfflineDraftSavedAt(draft.saved_at);
+    Alert.alert('Черновик сохранён', 'Черновик хранится только на этом устройстве и не отправлен на сервер.');
   };
 
   const handleSave = async () => {
-    if (!form.data_processing_consent) {
-      Alert.alert('Нужно согласие', 'Перед сохранением анкеты подтвердите согласие на обработку персональных данных.');
+    const currentKind = form.form_type === 'school_student' ? 'school_student' : 'applicant';
+    if (
+      storedSubmission?.kind === currentKind
+      && submissionStatus
+      && submissionStatus.status !== 'changes_requested'
+    ) {
+      Alert.alert('Анкета уже отправлена', 'Дождитесь решения менеджера. Повторная отправка не создастся.');
       return;
+    }
+    if (!form.data_processing_consent) {
+      Alert.alert('Нужно согласие', 'Перед отправкой анкеты подтвердите согласие на обработку персональных данных.');
+      return;
+    }
+    if (!form.full_name?.trim() || !form.phone?.trim() || !Number(form.academic_year)) {
+      Alert.alert('Не хватает данных', 'Укажите ФИО, телефон и год поступления.');
+      return;
+    }
+    if (form.form_type !== 'school_student') {
+      const choices = form.university_choices || [];
+      const programCount = new Set(choices.flatMap(item => item.program_ids)).size;
+      if (choices.length < 3 || choices.length > 5 || programCount < 3 || programCount > 6 || choices.some(item => item.program_ids.length === 0)) {
+        Alert.alert('Проверьте выбор', 'Нужно выбрать от 3 до 5 вузов, минимум одну программу в каждом вузе и от 3 до 6 программ всего.');
+        return;
+      }
     }
     if (!isOnline) {
       const nextForm = { ...form, data_processing_consent: true };
@@ -335,7 +231,7 @@ export function ApplicantQuestionnaireScreen() {
       Alert.alert('Анкета сохранена offline', 'После восстановления интернета нажмите «Синхронизировать».');
       return;
     }
-    saveMutation.mutate('submitted');
+    saveMutation.mutate();
   };
 
   const handleSyncOfflineDraft = () => {
@@ -343,11 +239,19 @@ export function ApplicantQuestionnaireScreen() {
       Alert.alert('Нет интернета', 'Синхронизация будет доступна после подключения.');
       return;
     }
-    saveMutation.mutate(form.data_processing_consent ? 'submitted' : 'draft');
+    if (!form.data_processing_consent) {
+      Alert.alert('Нужно согласие', 'Подтвердите согласие перед отправкой анкеты.');
+      return;
+    }
+    const currentKind = form.form_type === 'school_student' ? 'school_student' : 'applicant';
+    if (storedSubmission?.kind === currentKind && submissionStatus?.status !== 'changes_requested') {
+      Alert.alert('Анкета уже отправлена', 'Синхронизация доступна после возврата анкеты менеджером на исправление.');
+      return;
+    }
+    saveMutation.mutate();
   };
 
-  const isEmptyForm = Object.keys(form).length === 0;
-  if (!offlineDraftChecked || (questionnaireQuery.isLoading && isEmptyForm && !offlineDraftSavedAt)) {
+  if (!offlineDraftChecked) {
     return (
       <Screen scroll style={styles.screen}>
         <LoadingSkeleton rows={6} height={120} />
@@ -355,23 +259,34 @@ export function ApplicantQuestionnaireScreen() {
     );
   }
 
-  if (questionnaireQuery.isError && !offlineDraftSavedAt && isEmptyForm) {
-    return (
-      <Screen scroll style={styles.screen}>
-        <ErrorState onAction={() => questionnaireQuery.refetch()} />
-      </Screen>
-    );
-  }
-
   const isSchoolStudent = form.form_type === 'school_student';
+  const activeSubmissionStatus = !storedSubmission?.kind
+    || storedSubmission.kind === (isSchoolStudent ? 'school_student' : 'applicant')
+    ? submissionStatus
+    : null;
 
   return (
-    <Screen scroll style={styles.screen} refreshing={questionnaireQuery.isRefetching} onRefresh={() => questionnaireQuery.refetch()}>
+    <Screen scroll style={styles.screen}>
       <RedGradientHero backgroundImage={bannerImages.application} style={styles.hero}>
-        <Badge label="Личный кабинет" variant="mint" icon="document" />
+        <Badge label="Без обязательной регистрации" variant="mint" icon="document" />
         <Text style={styles.heroTitle}>Анкета абитуриента</Text>
         <Text style={styles.heroText}>Заполняйте анкету как черновик. На проверку она уйдёт только после отдельной отправки.</Text>
       </RedGradientHero>
+
+      {activeSubmissionStatus ? (
+        <AppCard style={styles.statusCard}>
+          <Badge
+            label={submissionStatusLabel(activeSubmissionStatus.status)}
+            variant={activeSubmissionStatus.status === 'approved' ? 'mint' : 'neutral'}
+            icon={activeSubmissionStatus.status === 'approved' ? 'check' : 'document'}
+          />
+          <Text style={styles.statusTitle}>Статус отправленной анкеты</Text>
+          {activeSubmissionStatus.sl_id ? <Text style={styles.slId}>Ваш ID: {activeSubmissionStatus.sl_id}</Text> : null}
+          {activeSubmissionStatus.review_comment ? (
+            <Text style={styles.statusComment}>Комментарий менеджера: {activeSubmissionStatus.review_comment}</Text>
+          ) : null}
+        </AppCard>
+      ) : null}
 
       <Section title="Тип заявки">
         <ChoiceGroup
@@ -391,16 +306,15 @@ export function ApplicantQuestionnaireScreen() {
             ? 'Короткая предварительная заявка: без паспортных и визовых данных, чтобы начать подготовку заранее.'
             : 'Полная анкета для поступления с документами, паспортными данными и подготовкой пакета.'}
         </Text>
+        <Field
+          label="Год поступления"
+          value={form.academic_year || ''}
+          keyboardType="number-pad"
+          onChangeText={value => update('academic_year', value)}
+        />
       </Section>
 
       <Section title="Личные данные">
-        <Pressable style={styles.photoRow} onPress={pickFacePhoto}>
-          {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.facePhoto} /> : <View style={styles.facePhotoPlaceholder}><SvgIcon name="profile" size={34} color={colors.secondary} /></View>}
-          <View style={styles.photoTextBox}>
-            <Text style={styles.photoTitle}>Фотография лица</Text>
-            <Text style={styles.photoHint}>Загрузите фото. При выборе можно обрезать его по квадрату.</Text>
-          </View>
-        </Pressable>
         <Field label="Полное ФИО" value={form.full_name} onChangeText={value => update('full_name', value)} />
         <Field label="Дата рождения" placeholder="YYYY-MM-DD" value={form.birth_date || ''} onChangeText={value => update('birth_date', value)} />
         {!isSchoolStudent ? (
@@ -454,16 +368,9 @@ export function ApplicantQuestionnaireScreen() {
         <Field label="Год окончания" value={form.graduation_year} onChangeText={value => update('graduation_year', value)} />
       </Section>
 
-      {!isSchoolStudent ? <Section title="Достижения и дополнительные документы">
+      {!isSchoolStudent ? <Section title="Достижения">
         <Checklist options={ACHIEVEMENTS} selected={form.achievements || []} onToggle={value => toggleListValue('achievements', value)} />
-        <AppButton title="Загрузить подтверждающий файл" variant="outline" onPress={pickAttachment} loading={attachmentMutation.isPending} />
-        {form.attachments?.length ? (
-          <View style={styles.attachmentsList}>
-            {form.attachments.map(item => (
-              <Text key={item.id} style={styles.attachmentText}>{item.original_name || 'Файл'} · {new Date(item.created_at).toLocaleDateString('ru-RU')}</Text>
-            ))}
-          </View>
-        ) : null}
+        <Text style={styles.typeHint}>Подтверждающие файлы менеджер запросит после одобрения анкеты и создания аккаунта.</Text>
       </Section> : null}
 
       {!isSchoolStudent ? <Section title="Языки">
@@ -480,7 +387,14 @@ export function ApplicantQuestionnaireScreen() {
       </Section> : null}
 
       <Section title="Поступление">
-        <Field label="Желаемая программа / Вуз" maxLength={255} value={form.desired_program} onChangeText={value => update('desired_program', value)} />
+        {!isSchoolStudent ? (
+          <UniversityProgramSelection
+            value={form.university_choices || []}
+            onChange={value => setForm(prev => ({ ...prev, university_choices: value }))}
+            initialUniversityId={route.params?.universityId}
+            initialProgramId={route.params?.programId}
+          />
+        ) : null}
         <Field label="Цель поступления" multiline value={form.admission_goal} onChangeText={value => update('admission_goal', value)} />
         <Field label="Желаемый город" value={form.desired_city} onChangeText={value => update('desired_city', value)} />
         <Field label="Желаемая страна" value={form.desired_country} onChangeText={value => update('desired_country', value)} />
@@ -526,7 +440,7 @@ export function ApplicantQuestionnaireScreen() {
               ? 'Вы сейчас offline. Данные будут синхронизированы после подключения к интернету.'
               : `Найден локальный черновик от ${formatDraftDate(offlineDraftSavedAt)}.`}
           </Text>
-          {isOnline && offlineDraftSavedAt ? (
+          {isOnline && offlineDraftSavedAt && (!submissionStatus || submissionStatus.status === 'changes_requested') ? (
             <AppButton title="Синхронизировать" variant="outline" onPress={handleSyncOfflineDraft} loading={saveMutation.isPending} />
           ) : null}
         </AppCard>
@@ -535,53 +449,9 @@ export function ApplicantQuestionnaireScreen() {
       <View style={styles.actions}>
         <AppButton title="Отправить на проверку" onPress={handleSave} loading={saveMutation.isPending} />
         <AppButton title="Сохранить черновик" variant="outline" onPress={handleSaveDraft} loading={saveMutation.isPending} />
-        {form.generated_document_url || form.document_file ? (
-          <>
-            <AppButton title="Скачать документ анкеты" variant="outline" onPress={() => Linking.openURL(form.generated_document_url || form.document_file || '')} />
-            <AppButton title="Обновить документ анкеты" variant="ghost" onPress={() => regenerateMutation.mutate()} loading={regenerateMutation.isPending} />
-          </>
-        ) : null}
       </View>
     </Screen>
   );
-}
-
-type QuestionnaireSaveMode = 'draft' | 'submitted';
-
-function buildPayload(form: Partial<ApplicantQuestionnaire>, facePhoto: UploadableFile | null, saveMode: QuestionnaireSaveMode) {
-  const useFormData = Boolean(facePhoto);
-  if (!useFormData) {
-    const payload: Partial<ApplicantQuestionnaire> & { save_mode?: QuestionnaireSaveMode } = {};
-    TEXT_FIELDS.forEach(field => {
-      const value = form[field];
-      if (value !== undefined && value !== null && value !== '') {
-        (payload as Record<string, unknown>)[field] = value;
-      }
-    });
-    payload.achievements = form.achievements || [];
-    payload.languages = form.languages || [];
-    payload.help_needed = form.help_needed || [];
-    payload.data_processing_consent = Boolean(form.data_processing_consent);
-    payload.save_mode = saveMode;
-    return payload;
-  }
-
-  const data = new FormData();
-  TEXT_FIELDS.forEach(field => {
-    const value = form[field];
-    if (value !== undefined && value !== null && value !== '') {
-      data.append(field, String(value));
-    }
-  });
-  data.append('achievements', JSON.stringify(form.achievements || []));
-  data.append('languages', JSON.stringify(form.languages || []));
-  data.append('help_needed', JSON.stringify(form.help_needed || []));
-  data.append('data_processing_consent', form.data_processing_consent ? 'true' : 'false');
-  data.append('save_mode', saveMode);
-  if (facePhoto) {
-    appendUploadFile(data, 'face_photo', facePhoto);
-  }
-  return data;
 }
 
 function formatDraftDate(value: string | null) {
@@ -613,6 +483,169 @@ function formatQuestionnaireError(error: unknown) {
   }
 
   return getApiErrorMessage(error);
+}
+
+function submissionStatusLabel(status: OnboardingSubmissionStatus['status']) {
+  if (status === 'approved') return 'Анкета одобрена';
+  if (status === 'changes_requested') return 'Нужны исправления';
+  if (status === 'rejected') return 'Анкета отклонена';
+  return 'Анкета на проверке';
+}
+
+function UniversityProgramSelection({
+  value,
+  onChange,
+  initialUniversityId,
+  initialProgramId,
+}: {
+  value: UniversityChoiceDraft[];
+  onChange: (value: UniversityChoiceDraft[]) => void;
+  initialUniversityId?: number;
+  initialProgramId?: number;
+}) {
+  const [search, setSearch] = useState('');
+  const [activeUniversityId, setActiveUniversityId] = useState<number | null>(initialUniversityId || null);
+  const universitiesQuery = useQuery({
+    queryKey: ['onboarding-universities', search],
+    queryFn: () => educationCatalogApi.getUniversities({ search, limit: 20 }),
+    staleTime: 1000 * 60 * 10,
+  });
+  const initialUniversityQuery = useQuery({
+    queryKey: ['onboarding-university', initialUniversityId],
+    queryFn: () => educationCatalogApi.getUniversity(initialUniversityId!),
+    enabled: Boolean(initialUniversityId),
+    staleTime: 1000 * 60 * 30,
+  });
+  const programsQuery = useQuery({
+    queryKey: ['onboarding-programs', activeUniversityId],
+    queryFn: () => educationCatalogApi.getPrograms({ university: activeUniversityId!, limit: 100 }),
+    enabled: Boolean(activeUniversityId),
+    staleTime: 1000 * 60 * 20,
+  });
+
+  useEffect(() => {
+    const university = initialUniversityQuery.data;
+    if (!university || value.some(item => item.university_id === Number(university.id))) return;
+    onChange([
+      ...value,
+      {
+        university_id: Number(university.id),
+        university_name: university.name,
+        program_ids: [],
+        program_names: [],
+      },
+    ]);
+  }, [initialUniversityQuery.data, onChange, value]);
+
+  useEffect(() => {
+    if (!initialProgramId || !activeUniversityId || !programsQuery.data) return;
+    const program = programsQuery.data.find(item => Number(item.id) === Number(initialProgramId));
+    const choice = value.find(item => item.university_id === activeUniversityId);
+    if (!program || !choice || choice.program_ids.includes(Number(program.id))) return;
+    onChange(value.map(item => item.university_id === activeUniversityId
+      ? {
+          ...item,
+          program_ids: [...item.program_ids, Number(program.id)],
+          program_names: [...item.program_names, program.title],
+        }
+      : item));
+  }, [activeUniversityId, initialProgramId, onChange, programsQuery.data, value]);
+
+  const totalPrograms = new Set(value.flatMap(item => item.program_ids)).size;
+  const selectUniversity = (university: any) => {
+    const universityId = Number(university.id);
+    setActiveUniversityId(universityId);
+    if (value.some(item => item.university_id === universityId)) return;
+    if (value.length >= 5) {
+      Alert.alert('Лимит выбора', 'Можно выбрать не больше 5 вузов.');
+      return;
+    }
+    onChange([...value, {
+      university_id: universityId,
+      university_name: university.name,
+      program_ids: [],
+      program_names: [],
+    }]);
+  };
+  const toggleProgram = (program: Program) => {
+    if (!activeUniversityId) return;
+    const programId = Number(program.id);
+    const choice = value.find(item => item.university_id === activeUniversityId);
+    if (!choice) return;
+    const selected = choice.program_ids.includes(programId);
+    if (!selected && totalPrograms >= 6) {
+      Alert.alert('Лимит выбора', 'Можно выбрать не больше 6 программ.');
+      return;
+    }
+    onChange(value.map(item => item.university_id === activeUniversityId
+      ? {
+          ...item,
+          program_ids: selected ? item.program_ids.filter(id => id !== programId) : [...item.program_ids, programId],
+          program_names: selected ? item.program_names.filter((_, index) => item.program_ids[index] !== programId) : [...item.program_names, program.title],
+        }
+      : item));
+  };
+
+  return (
+    <View style={styles.universityPicker}>
+      <Text style={styles.subLabel}>Выберите 3–5 вузов и 3–6 программ</Text>
+      <Text style={styles.selectionCounter}>Вузов: {value.length}/5 · программ: {totalPrograms}/6</Text>
+      {value.map(choice => (
+        <View key={choice.university_id} style={styles.selectedUniversity}>
+          <Pressable style={styles.selectedUniversityMain} onPress={() => setActiveUniversityId(choice.university_id)}>
+            <Text style={styles.selectedUniversityTitle}>{choice.university_name}</Text>
+            <Text style={styles.selectedUniversityPrograms}>
+              {choice.program_names.length ? choice.program_names.join(', ') : 'Выберите минимум одну программу'}
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => {
+            onChange(value.filter(item => item.university_id !== choice.university_id));
+            if (activeUniversityId === choice.university_id) setActiveUniversityId(null);
+          }}>
+            <SvgIcon name="close" size={20} color={colors.danger} />
+          </Pressable>
+        </View>
+      ))}
+
+      <Field label="Найти вуз" value={search} onChangeText={setSearch} placeholder="Название вуза" />
+      {universitiesQuery.isLoading ? <LoadingSkeleton rows={2} height={54} /> : null}
+      <View style={styles.catalogChoices}>
+        {(universitiesQuery.data || []).map(university => (
+          <Pressable
+            key={university.id}
+            style={[
+              styles.catalogChoice,
+              value.some(item => item.university_id === Number(university.id)) && styles.catalogChoiceActive,
+            ]}
+            onPress={() => selectUniversity(university)}
+          >
+            <Text style={styles.catalogChoiceText}>{university.name}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {activeUniversityId ? (
+        <View style={styles.programPicker}>
+          <Text style={styles.subLabel}>Программы выбранного вуза</Text>
+          {programsQuery.isLoading ? <LoadingSkeleton rows={2} height={48} /> : null}
+          <View style={styles.catalogChoices}>
+            {(programsQuery.data || []).map(program => {
+              const selected = value.find(item => item.university_id === activeUniversityId)?.program_ids.includes(Number(program.id));
+              return (
+                <Pressable
+                  key={program.id}
+                  style={[styles.catalogChoice, selected && styles.catalogChoiceActive]}
+                  onPress={() => toggleProgram(program)}
+                >
+                  <Text style={styles.catalogChoiceText}>{program.title}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -672,6 +705,10 @@ const styles = StyleSheet.create({
   hero: { minHeight: 250, marginBottom: spacing.lg },
   heroTitle: { color: colors.white, fontSize: 31, lineHeight: 37, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   heroText: { color: 'rgba(255,255,255,0.92)', fontSize: typography.body, lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
+  statusCard: { marginBottom: spacing.lg, borderColor: 'rgba(13,65,109,0.22)' },
+  statusTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginTop: spacing.md },
+  slId: { color: colors.secondary, fontSize: typography.body, fontWeight: typography.weights.heavy, marginTop: spacing.sm },
+  statusComment: { color: colors.text, lineHeight: 21, marginTop: spacing.sm },
   localDraftCard: { marginBottom: spacing.lg, borderColor: 'rgba(184,32,26,0.22)', backgroundColor: 'rgba(184,32,26,0.06)' },
   localDraftTitle: { color: colors.text, fontSize: typography.body, fontWeight: typography.weights.heavy, marginBottom: 4 },
   localDraftText: { color: colors.muted, lineHeight: 20, fontWeight: typography.weights.medium },
@@ -692,6 +729,17 @@ const styles = StyleSheet.create({
   chipTextActive: { color: colors.white },
   selectBlock: { marginBottom: spacing.md },
   subLabel: { color: colors.text, fontSize: typography.small, fontWeight: typography.weights.bold, marginBottom: spacing.xs },
+  universityPicker: { gap: spacing.sm, marginBottom: spacing.md },
+  selectionCounter: { color: colors.secondary, fontWeight: typography.weights.heavy, marginBottom: spacing.xs },
+  selectedUniversity: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.surface },
+  selectedUniversityMain: { flex: 1 },
+  selectedUniversityTitle: { color: colors.text, fontWeight: typography.weights.heavy },
+  selectedUniversityPrograms: { color: colors.muted, fontSize: typography.small, lineHeight: 18, marginTop: 3 },
+  catalogChoices: { gap: spacing.xs },
+  catalogChoice: { padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.card },
+  catalogChoiceActive: { borderColor: colors.primary, backgroundColor: 'rgba(184,32,26,0.07)' },
+  catalogChoiceText: { color: colors.text, fontWeight: typography.weights.bold, lineHeight: 19 },
+  programPicker: { gap: spacing.xs, marginTop: spacing.sm },
   checkGrid: { gap: spacing.xs, marginBottom: spacing.md },
   checkItem: { minHeight: 44, borderRadius: radius.md, paddingHorizontal: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   checkItemActive: { borderColor: 'rgba(184,32,26,0.32)', backgroundColor: 'rgba(184,32,26,0.07)' },
