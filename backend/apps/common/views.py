@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.conf import settings
+from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
@@ -27,6 +29,24 @@ Users can contact Student's Life to request updates or removal of their personal
 
 DEVELOPER_NOTIFICATION_USER = 'begenchyagmurow2008@gmail.com'
 DEVELOPER_PAGE_URL = 'https://students-life.ru/developer/'
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def health(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT 1')
+            cursor.fetchone()
+    except Exception:
+        return Response({'status': 'unhealthy', 'database': 'unavailable'}, status=503)
+    return Response({
+        'status': 'ok',
+        'database': 'ok',
+        'storage': 'local',
+        'public_registration': settings.PUBLIC_REGISTRATION_ENABLED,
+        'local_chat': settings.LOCAL_CHAT_ENABLED,
+    })
 
 
 def get_active_privacy_policy():

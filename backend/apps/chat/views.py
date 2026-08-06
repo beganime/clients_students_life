@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -11,9 +12,16 @@ from .models import ChatMessage, ChatRoom
 from .serializers import ChatMessageCreateSerializer, ChatMessageSerializer, ChatRoomSerializer
 
 
+class LocalChatEnabled(permissions.BasePermission):
+    message = 'Локальный чат отключён. Используется сервис Akylchat.'
+
+    def has_permission(self, request, view):
+        return settings.LOCAL_CHAT_ENABLED
+
+
 class ChatRoomViewSet(viewsets.ModelViewSet):
     serializer_class = ChatRoomSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, LocalChatEnabled]
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     filterset_fields = ('status', 'application')
     ordering_fields = ('created_at', 'updated_at')
@@ -114,7 +122,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
 class ChatMessageViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ChatMessageSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, LocalChatEnabled]
 
     def get_queryset(self):
         qs = ChatMessage.objects.select_related('room', 'sender_user', 'sender_staff')

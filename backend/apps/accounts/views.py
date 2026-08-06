@@ -1,3 +1,6 @@
+import secrets
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q
@@ -86,12 +89,68 @@ class RegisterView(generics.CreateAPIView):
     throttle_scope = 'register'
 
     def create(self, request, *args, **kwargs):
+        if not settings.PUBLIC_REGISTRATION_ENABLED:
+            return Response(
+                {
+                    'detail': (
+                        'Публичная регистрация отключена. Заполните анкету; '
+                        'аккаунт будет создан после подтверждения менеджером.'
+                    )
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         sync_mobile_client_to_manager_sl(user)
         response_serializer = UserMeSerializer(user, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProvisionClientAccountView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        expected = settings.MANAGER_SL_PROVISION_TOKEN
+        supplied = request.headers.get('Authorization', '')
+        supplied = supplied[7:].strip() if supplied.startswith('Bearer ') else ''
+        if not expected or not supplied or not secrets.compare_digest(expected, supplied):
+            return Response({'detail': 'Unauthorized.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        sl_id = str(request.data.get('sl_id') or '').strip().upper()
+        password = str(request.data.get('password') or '')
+        full_name = str(request.data.get('full_name') or '').strip()
+        email = str(request.data.get('email') or '').strip().casefold()
+        phone = str(request.data.get('phone') or '').strip()
+        if not sl_id or len(sl_id) > 32 or not sl_id.startswith('SL-'):
+            return Response({'detail': 'A valid sl_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not password or len(password) > 128:
+            return Response({'detail': 'A valid password is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not full_name or len(full_name) > 255:
+            return Response({'detail': 'A valid full_name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        parts = full_name.split(maxsplit=1)
+        defaults = {
+            'first_name': parts[0],
+            'last_name': parts[1] if len(parts) > 1 else '',
+            'email': email,
+            'is_active': True,
+        }
+        with transaction.atomic():
+            user, created = User.objects.select_for_update().get_or_create(username=sl_id, defaults=defaults)
+            if created:
+                user.set_password(password)
+                user.save(update_fields=['password'])
+            profile = ensure_client_profile(user)
+            if phone and profile.phone != phone:
+                profile.phone = phone
+                profile.save(update_fields=['phone', 'updated_at'])
+
+        return Response(
+            {'status': 'created' if created else 'exists', 'user_id': user.pk, 'sl_id': user.username},
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
 
 
 class StaffLoginView(APIView):
