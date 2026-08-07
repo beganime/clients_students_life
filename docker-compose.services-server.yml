@@ -1,4 +1,10 @@
 services:
+  db:
+    profiles: ["local-db"]
+
   backend:
     ports: !override
       - "127.0.0.1:8103:8000"
+    depends_on: !override
+      redis:
+        condition: service_healthy
