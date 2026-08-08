@@ -136,6 +136,13 @@ class ClientExam(TimeStampedModel):
             models.Index(fields=['user', 'is_active', 'exam_date']),
             models.Index(fields=['acknowledged_by_user', 'next_reminder_at']),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'manager_sl_exam_id'],
+                condition=~models.Q(manager_sl_exam_id=''),
+                name='unique_client_external_exam',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.subject} - {self.user}'

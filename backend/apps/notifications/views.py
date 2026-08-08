@@ -124,14 +124,38 @@ class ServiceClientExamListCreateView(APIView):
         user = self.get_user(client_id)
         if not user:
             return Response({'detail': 'Client user not found.'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = ClientExamSerializer(data=request.data, context={'request': request})
+        external_id = str(request.data.get('manager_sl_exam_id') or '').strip()
+        existing = None
+        if external_id:
+            existing = ClientExam.objects.filter(user=user, manager_sl_exam_id=external_id).first()
+        previous_schedule = (existing.exam_date, existing.exam_time) if existing else None
+        serializer = ClientExamSerializer(
+            existing,
+            data=request.data,
+            partial=bool(existing),
+            context={'request': request},
+        )
         serializer.is_valid(raise_exception=True)
         created_by = request.user if request.user and request.user.is_authenticated else None
-        exam = serializer.save(user=user, created_by_manager=created_by)
+        if existing:
+            exam = serializer.save()
+        else:
+            exam = serializer.save(user=user, created_by_manager=created_by)
+        schedule_changed = previous_schedule is not None and previous_schedule != (exam.exam_date, exam.exam_time)
+        if schedule_changed:
+            exam.acknowledged_by_user = False
+            exam.acknowledged_at = None
+            exam.last_reminded_at = None
         exam.next_reminder_at = exam.compute_next_reminder_at()
-        exam.save(update_fields=['next_reminder_at', 'updated_at'])
-        send_exam_reminder(exam, force=True)
-        return Response(ClientExamSerializer(exam, context={'request': request}).data, status=status.HTTP_201_CREATED)
+        update_fields = ['next_reminder_at', 'updated_at']
+        if schedule_changed:
+            update_fields.extend(['acknowledged_by_user', 'acknowledged_at', 'last_reminded_at'])
+        exam.save(update_fields=update_fields)
+        if existing is None or schedule_changed:
+            send_exam_reminder(exam, force=True)
+        payload = ClientExamSerializer(exam, context={'request': request}).data
+        payload['sync_status'] = 'updated' if existing else 'created'
+        return Response(payload, status=status.HTTP_200_OK if existing else status.HTTP_201_CREATED)
 
 
 class ServiceClientExamDetailView(APIView):
