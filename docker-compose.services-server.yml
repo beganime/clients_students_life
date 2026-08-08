@@ -8,3 +8,11 @@ services:
     depends_on: !override
       redis:
         condition: service_healthy
+    networks:
+      - default
+      - sl_services_internal
+
+networks:
+  sl_services_internal:
+    external: true
+    name: sl-services-internal
