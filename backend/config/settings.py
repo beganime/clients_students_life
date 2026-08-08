@@ -255,6 +255,7 @@ ALLOW_UNSAFE_LOCAL_API = DEBUG and config('ALLOW_UNSAFE_LOCAL_API', default=Fals
 
 MANAGER_SL_API_BASE_URL = config('MANAGER_SL_API_BASE_URL', default='')
 MANAGER_SL_LEADS_API_KEY = config('MANAGER_SL_LEADS_API_KEY', default='')
+STUDENTS_LIFE_API_KEY = config('STUDENTS_LIFE_API_KEY', default='')
 MANAGER_SL_TIMEOUT_SECONDS = config('MANAGER_SL_TIMEOUT_SECONDS', default=8, cast=int)
 
 # The public account is created only after ManagerSL approves an onboarding
