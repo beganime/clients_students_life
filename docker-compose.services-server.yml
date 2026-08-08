@@ -9,8 +9,10 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - default
-      - sl_services_internal
+      default:
+      sl_services_internal:
+        aliases:
+          - students-life-internal
 
 networks:
   sl_services_internal:
