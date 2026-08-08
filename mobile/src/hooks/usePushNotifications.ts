@@ -22,6 +22,23 @@ Notifications.setNotificationHandler({
   }),
 });
 
+export async function getDevicePushToken(requestPermission = true): Promise<string> {
+  if (Platform.OS === 'web' || !Device.isDevice) return '';
+
+  const existing = await Notifications.getPermissionsAsync();
+  let finalStatus = existing.status;
+  if (requestPermission && existing.status !== 'granted') {
+    const requested = await Notifications.requestPermissionsAsync();
+    finalStatus = requested.status;
+  }
+  if (finalStatus !== 'granted') return '';
+
+  const tokenData = USE_NATIVE_DEVICE_TOKEN
+    ? await Notifications.getDevicePushTokenAsync()
+    : await Notifications.getExpoPushTokenAsync();
+  return String(tokenData.data || '');
+}
+
 export function usePushNotifications() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
@@ -31,25 +48,7 @@ export function usePushNotifications() {
     async function register() {
       try {
         if (!isAuthenticated) return;
-        if (Platform.OS === 'web') return;
-        if (!Device.isDevice) return;
-
-        const existing = await Notifications.getPermissionsAsync();
-        let finalStatus = existing.status;
-
-        if (existing.status !== 'granted') {
-          const requested = await Notifications.requestPermissionsAsync();
-          finalStatus = requested.status;
-        }
-
-        if (finalStatus !== 'granted') return;
-        if (cancelled) return;
-
-        const tokenData = USE_NATIVE_DEVICE_TOKEN
-          ? await Notifications.getDevicePushTokenAsync()
-          : await Notifications.getExpoPushTokenAsync();
-
-        const token = String(tokenData.data);
+        const token = await getDevicePushToken(true);
 
         if (!token || cancelled) return;
 

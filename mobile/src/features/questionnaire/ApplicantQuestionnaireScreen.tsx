@@ -21,6 +21,7 @@ import { Screen } from '../../components/Screen';
 import { SvgIcon } from '../../components/SvgIcon';
 import { colors, radius, spacing, typography } from '../../constants/colors';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { getDevicePushToken } from '../../hooks/usePushNotifications';
 import { ApplicantQuestionnaire, OnboardingSubmissionStatus, Program, UniversityChoiceDraft } from '../../types/api';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
@@ -109,6 +110,7 @@ export function ApplicantQuestionnaireScreen() {
   const [offlineDraftChecked, setOfflineDraftChecked] = useState(false);
   const [storedSubmission, setStoredSubmission] = useState<StoredOnboardingSubmission | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<OnboardingSubmissionStatus | null>(null);
+  const [statusRefreshing, setStatusRefreshing] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -129,11 +131,27 @@ export function ApplicantQuestionnaireScreen() {
   useEffect(() => {
     onboardingSubmissionStorage.get().then(stored => {
       setStoredSubmission(stored);
-      if (stored) {
-        onboardingApi.getStatus(stored).then(setSubmissionStatus).catch(() => undefined);
-      }
     });
   }, []);
+
+  useEffect(() => {
+    if (!storedSubmission) return undefined;
+    let active = true;
+    const refresh = async () => {
+      try {
+        const status = await onboardingApi.getStatus(storedSubmission);
+        if (active) setSubmissionStatus(status);
+      } catch {
+        // A temporary status check failure must not hide the local draft.
+      }
+    };
+    refresh();
+    const interval = setInterval(refresh, 60_000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [storedSubmission]);
 
   useEffect(() => {
     if (route.params?.formType) {
@@ -147,7 +165,8 @@ export function ApplicantQuestionnaireScreen() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = buildOnboardingPayload(form);
+      const fcmToken = await getDevicePushToken(true).catch(() => '');
+      const payload = { ...buildOnboardingPayload(form), fcm_token: fcmToken };
       if (storedSubmission && storedSubmission.kind === payload.kind && submissionStatus?.status === 'changes_requested') {
         return onboardingApi.resubmit(storedSubmission, payload);
       }
@@ -251,6 +270,18 @@ export function ApplicantQuestionnaireScreen() {
     saveMutation.mutate();
   };
 
+  const handleRefreshStatus = async () => {
+    if (!storedSubmission || statusRefreshing) return;
+    setStatusRefreshing(true);
+    try {
+      setSubmissionStatus(await onboardingApi.getStatus(storedSubmission));
+    } catch (error) {
+      Alert.alert('Не удалось обновить статус', getApiErrorMessage(error));
+    } finally {
+      setStatusRefreshing(false);
+    }
+  };
+
   if (!offlineDraftChecked) {
     return (
       <Screen scroll style={styles.screen}>
@@ -284,6 +315,10 @@ export function ApplicantQuestionnaireScreen() {
           {activeSubmissionStatus.sl_id ? <Text style={styles.slId}>Ваш ID: {activeSubmissionStatus.sl_id}</Text> : null}
           {activeSubmissionStatus.review_comment ? (
             <Text style={styles.statusComment}>Комментарий менеджера: {activeSubmissionStatus.review_comment}</Text>
+          ) : null}
+          <AppButton title="Обновить статус" variant="outline" onPress={handleRefreshStatus} loading={statusRefreshing} />
+          {activeSubmissionStatus.status === 'approved' ? (
+            <AppButton title="Войти по SL-ID" onPress={() => navigation.navigate('Auth', { screen: 'Login' })} />
           ) : null}
         </AppCard>
       ) : null}
@@ -487,6 +522,7 @@ function formatQuestionnaireError(error: unknown) {
 
 function submissionStatusLabel(status: OnboardingSubmissionStatus['status']) {
   if (status === 'approved') return 'Анкета одобрена';
+  if (status === 'in_review') return 'Менеджер проверяет анкету';
   if (status === 'changes_requested') return 'Нужны исправления';
   if (status === 'rejected') return 'Анкета отклонена';
   return 'Анкета на проверке';

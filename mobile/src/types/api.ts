@@ -411,7 +411,7 @@ export type UniversityChoiceDraft = {
 
 export type OnboardingSubmissionStatus = {
   public_id: string;
-  status: 'submitted' | 'changes_requested' | 'approved' | 'rejected';
+  status: 'submitted' | 'in_review' | 'changes_requested' | 'approved' | 'rejected';
   review_comment?: string;
   sl_id?: string | null;
   submitted_at: string;
