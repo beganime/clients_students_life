@@ -299,7 +299,7 @@ export function ApplicantQuestionnaireScreen() {
   return (
     <Screen scroll style={styles.screen}>
       <RedGradientHero backgroundImage={bannerImages.application} style={styles.hero}>
-        <Badge label="Без обязательной регистрации" variant="mint" icon="document" />
+        <Badge label="Аккаунт после одобрения" variant="mint" icon="document" />
         <Text style={styles.heroTitle}>Анкета абитуриента</Text>
         <Text style={styles.heroText}>Заполняйте анкету как черновик. На проверку она уйдёт только после отдельной отправки.</Text>
       </RedGradientHero>

@@ -222,7 +222,7 @@ export function UniversitiesScreen() {
               <Text style={styles.kicker}>Каталог вузов</Text>
               <Text style={styles.title}>Страны, города, вузы и программы</Text>
               <Text style={styles.subtitle}>
-                Данные загружаются через прокси students-life.ru. Используйте фильтры, чтобы быстро перейти к подходящим вариантам.
+                Данные загружаются через защищённый сервер Student's Life. Используйте фильтры, чтобы быстро перейти к подходящим вариантам.
               </Text>
             </RedGradientHero>
 

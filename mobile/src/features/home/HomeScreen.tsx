@@ -102,7 +102,7 @@ export function HomeScreen() {
         </View>
         <View style={styles.documentsTextBox}>
           <Text style={styles.documentsTitle}>Поступить через нас</Text>
-          <Text style={styles.documentsText}>Заполните анкету без предварительной регистрации</Text>
+          <Text style={styles.documentsText}>Заполните анкету — аккаунт появится после одобрения менеджером</Text>
         </View>
         <AppButton
           title="Заполнить анкету"
@@ -197,12 +197,17 @@ export function HomeScreen() {
         <QuickService icon="mapPin" title="Туры" onPress={() => navigation.navigate('ToursInfo')} />
       </View>
 
-      <AppCard style={styles.registerCard}>
+      <AppCard style={styles.onboardingCard}>
         <Badge label="Поступление" variant="mint" icon="check" />
-        <Text style={styles.registerTitle}>Сначала анкета, затем аккаунт</Text>
-        <Text style={styles.registerText}>
-          Регистрация заранее не нужна. После проверки анкеты менеджер передаст SL-ID и данные для входа.
+        <Text style={styles.onboardingTitle}>Начните с анкеты</Text>
+        <Text style={styles.onboardingText}>
+          После проверки менеджер назначит SL-ID и передаст данные для входа в приложение.
         </Text>
+        <AppButton
+          title="Заполнить анкету"
+          variant="outline"
+          onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+        />
       </AppCard>
 
       <CTASection
@@ -386,14 +391,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   quickServiceText: { color: colors.text, fontWeight: typography.weights.heavy, textAlign: 'center' },
-  registerCard: { marginTop: spacing.xl },
-  registerTitle: {
+  onboardingCard: { marginTop: spacing.xl, gap: spacing.md },
+  onboardingTitle: {
     color: colors.text,
     fontSize: typography.subtitle,
     fontWeight: typography.weights.heavy,
     marginTop: spacing.md,
   },
-  registerText: {
+  onboardingText: {
     color: colors.muted,
     fontSize: typography.body,
     lineHeight: 23,
