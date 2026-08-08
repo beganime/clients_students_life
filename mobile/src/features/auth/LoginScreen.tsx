@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { bannerImages } from '../../assets/banners';
+import { onboardingSubmissionStorage } from '../../api/onboarding';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
@@ -12,13 +13,14 @@ import { SvgIcon } from '../../components/SvgIcon';
 import { colors, radius, spacing, typography } from '../../constants/colors';
 import { AuthStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
+import { clearOfflineQuestionnaireDraft } from '../../utils/offlineStorage';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 type StatusState = { type: 'success' | 'error' | 'info'; text: string } | null;
 
-export function LoginScreen({ navigation }: Props) {
+export function LoginScreen({ navigation, route }: Props) {
   const login = useAuthStore(state => state.login);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.slId || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,6 +43,12 @@ export function LoginScreen({ navigation }: Props) {
       setLoading(true);
       setStatus({ type: 'info', text: 'Проверяем данные...' });
       await login(cleanEmail, password);
+      if (route.params?.fromApprovedOnboarding) {
+        await Promise.all([
+          onboardingSubmissionStorage.clear(),
+          clearOfflineQuestionnaireDraft(),
+        ]);
+      }
       setStatus({ type: 'success', text: 'Вы успешно вошли в систему.' });
       setTimeout(() => navigation.getParent<any>()?.navigate('App'), 400);
     } catch (error) {
@@ -74,7 +82,7 @@ export function LoginScreen({ navigation }: Props) {
             setStatus(null);
           }}
           autoCapitalize="none"
-          placeholder="SL-2027-001"
+          placeholder="SL-001"
         />
         <AppInput
           label="Пароль"

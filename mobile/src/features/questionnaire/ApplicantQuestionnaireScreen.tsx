@@ -346,7 +346,21 @@ export function ApplicantQuestionnaireScreen() {
           ) : null}
           <AppButton title="Обновить статус" variant="outline" onPress={handleRefreshStatus} loading={statusRefreshing} />
           {activeSubmissionStatus.status === 'approved' ? (
-            <AppButton title="Войти по SL-ID" onPress={() => navigation.navigate('Auth', { screen: 'Login' })} />
+            <>
+              <Text style={styles.statusComment}>
+                Анкета одобрена. Получите пароль у менеджера, подтвердите вход и профиль сохранится на этом телефоне.
+              </Text>
+              <AppButton
+                title="Подтвердить и войти"
+                onPress={() => navigation.navigate('Auth', {
+                  screen: 'Login',
+                  params: {
+                    slId: activeSubmissionStatus.sl_id || undefined,
+                    fromApprovedOnboarding: true,
+                  },
+                })}
+              />
+            </>
           ) : null}
         </AppCard>
       ) : null}
