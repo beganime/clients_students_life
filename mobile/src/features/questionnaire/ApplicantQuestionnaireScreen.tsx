@@ -316,6 +316,34 @@ export function ApplicantQuestionnaireScreen() {
           {activeSubmissionStatus.review_comment ? (
             <Text style={styles.statusComment}>Комментарий менеджера: {activeSubmissionStatus.review_comment}</Text>
           ) : null}
+          {activeSubmissionStatus.admission_status ? (
+            <View style={styles.admissionStatus}>
+              <Text style={styles.admissionStatusTitle}>Ход поступления</Text>
+              {activeSubmissionStatus.admission_status.current_status ? (
+                <Text style={styles.statusComment}>Текущий этап: {activeSubmissionStatus.admission_status.current_status}</Text>
+              ) : null}
+              {activeSubmissionStatus.admission_status.invitation_city ? (
+                <Text style={styles.statusComment}>Город приглашения: {activeSubmissionStatus.admission_status.invitation_city}</Text>
+              ) : null}
+              {activeSubmissionStatus.admission_status.meeting ? (
+                <Text style={styles.statusComment}>Встреча: {activeSubmissionStatus.admission_status.meeting}</Text>
+              ) : null}
+              {activeSubmissionStatus.admission_status.current_location ? (
+                <Text style={styles.statusComment}>Сейчас находится: {activeSubmissionStatus.admission_status.current_location}</Text>
+              ) : null}
+            </View>
+          ) : null}
+          {activeSubmissionStatus.university_choices?.length ? (
+            <View style={styles.admissionStatus}>
+              <Text style={styles.admissionStatusTitle}>Выбранные вузы и программы</Text>
+              {activeSubmissionStatus.university_choices.map(choice => (
+                <Text key={choice.university_id} style={styles.statusComment}>
+                  {choice.rank}. {choice.university_name}
+                  {choice.programs.length ? ` — ${choice.programs.map(program => program.name).join(', ')}` : ''}
+                </Text>
+              ))}
+            </View>
+          ) : null}
           <AppButton title="Обновить статус" variant="outline" onPress={handleRefreshStatus} loading={statusRefreshing} />
           {activeSubmissionStatus.status === 'approved' ? (
             <AppButton title="Войти по SL-ID" onPress={() => navigation.navigate('Auth', { screen: 'Login' })} />
@@ -745,6 +773,17 @@ const styles = StyleSheet.create({
   statusTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   slId: { color: colors.secondary, fontSize: typography.body, fontWeight: typography.weights.heavy, marginTop: spacing.sm },
   statusComment: { color: colors.text, lineHeight: 21, marginTop: spacing.sm },
+  admissionStatus: {
+    borderTopColor: 'rgba(13,65,109,0.14)',
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+  },
+  admissionStatusTitle: {
+    color: colors.text,
+    fontSize: typography.body,
+    fontWeight: typography.weights.heavy,
+  },
   localDraftCard: { marginBottom: spacing.lg, borderColor: 'rgba(184,32,26,0.22)', backgroundColor: 'rgba(184,32,26,0.06)' },
   localDraftTitle: { color: colors.text, fontSize: typography.body, fontWeight: typography.weights.heavy, marginBottom: 4 },
   localDraftText: { color: colors.muted, lineHeight: 20, fontWeight: typography.weights.medium },

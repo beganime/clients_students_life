@@ -414,6 +414,19 @@ export type OnboardingSubmissionStatus = {
   status: 'submitted' | 'in_review' | 'changes_requested' | 'approved' | 'rejected';
   review_comment?: string;
   sl_id?: string | null;
+  university_choices?: Array<{
+    rank: number;
+    university_id: number;
+    university_name: string;
+    programs: Array<{ id: number; name: string }>;
+  }>;
+  admission_status?: {
+    current_status: string;
+    invitation_city: string;
+    meeting: string;
+    current_location: string;
+    updated_at: string;
+  } | null;
   submitted_at: string;
   reviewed_at?: string | null;
 };
