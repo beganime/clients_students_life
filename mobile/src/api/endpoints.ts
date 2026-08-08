@@ -285,19 +285,19 @@ export const chatApi = {
     return data;
   },
 
-  async getMessages(roomId: number) {
+  async getMessages(roomId: number | string) {
     const { data } = await apiClient.get<PaginatedResponse<ChatMessage>>(`/chat/${roomId}/messages/`);
     return data.results;
   },
 
-  async sendMessage(roomId: number, text: string) {
+  async sendMessage(roomId: number | string, text: string) {
     const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, {
       text,
     });
     return data;
   },
 
-  async sendImage(roomId: number, file: UploadableFile, text = '') {
+  async sendImage(roomId: number | string, file: UploadableFile, text = '') {
     const formData = new FormData();
     if (text.trim()) {
       formData.append('text', text.trim());
@@ -307,7 +307,7 @@ export const chatApi = {
     return uploadFormData<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
   },
 
-  async sendFile(roomId: number, file: UploadableFile, text = '') {
+  async sendFile(roomId: number | string, file: UploadableFile, text = '') {
     const formData = new FormData();
     if (text.trim()) {
       formData.append('text', text.trim());
@@ -317,7 +317,7 @@ export const chatApi = {
     return uploadFormData<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
   },
 
-  async markRead(roomId: number) {
+  async markRead(roomId: number | string) {
     const { data } = await apiClient.post(`/chat/${roomId}/mark_read/`);
     return data;
   },

@@ -14,6 +14,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 
 from apps.documents.views import has_manager_or_service_access
+from apps.chat.akyl import AkylChatError, provision_akylchat_client
 
 from .models import AppRole, AppUserActivity, ClientProfile, ensure_client_profile
 from .manager_sl_sync import sync_mobile_client_to_manager_sl
@@ -139,16 +140,38 @@ class ProvisionClientAccountView(APIView):
         }
         with transaction.atomic():
             user, created = User.objects.select_for_update().get_or_create(username=sl_id, defaults=defaults)
-            if created:
-                user.set_password(password)
-                user.save(update_fields=['password'])
+            user.set_password(password)
+            user.save(update_fields=['password'])
             profile = ensure_client_profile(user)
             if phone and profile.phone != phone:
                 profile.phone = phone
                 profile.save(update_fields=['phone', 'updated_at'])
 
+        try:
+            akylchat = provision_akylchat_client(
+                sl_id=sl_id,
+                password=password,
+                full_name=full_name,
+                email=email,
+                phone=phone,
+            )
+        except AkylChatError as exc:
+            return Response(
+                {
+                    'detail': 'Mobile account was created, but Akylchat provisioning failed.',
+                    'akylchat_error': str(exc),
+                    'sl_id': sl_id,
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
         return Response(
-            {'status': 'created' if created else 'exists', 'user_id': user.pk, 'sl_id': user.username},
+            {
+                'status': 'created' if created else 'exists',
+                'user_id': user.pk,
+                'sl_id': user.username,
+                'akylchat': akylchat,
+            },
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 

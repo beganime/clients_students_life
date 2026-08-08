@@ -10,13 +10,26 @@ from apps.applications.models import Application
 from .services import notify_chat_message, staff_profile_for
 from .models import ChatMessage, ChatRoom
 from .serializers import ChatMessageCreateSerializer, ChatMessageSerializer, ChatRoomSerializer
+from .akyl import AkylChatClient, AkylChatError
 
 
 class LocalChatEnabled(permissions.BasePermission):
     message = 'Локальный чат отключён. Используется сервис Akylchat.'
 
     def has_permission(self, request, view):
-        return settings.LOCAL_CHAT_ENABLED
+        return settings.LOCAL_CHAT_ENABLED or bool(settings.AKYLCHAT_API_BASE_URL and settings.AKYLCHAT_SERVICE_TOKEN)
+
+
+def akyl_actor(user):
+    return 'manager' if is_manager_user(user) else 'client'
+
+
+def akyl_sl_id(user):
+    return str(user.username or '').strip().upper()
+
+
+def akyl_error_response(exc):
+    return Response({'detail': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
 
 
 class ChatRoomViewSet(viewsets.ModelViewSet):
@@ -26,6 +39,41 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
     filterset_fields = ('status', 'application')
     ordering_fields = ('created_at', 'updated_at')
     ordering = ('-updated_at',)
+
+    @property
+    def use_akylchat(self):
+        return not settings.LOCAL_CHAT_ENABLED
+
+    def akyl_client(self):
+        return AkylChatClient()
+
+    def akyl_room_context(self, pk=None):
+        actor = akyl_actor(self.request.user)
+        if actor == 'client':
+            return akyl_sl_id(self.request.user), actor
+        rooms = self.akyl_client().rooms(actor='manager').get('results', [])
+        room = next((item for item in rooms if str(item.get('id')) == str(pk)), None)
+        if not room:
+            raise AkylChatError('Чат не найден.')
+        return str(room.get('sl_id') or '').strip().upper(), actor
+
+    def list(self, request, *args, **kwargs):
+        if not self.use_akylchat:
+            return super().list(request, *args, **kwargs)
+        actor = akyl_actor(request.user)
+        try:
+            payload = self.akyl_client().rooms(
+                sl_id=akyl_sl_id(request.user) if actor == 'client' else '',
+                actor=actor,
+            )
+        except AkylChatError as exc:
+            return akyl_error_response(exc)
+        return Response({
+            'count': payload.get('count', len(payload.get('results', []))),
+            'next': None,
+            'previous': None,
+            'results': payload.get('results', []),
+        })
 
     def get_throttles(self):
         if self.action == 'send_message':
@@ -46,6 +94,23 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         return qs.filter(user=self.request.user)
 
     def create(self, request, *args, **kwargs):
+        if self.use_akylchat:
+            if is_manager_user(request.user):
+                return Response(
+                    {'detail': 'Менеджер открывает существующий клиентский чат из списка.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                payload = self.akyl_client().rooms(sl_id=akyl_sl_id(request.user), actor='client')
+            except AkylChatError as exc:
+                return akyl_error_response(exc)
+            rooms = payload.get('results', [])
+            if not rooms:
+                return Response(
+                    {'detail': 'Чат ещё не создан. Повторите вход или обратитесь к менеджеру.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            return Response(rooms[0], status=status.HTTP_201_CREATED)
         application_id = request.data.get('application')
         if is_manager_user(request.user):
             return Response(
@@ -78,6 +143,18 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def messages(self, request, pk=None):
+        if self.use_akylchat:
+            try:
+                sl_id, actor = self.akyl_room_context(pk)
+                payload = self.akyl_client().messages(sl_id, actor=actor)
+            except AkylChatError as exc:
+                return akyl_error_response(exc)
+            return Response({
+                'count': payload.get('count', len(payload.get('results', []))),
+                'next': None,
+                'previous': None,
+                'results': payload.get('results', []),
+            })
         room = self.get_object()
         messages = (
             room.messages
@@ -94,6 +171,22 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def send_message(self, request, pk=None):
+        if self.use_akylchat:
+            try:
+                sl_id, actor = self.akyl_room_context(pk)
+                upload_field = 'image' if request.FILES.get('image') else 'file'
+                upload = request.FILES.get(upload_field)
+                message = self.akyl_client().send_message(
+                    sl_id,
+                    actor=actor,
+                    text=str(request.data.get('text') or '').strip(),
+                    upload=upload,
+                    upload_field=upload_field,
+                    manager_name=(request.user.get_full_name() or request.user.username) if actor == 'manager' else '',
+                )
+            except AkylChatError as exc:
+                return akyl_error_response(exc)
+            return Response(message, status=status.HTTP_201_CREATED)
         room = self.get_object()
         if room.status != ChatRoom.Status.OPEN:
             return Response({'detail': 'Чат закрыт.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -115,6 +208,13 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def mark_read(self, request, pk=None):
+        if self.use_akylchat:
+            try:
+                sl_id, actor = self.akyl_room_context(pk)
+                payload = self.akyl_client().mark_read(sl_id, actor=actor)
+            except AkylChatError as exc:
+                return akyl_error_response(exc)
+            return Response(payload)
         room = self.get_object()
         room.messages.exclude(sender_user=request.user).update(is_read=True)
         return Response({'status': 'ok'})

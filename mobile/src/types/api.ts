@@ -197,7 +197,8 @@ export type ApplicationFile = {
 };
 
 export type ChatRoom = {
-  id: number;
+  id: number | string;
+  sl_id?: string;
   user?: number;
   user_name?: string;
   user_email?: string;
@@ -230,7 +231,7 @@ export type MyDocument = {
 };
 
 export type ChatAttachment = {
-  id: number;
+  id: number | string;
   url?: string | null;
   original_name?: string;
   content_type?: string;
@@ -241,9 +242,9 @@ export type ChatAttachment = {
 };
 
 export type ChatMessage = {
-  id: number;
-  room: number;
-  sender_user?: number | null;
+  id: number | string;
+  room: number | string;
+  sender_user?: number | string | null;
   sender_user_name?: string;
   sender_staff?: StaffProfile | null;
   sender_role?: 'user' | 'manager';

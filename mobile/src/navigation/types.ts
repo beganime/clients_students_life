@@ -46,7 +46,7 @@ export type RootStackParamList = {
   FavoriteUniversities: undefined;
   Notifications: undefined;
   Chat: undefined;
-  ChatRoom: { id: number };
+  ChatRoom: { id: number | string };
 
   EditProfile: undefined;
 };
