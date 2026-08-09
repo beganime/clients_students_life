@@ -78,7 +78,7 @@ export function ExpressApplicationScreen() {
       const current = await onboardingSubmissionStorage.get();
       setStored(current);
       setSubmission(data);
-      Alert.alert('Заявка отправлена', 'Менеджер увидит её в ManagerSL и в Google Sheets.');
+      Alert.alert('Спасибо за вашу заявку!', 'Мы получили её и скоро свяжемся с вами.');
     },
     onError: error => Alert.alert('Не удалось отправить заявку', getApiErrorMessage(error)),
   });
