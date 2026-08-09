@@ -16,7 +16,7 @@ from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 from apps.documents.views import has_manager_or_service_access
 from apps.chat.akyl import AkylChatError, provision_akylchat_client
 from apps.notifications.models import DeviceToken, UserNotification
-from apps.notifications.services import send_push_to_user
+from apps.notifications.services import send_push_to_user, send_raw_push_to_tokens
 
 from .models import AppRole, AppUserActivity, ClientProfile, ensure_client_profile
 from .manager_sl_sync import sync_mobile_client_to_manager_sl
@@ -181,6 +181,21 @@ class ProvisionClientAccountView(APIView):
                     defaults={'user': user, 'is_active': True},
                 )
 
+        credential_body = f'Ваш логин: {sl_id}\nВаш пароль: {password}'
+        active_tokens = list(
+            DeviceToken.objects.filter(user=user, is_active=True).values_list('token', flat=True)
+        )
+        push_sent = send_raw_push_to_tokens(
+            active_tokens,
+            'Аккаунт одобрен',
+            credential_body,
+            data={
+                'notification_type': 'account_credentials',
+                'related_object_type': 'account',
+                'related_object_id': user.pk,
+            },
+        )
+
         try:
             akylchat = provision_akylchat_client(
                 sl_id=sl_id,
@@ -205,6 +220,7 @@ class ProvisionClientAccountView(APIView):
                 'user_id': user.pk,
                 'sl_id': user.username,
                 'akylchat': akylchat,
+                'push_sent': push_sent,
             },
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )

@@ -22,8 +22,9 @@ class ProvisionClientAccountTests(TestCase):
             'fcm_token': 'current-device-token',
         }
 
+    @patch('apps.accounts.views.send_raw_push_to_tokens', return_value=1)
     @patch('apps.accounts.views.provision_akylchat_client')
-    def test_provision_creates_both_mobile_and_akylchat_accounts(self, provision_akylchat):
+    def test_provision_creates_both_mobile_and_akylchat_accounts(self, provision_akylchat, send_push):
         provision_akylchat.return_value = {
             'status': 'created',
             'user_uuid': 'user-uuid',
@@ -44,6 +45,10 @@ class ProvisionClientAccountTests(TestCase):
         self.assertIn('SL-001', notification.body)
         self.assertIn('Test_0710', notification.body)
         self.assertTrue(DeviceToken.objects.filter(token='current-device-token', user__username='SL-001', is_active=True).exists())
+        self.assertEqual(response.data['push_sent'], 1)
+        self.assertEqual(send_push.call_args.args[0], ['current-device-token'])
+        self.assertIn('SL-001', send_push.call_args.args[2])
+        self.assertIn('Test_0710', send_push.call_args.args[2])
         provision_akylchat.assert_called_once()
 
     @patch('apps.accounts.views.send_push_to_user')
