@@ -15,7 +15,8 @@ from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 
 from apps.documents.views import has_manager_or_service_access
 from apps.chat.akyl import AkylChatError, provision_akylchat_client
-from apps.notifications.models import UserNotification
+from apps.notifications.models import DeviceToken, UserNotification
+from apps.notifications.services import send_push_to_user
 
 from .models import AppRole, AppUserActivity, ClientProfile, ensure_client_profile
 from .manager_sl_sync import sync_mobile_client_to_manager_sl
@@ -32,6 +33,13 @@ User = get_user_model()
 
 def clean_device_value(value, max_length=255):
     return str(value or '').strip()[:max_length]
+
+
+def has_provision_access(request):
+    expected = settings.MANAGER_SL_PROVISION_TOKEN
+    supplied = request.headers.get('Authorization', '')
+    supplied = supplied[7:].strip() if supplied.startswith('Bearer ') else ''
+    return bool(expected and supplied and secrets.compare_digest(expected, supplied))
 
 
 def normalize_me_payload(data):
@@ -114,10 +122,7 @@ class ProvisionClientAccountView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        expected = settings.MANAGER_SL_PROVISION_TOKEN
-        supplied = request.headers.get('Authorization', '')
-        supplied = supplied[7:].strip() if supplied.startswith('Bearer ') else ''
-        if not expected or not supplied or not secrets.compare_digest(expected, supplied):
+        if not has_provision_access(request):
             return Response({'detail': 'Unauthorized.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         sl_id = str(request.data.get('sl_id') or '').strip().upper()
@@ -125,6 +130,10 @@ class ProvisionClientAccountView(APIView):
         full_name = str(request.data.get('full_name') or '').strip()
         email = str(request.data.get('email') or '').strip().casefold()
         phone = str(request.data.get('phone') or '').strip()
+        fcm_token = str(request.data.get('fcm_token') or '').strip()
+        onboarding_public_id = str(request.data.get('onboarding_public_id') or '').strip()
+        onboarding_access_token = str(request.data.get('onboarding_access_token') or '').strip()
+        onboarding_kind = str(request.data.get('onboarding_kind') or 'applicant').strip()
         if not sl_id or len(sl_id) > 32 or not sl_id.startswith('SL-'):
             return Response({'detail': 'A valid sl_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
         if not password or len(password) > 128:
@@ -146,7 +155,15 @@ class ProvisionClientAccountView(APIView):
             profile = ensure_client_profile(user)
             if phone and profile.phone != phone:
                 profile.phone = phone
-                profile.save(update_fields=['phone', 'updated_at'])
+            if onboarding_public_id:
+                profile.onboarding_public_id = onboarding_public_id
+            if onboarding_access_token:
+                profile.onboarding_access_token = onboarding_access_token
+            profile.onboarding_kind = onboarding_kind
+            profile.save(update_fields=[
+                'phone', 'onboarding_public_id', 'onboarding_access_token',
+                'onboarding_kind', 'updated_at',
+            ])
             UserNotification.objects.update_or_create(
                 user=user,
                 notification_type='account_credentials',
@@ -158,6 +175,11 @@ class ProvisionClientAccountView(APIView):
                     'is_read': False,
                 },
             )
+            if fcm_token:
+                DeviceToken.objects.update_or_create(
+                    token=fcm_token,
+                    defaults={'user': user, 'is_active': True},
+                )
 
         try:
             akylchat = provision_akylchat_client(
@@ -186,6 +208,30 @@ class ProvisionClientAccountView(APIView):
             },
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+
+class InternalClientNotificationView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        if not has_provision_access(request):
+            return Response({'detail': 'Unauthorized.'}, status=status.HTTP_401_UNAUTHORIZED)
+        sl_id = str(request.data.get('sl_id') or '').strip().upper()
+        title = str(request.data.get('title') or '').strip()
+        body = str(request.data.get('body') or '').strip()
+        if not sl_id or not title or not body:
+            return Response({'detail': 'sl_id, title and body are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(username=sl_id, is_active=True).first()
+        if not user:
+            return Response({'detail': 'Client account not found.'}, status=status.HTTP_404_NOT_FOUND)
+        active_tokens = DeviceToken.objects.filter(user=user, is_active=True).count()
+        send_push_to_user(
+            user, title, body,
+            notification_type=str(request.data.get('notification_type') or 'onboarding_status'),
+            related_object_type='onboarding',
+        )
+        return Response({'status': 'sent', 'active_tokens': active_tokens})
 
 
 class StaffLoginView(APIView):

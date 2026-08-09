@@ -59,6 +59,9 @@ class ClientProfile(TimeStampedModel):
     citizenship = models.CharField('Гражданство', max_length=255, blank=True)
     avatar = models.ImageField('Аватар', upload_to='users/avatars/', blank=True, null=True)
     language = models.CharField('Язык приложения', max_length=10, default='ru')
+    onboarding_public_id = models.CharField('ID анкеты ManagerSL', max_length=64, blank=True)
+    onboarding_access_token = models.CharField('Токен анкеты ManagerSL', max_length=255, blank=True)
+    onboarding_kind = models.CharField('Тип анкеты ManagerSL', max_length=24, blank=True, default='applicant')
 
     class Meta:
         verbose_name = 'Профиль клиента'

@@ -151,7 +151,27 @@ export function ApplicantQuestionnaireScreen() {
     const refresh = async () => {
       try {
         const status = await onboardingApi.getStatus(storedSubmission);
-        if (active) setSubmissionStatus(status);
+        if (active) {
+          setSubmissionStatus(status);
+          const choices = (status.university_choices || []).map(choice => ({
+            university_id: choice.university_id,
+            university_name: choice.university_name,
+            program_ids: choice.programs.map(program => program.id),
+            program_names: choice.programs.map(program => program.name),
+          }));
+          setForm(prev => ({
+            ...prev,
+            ...(status.payload || {}),
+            form_type: status.kind,
+            academic_year: String(status.academic_year || prev.academic_year || ''),
+            full_name: status.full_name || prev.full_name,
+            phone: status.phone || prev.phone,
+            email: status.email || prev.email,
+            birth_date: status.date_of_birth || prev.birth_date,
+            citizenship: status.citizenship || prev.citizenship,
+            university_choices: choices.length ? choices : prev.university_choices,
+          }));
+        }
       } catch {
         // A temporary status check failure must not hide the local draft.
       }
@@ -178,14 +198,7 @@ export function ApplicantQuestionnaireScreen() {
     mutationFn: async () => {
       const fcmToken = await getDevicePushToken(true).catch(() => '');
       const payload = { ...buildOnboardingPayload(form), fcm_token: fcmToken };
-      if (
-        storedSubmission
-        && storedSubmission.kind === payload.kind
-        && (
-          submissionStatus?.status === 'changes_requested'
-          || (submissionStatus?.stage === 'express' && submissionStatus.status === 'approved')
-        )
-      ) {
+      if (storedSubmission && storedSubmission.kind === payload.kind) {
         return onboardingApi.resubmit(storedSubmission, payload);
       }
       return onboardingApi.submit(payload);
@@ -235,16 +248,6 @@ export function ApplicantQuestionnaireScreen() {
   };
 
   const handleSave = async () => {
-    const currentKind = form.form_type === 'school_student' ? 'school_student' : 'applicant';
-    if (
-      storedSubmission?.kind === currentKind
-      && submissionStatus
-      && submissionStatus.status !== 'changes_requested'
-      && !(submissionStatus.stage === 'express' && submissionStatus.status === 'approved')
-    ) {
-      Alert.alert('Анкета уже отправлена', 'Дождитесь решения менеджера. Повторная отправка не создастся.');
-      return;
-    }
     if (!form.data_processing_consent) {
       Alert.alert('Нужно согласие', 'Перед отправкой анкеты подтвердите согласие на обработку персональных данных.');
       return;
@@ -287,15 +290,6 @@ export function ApplicantQuestionnaireScreen() {
     }
     if (!form.data_processing_consent) {
       Alert.alert('Нужно согласие', 'Подтвердите согласие перед отправкой анкеты.');
-      return;
-    }
-    const currentKind = form.form_type === 'school_student' ? 'school_student' : 'applicant';
-    if (
-      storedSubmission?.kind === currentKind
-      && submissionStatus?.status !== 'changes_requested'
-      && !(submissionStatus?.stage === 'express' && submissionStatus.status === 'approved')
-    ) {
-      Alert.alert('Анкета уже отправлена', 'Синхронизация доступна после возврата анкеты менеджером на исправление.');
       return;
     }
     saveMutation.mutate();

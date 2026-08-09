@@ -119,7 +119,7 @@ export function ExpressApplicationScreen() {
     setEntering(true);
     try {
       await login(credentials.mobile_login, credentials.shared_password);
-      await Promise.all([onboardingSubmissionStorage.clear(), clearOfflineQuestionnaireDraft()]);
+      await clearOfflineQuestionnaireDraft();
       navigation.navigate('App');
     } catch (error) {
       Alert.alert('Не удалось войти', getApiErrorMessage(error));
@@ -144,12 +144,6 @@ export function ExpressApplicationScreen() {
         <AppCard style={styles.statusCard}>
           <Text style={styles.statusTitle}>{statusLabel(submission.status, kind)}</Text>
           {submission.review_comment ? <Text style={styles.description}>Комментарий: {submission.review_comment}</Text> : null}
-          {submission.can_fill_full_questionnaire ? (
-            <AppButton
-              title="Заполнить полную анкету"
-              onPress={() => navigation.replace('ApplicantQuestionnaire', { formType: 'applicant' })}
-            />
-          ) : null}
           {submission.service_credentials ? (
             <>
               <View style={styles.credentials}>
@@ -158,6 +152,12 @@ export function ExpressApplicationScreen() {
               </View>
               <AppButton title="Подтвердить и войти" onPress={handleInstantLogin} loading={entering} />
             </>
+          ) : null}
+          {submission.can_fill_full_questionnaire && !submission.service_credentials ? (
+            <AppButton
+              title="Заполнить полную анкету"
+              onPress={() => navigation.replace('ApplicantQuestionnaire', { formType: 'applicant' })}
+            />
           ) : null}
           <AppButton title="Обновить статус" variant="outline" onPress={handleRefresh} loading={refreshing} />
         </AppCard>
@@ -200,7 +200,7 @@ export function ExpressApplicationScreen() {
 }
 
 function statusLabel(status: OnboardingSubmissionStatus['status'], kind: 'applicant' | 'school_student') {
-  if (status === 'approved') return kind === 'applicant' ? 'Можно заполнять полную анкету' : 'Заявка одобрена';
+  if (status === 'approved') return kind === 'applicant' ? 'Аккаунт открыт' : 'Заявка одобрена';
   if (status === 'changes_requested') return 'Менеджер просит уточнить данные';
   if (status === 'rejected') return 'Заявка отклонена';
   if (status === 'in_review') return 'Менеджер проверяет заявку';

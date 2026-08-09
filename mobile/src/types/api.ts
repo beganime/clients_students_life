@@ -267,6 +267,9 @@ export type UserProfile = {
   citizenship?: string;
   avatar?: string | null;
   language?: string;
+  onboarding_public_id?: string;
+  onboarding_access_token?: string;
+  onboarding_kind?: 'applicant' | 'school_student';
 };
 
 export type UserActivity = {
@@ -421,6 +424,13 @@ export type OnboardingSubmissionStatus = {
   review_comment?: string;
   sl_id?: string | null;
   can_fill_full_questionnaire?: boolean;
+  payload?: Partial<ApplicantQuestionnaire>;
+  full_name?: string;
+  phone?: string;
+  email?: string;
+  date_of_birth?: string | null;
+  citizenship?: string;
+  academic_year?: number;
   service_credentials?: {
     mobile_login: string;
     shared_password: string;

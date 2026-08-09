@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
-from apps.notifications.models import UserNotification
+from apps.notifications.models import DeviceToken, UserNotification
 
 
 User = get_user_model()
@@ -19,6 +19,7 @@ class ProvisionClientAccountTests(TestCase):
             'password': 'Test_0710',
             'full_name': 'Тестовый Клиент',
             'phone': '+99360000000',
+            'fcm_token': 'current-device-token',
         }
 
     @patch('apps.accounts.views.provision_akylchat_client')
@@ -42,7 +43,24 @@ class ProvisionClientAccountTests(TestCase):
         notification = UserNotification.objects.get(notification_type='account_credentials')
         self.assertIn('SL-001', notification.body)
         self.assertIn('Test_0710', notification.body)
+        self.assertTrue(DeviceToken.objects.filter(token='current-device-token', user__username='SL-001', is_active=True).exists())
         provision_akylchat.assert_called_once()
+
+    @patch('apps.accounts.views.send_push_to_user')
+    def test_internal_notification_uses_client_account(self, send_push):
+        user = User.objects.create_user(username='SL-002', password='x')
+        DeviceToken.objects.create(user=user, token='latest-token', is_active=True)
+
+        response = self.client.post(
+            '/api/v1/accounts/internal/notify/',
+            {'sl_id': 'SL-002', 'title': 'Аккаунт одобрен', 'body': 'Можно войти'},
+            format='json',
+            **self.headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['active_tokens'], 1)
+        send_push.assert_called_once()
 
     @patch('apps.accounts.views.provision_akylchat_client')
     def test_repeated_provision_updates_password_without_duplicate(self, provision_akylchat):

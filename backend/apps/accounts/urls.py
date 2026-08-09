@@ -9,6 +9,7 @@ from .views import (
     ManagerUserDetailView,
     ManagerUsersListView,
     MeView,
+    InternalClientNotificationView,
     ProvisionClientAccountView,
     RegisterView,
     StaffLoginView,
@@ -17,6 +18,7 @@ from .views import (
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('internal/provision/', ProvisionClientAccountView.as_view(), name='internal-provision'),
+    path('internal/notify/', InternalClientNotificationView.as_view(), name='internal-notify'),
     path('staff-login/', StaffLoginView.as_view(), name='staff-login'),
     path('manager-login/', StaffLoginView.as_view(), name='manager-login'),
     path('me/', MeView.as_view(), name='me'),

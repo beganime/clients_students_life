@@ -4,6 +4,18 @@ import { authApi } from '../api/endpoints';
 import { tokenStorage } from '../api/client';
 import { UserMe } from '../types/api';
 import { clearLocalAvatarUri } from '../utils/localMediaCache';
+import { onboardingSubmissionStorage } from '../api/onboarding';
+
+async function restoreQuestionnaireAccess(user: UserMe) {
+  const profile = user.profile;
+  if (profile?.onboarding_public_id && profile.onboarding_access_token) {
+    await onboardingSubmissionStorage.set({
+      public_id: profile.onboarding_public_id,
+      access_token: profile.onboarding_access_token,
+      kind: profile.onboarding_kind || 'applicant',
+    });
+  }
+}
 
 type AuthState = {
   user: UserMe | null;
@@ -31,6 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
       const user = await authApi.me();
+      await restoreQuestionnaireAccess(user);
       set({ user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       await tokenStorage.clearTokens();
@@ -42,12 +55,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   async login(username: string, password: string) {
     await authApi.login({ username, password });
     const user = await authApi.me();
+    await restoreQuestionnaireAccess(user);
     set({ user, isAuthenticated: true });
   },
 
   async managerLogin(username: string, password: string) {
     const response = await authApi.managerLogin({ username, password });
     const user = response.user || await authApi.me();
+    await restoreQuestionnaireAccess(user);
     set({ user, isAuthenticated: true });
   },
 
@@ -65,6 +80,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   async refreshMe() {
     const user = await authApi.me();
+    await restoreQuestionnaireAccess(user);
     set({ user, isAuthenticated: true });
   },
 }));
