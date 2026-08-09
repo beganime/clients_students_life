@@ -47,9 +47,19 @@ export function ExpressApplicationScreen() {
   const [entering, setEntering] = useState(false);
 
   const refreshStatus = async (current: StoredOnboardingSubmission) => {
-    const status = await onboardingApi.getStatus(current);
-    setSubmission(status);
-    return status;
+    try {
+      const status = await onboardingApi.getStatus(current);
+      setSubmission(status);
+      return status;
+    } catch (error) {
+      if ((error as any)?.response?.status === 404) {
+        await onboardingSubmissionStorage.clear();
+        setStored(null);
+        setSubmission(null);
+        return null;
+      }
+      throw error;
+    }
   };
 
   useEffect(() => {
