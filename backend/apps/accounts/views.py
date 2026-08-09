@@ -15,6 +15,7 @@ from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 
 from apps.documents.views import has_manager_or_service_access
 from apps.chat.akyl import AkylChatError, provision_akylchat_client
+from apps.notifications.models import UserNotification
 
 from .models import AppRole, AppUserActivity, ClientProfile, ensure_client_profile
 from .manager_sl_sync import sync_mobile_client_to_manager_sl
@@ -146,6 +147,17 @@ class ProvisionClientAccountView(APIView):
             if phone and profile.phone != phone:
                 profile.phone = phone
                 profile.save(update_fields=['phone', 'updated_at'])
+            UserNotification.objects.update_or_create(
+                user=user,
+                notification_type='account_credentials',
+                related_object_type='account',
+                related_object_id=user.pk,
+                defaults={
+                    'title': 'Данные для входа',
+                    'body': f'Ваш логин: {sl_id}\nВаш пароль: {password}',
+                    'is_read': False,
+                },
+            )
 
         try:
             akylchat = provision_akylchat_client(

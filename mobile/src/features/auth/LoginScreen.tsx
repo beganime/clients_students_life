@@ -21,7 +21,7 @@ type StatusState = { type: 'success' | 'error' | 'info'; text: string } | null;
 export function LoginScreen({ navigation, route }: Props) {
   const login = useAuthStore(state => state.login);
   const [email, setEmail] = useState(route.params?.slId || '');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(route.params?.password || '');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);

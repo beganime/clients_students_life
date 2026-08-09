@@ -29,7 +29,7 @@ export function OnboardingScreen({ navigation }: Props) {
         <AppButton
           title="Поступить через нас"
           variant="outline"
-          onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+          onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
         />
       </View>
     </Screen>

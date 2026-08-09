@@ -14,6 +14,7 @@ export type StoredOnboardingSubmission = {
 
 export type OnboardingSubmissionPayload = {
   kind: 'applicant' | 'school_student';
+  stage: 'express' | 'full';
   academic_year: number;
   full_name: string;
   phone: string;
@@ -106,6 +107,7 @@ export function buildOnboardingPayload(form: Partial<ApplicantQuestionnaire>): O
   const choices = (form.university_choices || []) as UniversityChoiceDraft[];
   return {
     kind: form.form_type === 'school_student' ? 'school_student' : 'applicant',
+    stage: 'full',
     academic_year: academicYear,
     full_name: String(form.full_name || '').trim(),
     phone: String(form.phone || '').trim(),
@@ -126,5 +128,31 @@ export function buildOnboardingPayload(form: Partial<ApplicantQuestionnaire>): O
           university_id: choice.university_id,
           program_ids: choice.program_ids,
         })),
+  };
+}
+
+export function buildExpressOnboardingPayload(input: {
+  kind: 'applicant' | 'school_student';
+  academicYear: number;
+  fullName: string;
+  phone: string;
+  email?: string;
+  requestedServices: string[];
+  requestText: string;
+  fcmToken?: string;
+}): OnboardingSubmissionPayload {
+  return {
+    kind: input.kind,
+    stage: 'express',
+    academic_year: input.academicYear,
+    full_name: input.fullName.trim(),
+    phone: input.phone.trim(),
+    email: input.email?.trim(),
+    payload: {
+      requested_services: input.requestedServices,
+      request_text: input.requestText.trim(),
+    } as Partial<ApplicantQuestionnaire>,
+    fcm_token: input.fcmToken,
+    university_choices: [],
   };
 }

@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
+from apps.notifications.models import UserNotification
 
 
 User = get_user_model()
@@ -38,6 +39,9 @@ class ProvisionClientAccountTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['akylchat']['chat_uuid'], 'chat-uuid')
         self.assertTrue(User.objects.get(username='SL-001').check_password('Test_0710'))
+        notification = UserNotification.objects.get(notification_type='account_credentials')
+        self.assertIn('SL-001', notification.body)
+        self.assertIn('Test_0710', notification.body)
         provision_akylchat.assert_called_once()
 
     @patch('apps.accounts.views.provision_akylchat_client')
@@ -56,3 +60,8 @@ class ProvisionClientAccountTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(User.objects.filter(username='SL-001').count(), 1)
         self.assertTrue(User.objects.get(username='SL-001').check_password('Changed_0710'))
+        self.assertEqual(UserNotification.objects.filter(notification_type='account_credentials').count(), 1)
+        self.assertIn(
+            'Changed_0710',
+            UserNotification.objects.get(notification_type='account_credentials').body,
+        )

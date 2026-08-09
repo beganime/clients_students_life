@@ -389,6 +389,9 @@ export type ApplicantQuestionnaire = {
   visa_city?: string;
   visa_valid_until?: string | null;
   has_international_passport?: string;
+  passport_pending?: boolean;
+  requested_services?: string[];
+  request_text?: string;
   hobbies?: string;
   applicant_comment?: string;
   referral_source?: string;
@@ -412,9 +415,16 @@ export type UniversityChoiceDraft = {
 
 export type OnboardingSubmissionStatus = {
   public_id: string;
+  kind: 'applicant' | 'school_student';
+  stage: 'express' | 'full';
   status: 'submitted' | 'in_review' | 'changes_requested' | 'approved' | 'rejected';
   review_comment?: string;
   sl_id?: string | null;
+  can_fill_full_questionnaire?: boolean;
+  service_credentials?: {
+    mobile_login: string;
+    shared_password: string;
+  } | null;
   university_choices?: Array<{
     rank: number;
     university_id: number;

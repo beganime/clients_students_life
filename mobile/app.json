@@ -39,7 +39,8 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-notifications"
+      "expo-notifications",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "apiBaseUrl": "https://www.stud-life.com/api/v1",

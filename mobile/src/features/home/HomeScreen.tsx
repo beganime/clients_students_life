@@ -66,7 +66,7 @@ export function HomeScreen() {
           <AppButton
             title="Оставить заявку"
             variant="outline"
-            onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+            onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
           />
         </View>
       </RedGradientHero>
@@ -107,7 +107,7 @@ export function HomeScreen() {
         <AppButton
           title="Заполнить анкету"
           variant="outline"
-          onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+          onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
           style={styles.documentsButton}
         />
       </AppCard>
@@ -125,7 +125,7 @@ export function HomeScreen() {
         <AppButton
           title="Оставить заявку заранее"
           variant="outline"
-          onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'school_student' })}
+          onPress={() => navigation.navigate('ExpressApplication', { kind: 'school_student' })}
           style={styles.documentsButton}
         />
       </AppCard>
@@ -206,7 +206,7 @@ export function HomeScreen() {
         <AppButton
           title="Заполнить анкету"
           variant="outline"
-          onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+          onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
         />
       </AppCard>
 
@@ -217,7 +217,7 @@ export function HomeScreen() {
         primaryText="Открыть чат"
         onPrimaryPress={() => navigation.navigate('Chat')}
         secondaryText="Оставить заявку"
-        onSecondaryPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+        onSecondaryPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
       />
     </Screen>
   );

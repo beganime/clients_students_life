@@ -44,7 +44,7 @@ export function ServicesScreen() {
           аккуратном сценарии.
         </Text>
         <View style={styles.heroActions}>
-          <AppButton title="Заполнить анкету" onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} />
+          <AppButton title="Поступить через нас" onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })} />
           <AppButton title="Посмотреть вузы" variant="outline" onPress={() => navigation.navigate('Universities')} />
         </View>
       </RedGradientHero>
@@ -52,7 +52,7 @@ export function ServicesScreen() {
       <SectionHeader eyebrow="Быстрый выбор" title="Основные услуги" />
       <View style={styles.mainGrid}>
         <ServiceActionCard icon="university" title="Вузы" subtitle="Каталог университетов" onPress={() => navigation.navigate('Universities')} />
-        <ServiceActionCard icon="application" title="Поступить" subtitle="Анкета для менеджера" onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} />
+        <ServiceActionCard icon="application" title="Поступить" subtitle="Экспресс-заявка для менеджера" onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })} />
         <ServiceActionCard icon="visa" title="Виза" subtitle="Документы и сроки" onPress={() => navigation.navigate('VisaInfo')} />
         <ServiceActionCard icon="mapPin" title="Туры" subtitle="Ознакомительные поездки" onPress={() => navigation.navigate('ToursInfo')} />
       </View>
@@ -87,7 +87,7 @@ export function ServicesScreen() {
               </Text>
               <View style={styles.serviceButtons}>
                 <AppButton title="Подробнее" variant="outline" onPress={() => navigation.navigate('ServiceDetail', { slug: service.slug })} />
-                <AppButton title="Анкета" variant="ghost" onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} />
+                <AppButton title="Заявка" variant="ghost" onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })} />
               </View>
             </AppCard>
           ))}
@@ -99,7 +99,7 @@ export function ServicesScreen() {
         title="Не знаете, с чего начать?"
         description="Оставьте заявку: менеджер объяснит документы, сроки, стоимость и ближайшие шаги."
         primaryText="Оставить заявку"
-        onPrimaryPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+        onPrimaryPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
         secondaryText="Открыть чат"
         onSecondaryPress={() => navigation.navigate('Chat')}
       />

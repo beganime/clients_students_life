@@ -16,7 +16,7 @@ import { NewsDetailScreen } from '../features/news/NewsDetailScreen';
 import { NotificationsScreen } from '../features/notifications/NotificationsScreen';
 import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
 import { EditProfileScreen } from '../features/profile/EditProfileScreen';
-import { ApplicantQuestionnaireScreen, DataConsentScreen } from '../features/questionnaire';
+import { ApplicantQuestionnaireScreen, DataConsentScreen, ExpressApplicationScreen } from '../features/questionnaire';
 import { ServiceDetailScreen } from '../features/services/ServiceDetailScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { StaffScreen } from '../features/staff/StaffScreen';
@@ -67,6 +67,7 @@ export function RootNavigator() {
         <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'Мои заявки' }} />
         <Stack.Screen name="MyDocuments" component={MyDocumentsScreen} options={{ title: 'Мои документы' }} />
         <Stack.Screen name="ApplicantQuestionnaire" component={ApplicantQuestionnaireScreen} options={{ title: 'Анкета абитуриента' }} />
+        <Stack.Screen name="ExpressApplication" component={ExpressApplicationScreen} options={{ title: 'Экспресс-заявка' }} />
         <Stack.Screen name="DataConsent" component={DataConsentScreen} options={{ title: 'Согласие на данные' }} />
         <Stack.Screen name="FavoriteUniversities" component={FavoriteUniversitiesScreen} options={{ title: 'Избранные вузы' }} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Уведомления' }} />

@@ -63,7 +63,7 @@ export function ProfileScreen() {
 
         <View style={styles.actions}>
           <AppButton title="Войти" onPress={() => navigation.navigate('Auth', { screen: 'Login' })} />
-          <AppButton title="Заполнить анкету" variant="outline" onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} />
+          <AppButton title="Поступить через нас" variant="outline" onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })} />
           <AppButton title="Политика конфиденциальности" variant="ghost" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
         </View>
       </Screen>

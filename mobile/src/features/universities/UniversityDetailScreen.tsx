@@ -65,7 +65,7 @@ export function UniversityDetailScreen() {
     });
   }, [programSearch, programSort, universityPrograms]);
 
-  const handleApplyPress = () => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant', universityId: universityQuery.data?.id });
+  const handleApplyPress = () => navigation.navigate('ExpressApplication', { kind: 'applicant' });
 
   if (universityQuery.isLoading) return <Loading />;
   if (universityQuery.isError) {
@@ -169,7 +169,7 @@ export function UniversityDetailScreen() {
               key={program.id}
               program={program}
               onOpen={() => navigation.navigate('ProgramDetail', { id: program.id })}
-              onApply={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant', universityId: data.id, programId: program.id })}
+              onApply={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
             />
           ))}
           {!visiblePrograms.length ? (

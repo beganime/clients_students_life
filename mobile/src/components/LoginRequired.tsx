@@ -38,7 +38,7 @@ export function LoginRequired({
             <AppButton
               title="Заполнить анкету"
               variant="outline"
-              onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+              onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
             />
           </View>
         </View>

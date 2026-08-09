@@ -3,6 +3,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type AuthStackParamList = {
   Login: {
     slId?: string;
+    password?: string;
     fromApprovedOnboarding?: boolean;
   } | undefined;
 };
@@ -41,6 +42,9 @@ export type RootStackParamList = {
     formType?: 'school_student' | 'applicant';
     universityId?: number;
     programId?: number;
+  } | undefined;
+  ExpressApplication: {
+    kind?: 'school_student' | 'applicant';
   } | undefined;
   DataConsent: undefined;
   FavoriteUniversities: undefined;
