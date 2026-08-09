@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -41,6 +42,7 @@ export async function getDevicePushToken(requestPermission = true): Promise<stri
 
 export function usePushNotifications() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let cancelled = false;
@@ -68,4 +70,18 @@ export function usePushNotifications() {
       cancelled = true;
     };
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const refreshClientData = () => {
+      queryClient.invalidateQueries({ queryKey: ['my-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['my-application-history'] });
+      queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+    };
+    const received = Notifications.addNotificationReceivedListener(refreshClientData);
+    const opened = Notifications.addNotificationResponseReceivedListener(refreshClientData);
+    return () => {
+      received.remove();
+      opened.remove();
+    };
+  }, [queryClient]);
 }

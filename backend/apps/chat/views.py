@@ -1,3 +1,5 @@
+import hashlib
+
 from django.conf import settings
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -10,7 +12,7 @@ from apps.applications.models import Application
 from .services import notify_chat_message, staff_profile_for
 from .models import ChatMessage, ChatRoom
 from .serializers import ChatMessageCreateSerializer, ChatMessageSerializer, ChatRoomSerializer
-from .akyl import AkylChatClient, AkylChatError
+from .akyl import AkylChatClient, AkylChatError, provision_akylchat_client
 
 
 class LocalChatEnabled(permissions.BasePermission):
@@ -102,6 +104,18 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
                 )
             try:
                 payload = self.akyl_client().rooms(sl_id=akyl_sl_id(request.user), actor='client')
+                if not payload.get('results'):
+                    chat_password = hashlib.sha256(
+                        f'{settings.SECRET_KEY}:{akyl_sl_id(request.user)}'.encode('utf-8')
+                    ).hexdigest()[:32]
+                    provision_akylchat_client(
+                        sl_id=akyl_sl_id(request.user),
+                        password=chat_password,
+                        full_name=request.user.get_full_name() or akyl_sl_id(request.user),
+                        email=request.user.email or '',
+                        phone=getattr(getattr(request.user, 'client_profile', None), 'phone', ''),
+                    )
+                    payload = self.akyl_client().rooms(sl_id=akyl_sl_id(request.user), actor='client')
             except AkylChatError as exc:
                 return akyl_error_response(exc)
             rooms = payload.get('results', [])

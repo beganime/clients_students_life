@@ -64,7 +64,7 @@ export function RootNavigator() {
         <Stack.Screen name="ToursInfo" component={ToursInfoScreen} options={{ title: 'Туры' }} />
         <Stack.Screen name="AdmissionInfo" component={AdmissionInfoScreen} options={{ title: 'Поступление' }} />
         <Stack.Screen name="Chat" component={ChatListScreen} options={{ title: 'Чат с менеджером' }} />
-        <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'Мои заявки' }} />
+        <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'История действий' }} />
         <Stack.Screen name="MyDocuments" component={MyDocumentsScreen} options={{ title: 'Мои документы' }} />
         <Stack.Screen name="ApplicantQuestionnaire" component={ApplicantQuestionnaireScreen} options={{ title: 'Анкета абитуриента' }} />
         <Stack.Screen name="ExpressApplication" component={ExpressApplicationScreen} options={{ title: 'Экспресс-заявка' }} />

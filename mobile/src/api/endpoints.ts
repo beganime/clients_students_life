@@ -330,8 +330,8 @@ export const notificationsApi = {
   },
 
   async getMyNotifications() {
-    const { data } = await apiClient.get<PaginatedResponse<UserNotification>>('/notifications/my/');
-    return data.results;
+    const { data } = await apiClient.get<PaginatedResponse<UserNotification> | UserNotification[]>('/notifications/my/');
+    return Array.isArray(data) ? data : data.results || [];
   },
 
   async getMyExams() {

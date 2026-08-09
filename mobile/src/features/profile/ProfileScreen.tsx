@@ -29,6 +29,8 @@ export function ProfileScreen() {
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
   const avatarUrl = localAvatarUri || getMediaUrl(user?.profile?.avatar || null);
   const isManager = Boolean(user?.is_manager);
+  const locationNeedsUpdate = !user?.profile?.location_updated_at
+    || Date.now() - new Date(user.profile.location_updated_at).getTime() > 30 * 24 * 60 * 60 * 1000;
 
   useEffect(() => {
     getLocalAvatarUri().then(setLocalAvatarUri).catch(() => undefined);
@@ -99,6 +101,14 @@ export function ProfileScreen() {
         <QuickAction icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
       </View>
 
+      {!isManager && locationNeedsUpdate ? (
+        <AppCard style={styles.locationReminder}>
+          <Text style={styles.blockTitle}>Обновите местоположение</Text>
+          <Text style={styles.benefitText}>Раз в месяц сообщайте менеджеру, где вы сейчас находитесь. Также обновляйте поле после переезда или поездки.</Text>
+          <AppButton title="Указать, где я сейчас" onPress={() => navigation.navigate('EditProfile')} style={styles.locationButton} />
+        </AppCard>
+      ) : null}
+
       <AppCard style={styles.infoCard}>
         <Text style={styles.blockTitle}>Контактные данные</Text>
         <ProfileInfo icon="phone" label="Телефон" value={user.profile?.phone || 'не указан'} />
@@ -106,6 +116,7 @@ export function ProfileScreen() {
         <ProfileInfo icon="chat" label="Telegram" value={user.profile?.telegram || 'не указан'} />
         <ProfileInfo icon="globe" label="Страна" value={user.profile?.country || 'не указана'} />
         <ProfileInfo icon="mapPin" label="Город" value={user.profile?.city || 'не указан'} />
+        <ProfileInfo icon="mapPin" label="Сейчас находится" value={user.profile?.current_location || 'не указано'} />
       </AppCard>
 
       <AppCard style={styles.benefitCard}>
@@ -186,6 +197,8 @@ const styles = StyleSheet.create({
   guestTitle: { color: colors.white, fontSize: 32, fontWeight: typography.weights.heavy },
   guestText: { marginTop: spacing.sm, color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, fontWeight: typography.weights.medium },
   profileHero: { minHeight: 230, marginBottom: spacing.lg },
+  locationReminder: { marginBottom: spacing.lg, borderColor: '#B91C1C' },
+  locationButton: { marginTop: spacing.md },
   profileTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   profileTitleBox: { flex: 1 },
   avatar: { width: 86, height: 86, borderRadius: radius.lg, backgroundColor: colors.border },

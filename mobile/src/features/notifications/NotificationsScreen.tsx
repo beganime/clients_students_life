@@ -25,6 +25,8 @@ export function NotificationsScreen() {
     queryFn: notificationsApi.getMyNotifications,
     staleTime: 0,
     refetchOnMount: 'always',
+    refetchInterval: 10000,
+    refetchOnReconnect: true,
   });
 
   const examsQuery = useQuery({

@@ -60,3 +60,18 @@ class AkylChatProxyTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['id'], 'message-uuid')
         send_message.assert_called_once()
+
+    @patch('apps.chat.views.provision_akylchat_client')
+    @patch('apps.chat.views.AkylChatClient.rooms')
+    def test_create_self_heals_missing_support_chat(self, rooms, provision):
+        rooms.side_effect = [
+            {'count': 0, 'results': []},
+            {'count': 1, 'results': [self.room]},
+        ]
+        provision.return_value = {'status': 'created'}
+
+        response = self.client.post('/api/v1/chat/', {'application': None}, format='json')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['id'], 'chat-uuid')
+        provision.assert_called_once()

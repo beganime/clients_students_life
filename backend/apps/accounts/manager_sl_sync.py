@@ -25,6 +25,8 @@ def build_mobile_client_payload(user):
         'citizenship': compact(profile.citizenship, 100),
         'country': compact(profile.country, 100),
         'city': compact(profile.city, 100),
+        'current_location': compact(profile.current_location, 255),
+        'location_updated_at': profile.location_updated_at.isoformat() if profile.location_updated_at else '',
         'profile': {
             'phone': compact(profile.phone, 50),
             'whatsapp': compact(profile.whatsapp, 50),
@@ -33,6 +35,8 @@ def build_mobile_client_payload(user):
             'country': compact(profile.country, 100),
             'city': compact(profile.city, 100),
             'language': compact(profile.language, 20),
+            'current_location': compact(profile.current_location, 255),
+            'location_updated_at': profile.location_updated_at.isoformat() if profile.location_updated_at else '',
         },
         'source': 'students_life_mobile_app',
     }

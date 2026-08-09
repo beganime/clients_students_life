@@ -270,6 +270,8 @@ export type UserProfile = {
   onboarding_public_id?: string;
   onboarding_access_token?: string;
   onboarding_kind?: 'applicant' | 'school_student';
+  current_location?: string;
+  location_updated_at?: string | null;
 };
 
 export type UserActivity = {

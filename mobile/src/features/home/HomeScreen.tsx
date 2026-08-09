@@ -105,9 +105,11 @@ export function HomeScreen() {
           <Text style={styles.documentsText}>Заполните анкету — аккаунт появится после одобрения менеджером</Text>
         </View>
         <AppButton
-          title="Заполнить анкету"
+          title={isAuthenticated ? 'Открыть полную анкету' : 'Заполнить анкету'}
           variant="outline"
-          onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
+          onPress={() => isAuthenticated
+            ? navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })
+            : navigation.navigate('ExpressApplication', { kind: 'applicant' })}
           style={styles.documentsButton}
         />
       </AppCard>

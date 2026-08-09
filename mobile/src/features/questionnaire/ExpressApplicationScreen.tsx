@@ -35,6 +35,7 @@ export function ExpressApplicationScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const login = useAuthStore(state => state.login);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const kind = route.params?.kind === 'school_student' ? 'school_student' : 'applicant';
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -120,7 +121,7 @@ export function ExpressApplicationScreen() {
     try {
       await login(credentials.mobile_login, credentials.shared_password);
       await clearOfflineQuestionnaireDraft();
-      navigation.navigate('App');
+      navigation.replace('ApplicantQuestionnaire', { formType: 'applicant' });
     } catch (error) {
       Alert.alert('Не удалось войти', getApiErrorMessage(error));
     } finally {
@@ -144,7 +145,7 @@ export function ExpressApplicationScreen() {
         <AppCard style={styles.statusCard}>
           <Text style={styles.statusTitle}>{statusLabel(submission.status, kind)}</Text>
           {submission.review_comment ? <Text style={styles.description}>Комментарий: {submission.review_comment}</Text> : null}
-          {submission.service_credentials ? (
+          {submission.service_credentials && !isAuthenticated ? (
             <>
               <View style={styles.credentials}>
                 <Text style={styles.credentialLine}>Логин: {submission.service_credentials.mobile_login}</Text>
@@ -153,9 +154,9 @@ export function ExpressApplicationScreen() {
               <AppButton title="Подтвердить и войти" onPress={handleInstantLogin} loading={entering} />
             </>
           ) : null}
-          {submission.can_fill_full_questionnaire && !submission.service_credentials ? (
+          {submission.can_fill_full_questionnaire && (isAuthenticated || !submission.service_credentials) ? (
             <AppButton
-              title="Заполнить полную анкету"
+              title={isAuthenticated ? 'Открыть полную анкету' : 'Заполнить полную анкету'}
               onPress={() => navigation.replace('ApplicantQuestionnaire', { formType: 'applicant' })}
             />
           ) : null}

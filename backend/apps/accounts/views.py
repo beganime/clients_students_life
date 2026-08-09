@@ -1,4 +1,5 @@
 import secrets
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -44,7 +45,7 @@ def has_provision_access(request):
 
 def normalize_me_payload(data):
     user_fields = ('email', 'first_name', 'last_name')
-    profile_fields = ('phone', 'whatsapp', 'telegram', 'country', 'city', 'citizenship', 'avatar', 'language')
+    profile_fields = ('phone', 'whatsapp', 'telegram', 'country', 'city', 'citizenship', 'avatar', 'language', 'current_location')
     payload = {}
 
     for field in user_fields:
@@ -67,6 +68,30 @@ def normalize_me_payload(data):
         payload['profile'] = profile_data
 
     return payload or data
+
+
+def ensure_current_location_reminder(user):
+    profile = ensure_client_profile(user)
+    reminder_after = timezone.now() - timedelta(days=30)
+    location_is_stale = (
+        not profile.current_location
+        or not profile.location_updated_at
+        or profile.location_updated_at < reminder_after
+    )
+    already_reminded = UserNotification.objects.filter(
+        user=user,
+        notification_type='current_location_reminder',
+        created_at__gte=reminder_after,
+    ).exists()
+    if location_is_stale and not already_reminded:
+        send_push_to_user(
+            user,
+            'Обновите местоположение',
+            'Укажите, где вы сейчас находитесь. Обновляйте эти данные раз в месяц и после каждой поездки.',
+            notification_type='current_location_reminder',
+            related_object_type='client_profile',
+            related_object_id=profile.pk,
+        )
 
 
 def ensure_manager_role(user):
@@ -250,6 +275,31 @@ class InternalClientNotificationView(APIView):
         return Response({'status': 'sent', 'active_tokens': active_tokens})
 
 
+class InternalBulkClientNotificationView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        if not has_provision_access(request):
+            return Response({'detail': 'Unauthorized.'}, status=status.HTTP_401_UNAUTHORIZED)
+        title = str(request.data.get('title') or '').strip()
+        body = str(request.data.get('body') or '').strip()
+        sl_ids = [str(value).strip().upper() for value in (request.data.get('sl_ids') or []) if str(value).strip()]
+        target_all = bool(request.data.get('target_all'))
+        if not title or not body or (not target_all and not sl_ids):
+            return Response({'detail': 'title, body and recipients are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        users = User.objects.filter(is_active=True, username__startswith='SL-')
+        if not target_all:
+            users = users.filter(username__in=sl_ids)
+        sent = 0
+        active_tokens = 0
+        for user in users.iterator():
+            active_tokens += DeviceToken.objects.filter(user=user, is_active=True).count()
+            send_push_to_user(user, title, body, notification_type='manager_message', related_object_type='manager_sl')
+            sent += 1
+        return Response({'status': 'sent', 'recipients': sent, 'active_tokens': active_tokens})
+
+
 class StaffLoginView(APIView):
     permission_classes = [permissions.AllowAny]
     throttle_scope = 'login'
@@ -282,6 +332,8 @@ class MeView(APIView):
 
     def get(self, request):
         ensure_client_profile(request.user)
+        if str(request.user.username or '').upper().startswith('SL-'):
+            ensure_current_location_reminder(request.user)
         serializer = UserMeSerializer(request.user, context={'request': request})
         return Response(serializer.data)
 
@@ -293,8 +345,20 @@ class MeView(APIView):
             context={'request': request},
         )
         serializer.is_valid(raise_exception=True)
+        previous_location = getattr(getattr(request.user, 'client_profile', None), 'current_location', '')
         user = serializer.save()
         sync_mobile_client_to_manager_sl(user)
+        profile = ClientProfile.objects.filter(user=user).first()
+        if profile and profile.current_location and profile.current_location != previous_location:
+            UserNotification.objects.create(
+                user=user,
+                title='Местоположение обновлено',
+                body=f'Текущее местоположение: {profile.current_location}',
+                notification_type='profile_location_updated',
+                related_object_type='client_profile',
+                related_object_id=profile.pk,
+                is_read=True,
+            )
         return Response(serializer.data)
 
 

@@ -67,6 +67,21 @@ class ProvisionClientAccountTests(TestCase):
         self.assertEqual(response.data['active_tokens'], 1)
         send_push.assert_called_once()
 
+    @patch('apps.accounts.views.send_push_to_user')
+    def test_bulk_notification_can_target_selected_clients(self, send_push):
+        User.objects.create_user(username='SL-010', password='x')
+        User.objects.create_user(username='SL-011', password='x')
+
+        response = self.client.post(
+            '/api/v1/accounts/internal/notify-bulk/',
+            {'sl_ids': ['SL-010', 'SL-011'], 'title': 'Важное сообщение', 'body': 'Проверьте анкету'},
+            format='json', **self.headers,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['recipients'], 2)
+        self.assertEqual(send_push.call_count, 2)
+
     @patch('apps.accounts.views.provision_akylchat_client')
     def test_repeated_provision_updates_password_without_duplicate(self, provision_akylchat):
         provision_akylchat.return_value = {'status': 'exists'}
@@ -87,4 +102,36 @@ class ProvisionClientAccountTests(TestCase):
         self.assertIn(
             'Changed_0710',
             UserNotification.objects.get(notification_type='account_credentials').body,
+        )
+
+    def test_me_creates_only_one_monthly_location_reminder(self):
+        user = User.objects.create_user(username='SL-020', password='x')
+        self.client.force_authenticate(user)
+
+        first = self.client.get('/api/v1/accounts/me/')
+        second = self.client.get('/api/v1/accounts/me/')
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(
+            UserNotification.objects.filter(user=user, notification_type='current_location_reminder').count(),
+            1,
+        )
+
+    def test_location_update_is_saved_in_action_history(self):
+        user = User.objects.create_user(username='SL-021', password='x')
+        self.client.force_authenticate(user)
+
+        response = self.client.patch(
+            '/api/v1/accounts/me/',
+            {'current_location': 'Казань'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        user.client_profile.refresh_from_db()
+        self.assertEqual(user.client_profile.current_location, 'Казань')
+        self.assertTrue(user.client_profile.location_updated_at)
+        self.assertTrue(
+            UserNotification.objects.filter(user=user, notification_type='profile_location_updated').exists()
         )
