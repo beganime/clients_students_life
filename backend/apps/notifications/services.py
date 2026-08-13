@@ -1,4 +1,5 @@
 import firebase_admin
+import requests
 from django.conf import settings
 from django.utils import timezone
 from firebase_admin import credentials, messaging
@@ -136,17 +137,40 @@ def send_push_notification(notification: PushNotification):
     return {'internal_created': created, 'push_sent': sent}
 
 
-def send_exam_reminder(exam: ClientExam, *, force=False):
-    if not exam.is_active or exam.acknowledged_by_user:
+def _exam_notification_kind(exam, now):
+    local_now = timezone.localtime(now, exam.starts_at.tzinfo)
+    if local_now.date() == exam.exam_date and not exam.exam_day_notified_at:
+        return 'exam_day'
+    if local_now.date() == exam.exam_date - timezone.timedelta(days=1) and not exam.day_before_notified_at:
+        return 'day_before'
+    return None
+
+
+def send_exam_reminder(exam: ClientExam, *, force=False, kind=None):
+    if not exam.is_active:
         return False
     now = timezone.now()
     if not force and exam.next_reminder_at and exam.next_reminder_at > now:
         return False
 
-    title = 'Напоминание об экзамене'
-    body = f'У вас экзамен: {exam.subject}. Дата: {exam.exam_date:%d.%m.%Y}, время: {exam.exam_time:%H:%M}.'
-    if exam.comment:
-        body = f'{body} {exam.comment}'
+    kind = kind or _exam_notification_kind(exam, now)
+    if kind == 'created' and exam.creation_notified_at:
+        return False
+    if kind == 'day_before' and exam.day_before_notified_at:
+        return False
+    if kind == 'exam_day' and exam.exam_day_notified_at:
+        return False
+    if kind not in {'created', 'day_before', 'exam_day'}:
+        exam.next_reminder_at = exam.compute_next_reminder_at(now)
+        exam.save(update_fields=['next_reminder_at', 'updated_at'])
+        return False
+
+    title = {
+        'created': 'Добавлен экзамен',
+        'day_before': 'Экзамен завтра',
+        'exam_day': 'Экзамен сегодня',
+    }[kind]
+    body = f'{exam.university}. Дата экзамена: {exam.exam_date:%d.%m.%Y}.'
 
     UserNotification.objects.create(
         user=exam.user,
@@ -181,9 +205,35 @@ def send_exam_reminder(exam: ClientExam, *, force=False):
             },
         )
     exam.last_reminded_at = now
+    setattr(exam, {
+        'created': 'creation_notified_at',
+        'day_before': 'day_before_notified_at',
+        'exam_day': 'exam_day_notified_at',
+    }[kind], now)
     exam.next_reminder_at = exam.compute_next_reminder_at(now)
-    exam.save(update_fields=['last_reminded_at', 'next_reminder_at', 'updated_at'])
+    exam.save(update_fields=[
+        'last_reminded_at', 'creation_notified_at', 'day_before_notified_at',
+        'exam_day_notified_at', 'next_reminder_at', 'updated_at',
+    ])
     return True
+
+
+def notify_exam_seen(exam: ClientExam):
+    callback_url = str(getattr(settings, 'EXAM_SL_CALLBACK_URL', '') or '').rstrip('/')
+    api_key = str(getattr(settings, 'EXAM_SL_API_KEY', '') or '')
+    if not callback_url or not api_key or not exam.manager_sl_exam_id:
+        return False
+    try:
+        response = requests.post(
+            f'{callback_url}/api/internal/exams/{exam.manager_sl_exam_id}/seen/',
+            json={'acknowledged_at': exam.acknowledged_at.isoformat() if exam.acknowledged_at else ''},
+            headers={'X-API-KEY': api_key},
+            timeout=10,
+        )
+        response.raise_for_status()
+        return True
+    except requests.RequestException:
+        return False
 
 
 def send_admin_reminder(reminder: AdminReminder, *, test_user=None):

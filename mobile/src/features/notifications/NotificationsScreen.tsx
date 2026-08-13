@@ -124,9 +124,8 @@ function NotificationCard({
             <Text style={styles.body}>{item.body}</Text>
             {exam ? (
               <View style={styles.examBox}>
-                <Text style={styles.examTitle}>{exam.subject}</Text>
-                <Text style={styles.examMeta}>{formatExamDate(exam.exam_date, exam.exam_time)}</Text>
-                {exam.comment ? <Text style={styles.examComment}>{exam.comment}</Text> : null}
+                <Text style={styles.examTitle}>{exam.university}</Text>
+                <Text style={styles.examMeta}>{formatExamDate(exam.exam_date)}</Text>
               </View>
             ) : null}
             <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
@@ -146,11 +145,10 @@ function NotificationCard({
   );
 }
 
-function formatExamDate(dateValue: string, timeValue: string) {
-  const [hours = '00', minutes = '00'] = String(timeValue || '').split(':');
-  const date = new Date(`${dateValue}T${hours}:${minutes}:00`);
-  if (Number.isNaN(date.getTime())) return `${dateValue} ${timeValue}`;
-  return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+function formatExamDate(dateValue: string) {
+  const date = new Date(`${dateValue}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return dateValue;
+  return date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 const styles = StyleSheet.create({
@@ -170,7 +168,6 @@ const styles = StyleSheet.create({
   examBox: { marginTop: spacing.sm, padding: spacing.sm, borderRadius: 10, backgroundColor: 'rgba(13,65,109,0.06)' },
   examTitle: { color: colors.secondary, fontWeight: typography.weights.heavy },
   examMeta: { color: colors.text, marginTop: 2, fontWeight: typography.weights.bold },
-  examComment: { color: colors.muted, marginTop: 4, lineHeight: 18 },
   ackButton: { marginTop: spacing.sm },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#DC2626', marginTop: spacing.xs },
 });

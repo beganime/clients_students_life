@@ -80,6 +80,21 @@ export function HomeScreen() {
       {isAuthenticated ? (
         <>
           <AppCard style={styles.documentsCard}>
+            <View style={styles.examIcon}>
+              <SvgIcon name="calendar" size={23} color={colors.primary} />
+            </View>
+            <View style={styles.documentsTextBox}>
+              <Text style={styles.documentsTitle}>Мои экзамены</Text>
+              <Text style={styles.documentsText}>Даты экзаменов и подтверждение просмотра уведомлений</Text>
+            </View>
+            <AppButton
+              title="Открыть экзамены"
+              variant="outline"
+              onPress={() => navigation.navigate('Exams')}
+              style={styles.documentsButton}
+            />
+          </AppCard>
+          <AppCard style={styles.documentsCard}>
             <View style={styles.documentsIcon}>
               <SvgIcon name="file" size={23} color={colors.secondary} />
             </View>
@@ -300,6 +315,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.medium,
   },
   heroActions: { gap: spacing.sm, marginTop: spacing.lg },
+  examIcon: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: 'rgba(185,28,28,0.08)', alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   statCard: { flex: 1, padding: spacing.md },
   statValue: { color: colors.secondary, fontSize: 22, fontWeight: typography.weights.heavy },

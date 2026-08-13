@@ -315,18 +315,11 @@ export type UserNotification = {
 
 export type ClientExam = {
   id: number;
-  subject: string;
+  university: string;
   exam_date: string;
-  exam_time: string;
-  timezone?: string;
-  comment?: string;
-  reminder_start_at?: string | null;
-  repeat_until_acknowledged?: boolean;
   acknowledged_at?: string | null;
   acknowledged_by_user: boolean;
   is_active: boolean;
-  last_reminded_at?: string | null;
-  next_reminder_at?: string | null;
   created_at: string;
   updated_at?: string;
 };

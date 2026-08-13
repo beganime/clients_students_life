@@ -99,6 +99,7 @@ export function ProfileScreen() {
         <QuickAction icon="application" title="Анкета" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
         <QuickAction icon="chat" title="Мои чаты" onPress={() => navigation.navigate('Chat')} />
         <QuickAction icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
+        <QuickAction icon="calendar" title="Экзамены" onPress={() => navigation.navigate('Exams')} />
       </View>
 
       {!isManager && locationNeedsUpdate ? (
@@ -130,6 +131,7 @@ export function ProfileScreen() {
       <View style={styles.menu}>
         <ProfileMenuItem icon="edit" title="Редактировать профиль" onPress={() => navigation.navigate('EditProfile')} />
         <ProfileMenuItem icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
+        <ProfileMenuItem icon="calendar" title="Экзамены" onPress={() => navigation.navigate('Exams')} />
         <ProfileMenuItem icon="document" title={isManager ? 'Заявки клиентов' : 'Мои заявки'} onPress={() => navigation.navigate('MyApplications')} />
         <ProfileMenuItem icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
         <ProfileMenuItem icon="application" title="Анкета абитуриента" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />

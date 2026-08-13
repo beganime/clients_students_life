@@ -79,6 +79,7 @@ class ClientExamSerializer(serializers.ModelSerializer):
             'id',
             'user',
             'subject',
+            'university',
             'exam_date',
             'exam_time',
             'timezone',
@@ -104,9 +105,33 @@ class ClientExamSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         )
+        extra_kwargs = {'university': {'required': False, 'allow_blank': True}}
+
+    def validate(self, attrs):
+        if not str(attrs.get('university') or '').strip():
+            attrs['university'] = str(attrs.get('subject') or getattr(self.instance, 'university', '') or 'Экзамен').strip()
+        return attrs
 
     def validate_subject(self, value):
         value = str(value or '').strip()
         if not value:
             raise serializers.ValidationError('Subject is required.')
         return value
+
+
+class ClientExamPublicSerializer(serializers.ModelSerializer):
+    """Minimal client contract: credentials, links and staff notes never leave the backend."""
+
+    class Meta:
+        model = ClientExam
+        fields = (
+            'id',
+            'university',
+            'exam_date',
+            'acknowledged_at',
+            'acknowledged_by_user',
+            'is_active',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = fields

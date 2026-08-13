@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import ClientExam, DeviceToken, PushNotification, UserNotification
-from .serializers import ClientExamSerializer, DeviceTokenSerializer, PushNotificationSerializer, UserNotificationSerializer
+from .serializers import ClientExamPublicSerializer, ClientExamSerializer, DeviceTokenSerializer, PushNotificationSerializer, UserNotificationSerializer
 from .services import send_exam_reminder
 from apps.accounts.models import is_manager_user
 from apps.documents.views import has_manager_or_service_access, has_service_api_access
@@ -89,7 +89,7 @@ class MyExamListView(APIView):
 
     def get(self, request):
         exams = ClientExam.objects.filter(user=request.user, is_active=True).order_by('exam_date', 'exam_time')
-        return Response(ClientExamSerializer(exams, many=True, context={'request': request}).data)
+        return Response(ClientExamPublicSerializer(exams, many=True, context={'request': request}).data)
 
 
 class MyExamAcknowledgeView(APIView):
@@ -100,7 +100,9 @@ class MyExamAcknowledgeView(APIView):
         if not exam:
             return Response({'detail': 'Exam not found.'}, status=status.HTTP_404_NOT_FOUND)
         exam.mark_acknowledged()
-        return Response(ClientExamSerializer(exam, context={'request': request}).data)
+        from .services import notify_exam_seen
+        notify_exam_seen(exam)
+        return Response(ClientExamPublicSerializer(exam, context={'request': request}).data)
 
 
 class ServiceClientExamListCreateView(APIView):
@@ -146,13 +148,19 @@ class ServiceClientExamListCreateView(APIView):
             exam.acknowledged_by_user = False
             exam.acknowledged_at = None
             exam.last_reminded_at = None
+            exam.creation_notified_at = None
+            exam.day_before_notified_at = None
+            exam.exam_day_notified_at = None
         exam.next_reminder_at = exam.compute_next_reminder_at()
         update_fields = ['next_reminder_at', 'updated_at']
         if schedule_changed:
-            update_fields.extend(['acknowledged_by_user', 'acknowledged_at', 'last_reminded_at'])
+            update_fields.extend([
+                'acknowledged_by_user', 'acknowledged_at', 'last_reminded_at',
+                'creation_notified_at', 'day_before_notified_at', 'exam_day_notified_at',
+            ])
         exam.save(update_fields=update_fields)
         if existing is None or schedule_changed:
-            send_exam_reminder(exam, force=True)
+            send_exam_reminder(exam, force=True, kind='created')
         payload = ClientExamSerializer(exam, context={'request': request}).data
         payload['sync_status'] = 'updated' if existing else 'created'
         return Response(payload, status=status.HTTP_200_OK if existing else status.HTTP_201_CREATED)
