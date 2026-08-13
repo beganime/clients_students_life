@@ -49,6 +49,7 @@ export type RootStackParamList = {
   DataConsent: undefined;
   FavoriteUniversities: undefined;
   Notifications: undefined;
+  Exams: undefined;
   Chat: undefined;
   ChatRoom: { id: number | string };
 

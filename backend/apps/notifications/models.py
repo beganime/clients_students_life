@@ -100,6 +100,7 @@ class ClientExam(TimeStampedModel):
         verbose_name='Пользователь',
     )
     subject = models.CharField('Предмет экзамена', max_length=255)
+    university = models.CharField('Вуз', max_length=255)
     exam_date = models.DateField('Дата экзамена')
     exam_time = models.TimeField('Время экзамена')
     timezone = models.CharField('Часовой пояс', max_length=64, default='Asia/Ashgabat')
@@ -127,6 +128,9 @@ class ClientExam(TimeStampedModel):
     manager_sl_exam_id = models.CharField('Manager SL exam ID', max_length=100, blank=True)
     last_reminded_at = models.DateTimeField('Последнее напоминание', null=True, blank=True)
     next_reminder_at = models.DateTimeField('Следующее напоминание', null=True, blank=True)
+    creation_notified_at = models.DateTimeField('Уведомление о добавлении', null=True, blank=True)
+    day_before_notified_at = models.DateTimeField('Уведомление за день', null=True, blank=True)
+    exam_day_notified_at = models.DateTimeField('Уведомление в день экзамена', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Экзамен клиента'
@@ -165,30 +169,22 @@ class ClientExam(TimeStampedModel):
         self.save(update_fields=['acknowledged_by_user', 'acknowledged_at', 'next_reminder_at', 'updated_at'])
 
     def compute_next_reminder_at(self, now=None):
-        if self.acknowledged_by_user or not self.is_active:
+        if not self.is_active:
             return None
 
         now = now or timezone.now()
         exam_at = self.starts_at
-        if now >= exam_at:
+        exam_day_end = exam_at.replace(hour=23, minute=59, second=59)
+        if now >= exam_day_end:
             return None
 
-        milestones = [
-            exam_at - timezone.timedelta(days=7),
-            exam_at - timezone.timedelta(days=3),
-            exam_at - timezone.timedelta(days=1),
-            exam_at - timezone.timedelta(hours=3),
-            exam_at - timezone.timedelta(hours=1),
-        ]
-        future_milestones = [item for item in milestones if item > now]
-
-        if not self.last_reminded_at:
-            return self.reminder_start_at if self.reminder_start_at and self.reminder_start_at > now else now
-
-        repeat_at = now + timezone.timedelta(hours=1) if self.repeat_until_acknowledged else None
-        candidates = future_milestones
-        if repeat_at and repeat_at < exam_at:
-            candidates.append(repeat_at)
+        day_before = (exam_at - timezone.timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+        exam_day = exam_at.replace(hour=9, minute=0, second=0, microsecond=0)
+        candidates = []
+        if not self.day_before_notified_at and now.date() <= day_before.date():
+            candidates.append(max(day_before, now))
+        if not self.exam_day_notified_at:
+            candidates.append(max(exam_day, now))
         return min(candidates) if candidates else None
 
 

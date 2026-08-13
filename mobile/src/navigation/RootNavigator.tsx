@@ -14,6 +14,7 @@ import { KnowledgeDetailScreen } from '../features/knowledge/KnowledgeDetailScre
 import { KnowledgeListScreen } from '../features/knowledge/KnowledgeListScreen';
 import { NewsDetailScreen } from '../features/news/NewsDetailScreen';
 import { NotificationsScreen } from '../features/notifications/NotificationsScreen';
+import { ExamsScreen } from '../features/exams/ExamsScreen';
 import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
 import { EditProfileScreen } from '../features/profile/EditProfileScreen';
 import { ApplicantQuestionnaireScreen, DataConsentScreen, ExpressApplicationScreen } from '../features/questionnaire';
@@ -71,6 +72,7 @@ export function RootNavigator() {
         <Stack.Screen name="DataConsent" component={DataConsentScreen} options={{ title: 'Согласие на данные' }} />
         <Stack.Screen name="FavoriteUniversities" component={FavoriteUniversitiesScreen} options={{ title: 'Избранные вузы' }} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Уведомления' }} />
+        <Stack.Screen name="Exams" component={ExamsScreen} options={{ title: 'Экзамены' }} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Редактировать профиль' }} />
         <Stack.Screen name="ChatRoom" component={ChatRoomScreen} options={{ title: 'Чат' }} />
       </Stack.Navigator>

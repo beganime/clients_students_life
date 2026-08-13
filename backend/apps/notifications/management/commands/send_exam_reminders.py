@@ -19,7 +19,6 @@ class Command(BaseCommand):
             .select_related('user')
             .filter(
                 is_active=True,
-                acknowledged_by_user=False,
                 next_reminder_at__isnull=False,
                 next_reminder_at__lte=now,
             )
