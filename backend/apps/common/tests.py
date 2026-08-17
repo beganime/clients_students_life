@@ -1,5 +1,12 @@
+from unittest.mock import patch
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
+
+from apps.notifications.models import DeviceToken, UserNotification
+
+from .models import DeveloperRequest
 
 
 class DeploymentReadinessTests(TestCase):
@@ -22,6 +29,42 @@ class DeploymentReadinessTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
+
+
+class DeveloperPageTests(TestCase):
+    def test_turkmen_page_and_form_are_available(self):
+        response = self.client.get('/developer/?lang=tk')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Işiňiz üçin web sahypa')
+        self.assertContains(response, '3 gün')
+        self.assertContains(response, 'name="language" value="tk"')
+
+    @patch('apps.common.views.send_raw_push_to_tokens', return_value=1)
+    def test_request_is_saved_and_pushes_latest_active_device(self, send_push):
+        user = get_user_model().objects.create_user(
+            username='developer-notification-user',
+            email='begenchyagmurow2008@gmail.com',
+            password='test-only-password',
+        )
+        DeviceToken.objects.create(user=user, token='current-developer-device-token', is_active=True)
+
+        response = self.client.post('/developer/', {
+            'language': 'ru',
+            'name': 'Тестовая компания',
+            'contact': '@test_contact',
+            'contact_method': 'telegram',
+            'project_type': 'website',
+            'budget': 'по договорённости',
+            'timeline': '7 дней',
+            'message': 'Нужен тестовый сайт',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(DeveloperRequest.objects.count(), 1)
+        self.assertTrue(UserNotification.objects.filter(user=user, notification_type='developer_request').exists())
+        send_push.assert_called_once()
+        self.assertEqual(send_push.call_args.args[0], ['current-developer-device-token'])
 
 
 @override_settings(MANAGER_SL_PROVISION_TOKEN='manager-token')
