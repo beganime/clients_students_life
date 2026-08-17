@@ -40,6 +40,24 @@ class DeveloperPageTests(TestCase):
         self.assertContains(response, '3 gün')
         self.assertContains(response, 'name="language" value="tk"')
 
+    def test_developer_contacts_are_rendered_as_links(self):
+        from .models import AppSetting
+
+        AppSetting.objects.create(key='developer_telegram', value='@beganime')
+        AppSetting.objects.create(key='developer_instagram', value='beganime4')
+        AppSetting.objects.create(key='developer_phone', value='+99363995579 / +99371947297')
+        AppSetting.objects.create(
+            key='developer_email',
+            value='begenchyagmurow2008@gmail.com / admin@tmmail.ru / begenchyagmurow@mail.ru',
+        )
+
+        response = self.client.get('/developer/')
+
+        self.assertContains(response, 'https://t.me/beganime')
+        self.assertContains(response, 'https://instagram.com/beganime4')
+        self.assertContains(response, 'tel:+99363995579')
+        self.assertContains(response, 'mailto:admin@tmmail.ru')
+
     @patch('apps.common.views.send_raw_push_to_tokens', return_value=1)
     def test_request_is_saved_and_pushes_latest_active_device(self, send_push):
         user = get_user_model().objects.create_user(

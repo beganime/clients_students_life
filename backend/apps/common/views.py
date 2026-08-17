@@ -147,12 +147,29 @@ def _notify_developer_request(developer_request):
 
 def _developer_contacts():
     settings = {item.key: item.value for item in AppSetting.objects.filter(
-        key__in=('developer_telegram', 'developer_phone', 'developer_email')
+        key__in=(
+            'developer_telegram',
+            'developer_phone',
+            'developer_email',
+            'developer_instagram',
+        )
     )}
+    telegram = settings.get('developer_telegram', '').strip()
+    instagram = settings.get('developer_instagram', '').strip()
+    emails = tuple(part.strip() for part in settings.get('developer_email', '').split('/') if part.strip())
+    phones = tuple(part.strip() for part in settings.get('developer_phone', '').split('/') if part.strip())
     return {
-        'telegram': settings.get('developer_telegram', ''),
-        'phone': settings.get('developer_phone', ''),
-        'email': settings.get('developer_email', ''),
+        'telegram': telegram,
+        'telegram_url': f'https://t.me/{telegram.lstrip("@").strip()}' if telegram else '',
+        'instagram': instagram,
+        'instagram_url': f'https://instagram.com/{instagram.lstrip("@").strip()}' if instagram else '',
+        'emails': emails,
+        'email': ' / '.join(emails),
+        'phones': tuple({
+            'label': phone,
+            'url': f'tel:{"".join(character for character in phone if character.isdigit() or character == "+")}',
+        } for phone in phones),
+        'phone': ' / '.join(phones),
     }
 
 

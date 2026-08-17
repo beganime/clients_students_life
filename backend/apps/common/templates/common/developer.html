@@ -326,6 +326,9 @@
       overflow-wrap: anywhere;
     }
     .contact-item small { display: block; color: var(--fog); margin-bottom: 4px; }
+    .contact-values { display: grid; gap: 6px; }
+    .contact-value { color: var(--frost); text-decoration: none; }
+    .contact-value:hover { color: var(--white); text-decoration: underline; }
     form { display: grid; gap: 14px; }
     .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     label {
@@ -551,9 +554,10 @@
             <h3>{% if is_turkmen %}Habarlaşmak{% else %}Контакты{% endif %}</h3>
             <p>{% if is_turkmen %}Işi gysgaça düşündiriň, men size amatly messenjerde ýa-da email arkaly jogap bererin.{% else %}Оставьте короткое описание задачи, и я отвечу в удобном для вас мессенджере или по почте.{% endif %}</p>
             <div class="contact-list">
-              <div class="contact-item"><small>Telegram</small>{{ contacts.telegram|default:"Telegram будет добавлен" }}</div>
-              <div class="contact-item"><small>Телефон</small>{{ contacts.phone|default:"Телефон будет добавлен" }}</div>
-              <div class="contact-item"><small>Email</small>{{ contacts.email|default:"Email будет добавлен" }}</div>
+              {% if contacts.telegram_url %}<a class="contact-item" href="{{ contacts.telegram_url }}" target="_blank" rel="noopener"><small>Telegram</small>{{ contacts.telegram }}</a>{% endif %}
+              {% if contacts.instagram_url %}<a class="contact-item" href="{{ contacts.instagram_url }}" target="_blank" rel="noopener"><small>Instagram</small>@{{ contacts.instagram }}</a>{% endif %}
+              {% if contacts.phones %}<div class="contact-item"><small>IMO / Link</small><div class="contact-values">{% for phone in contacts.phones %}<a class="contact-value" href="{{ phone.url }}">{{ phone.label }}</a>{% endfor %}</div></div>{% endif %}
+              {% if contacts.emails %}<div class="contact-item"><small>Gmail / Email</small><div class="contact-values">{% for email in contacts.emails %}<a class="contact-value" href="mailto:{{ email }}">{{ email }}</a>{% endfor %}</div></div>{% endif %}
             </div>
           </aside>
 
