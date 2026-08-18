@@ -2,7 +2,7 @@
   "expo": {
     "name": "Students Life",
     "slug": "students-life",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,7 +21,7 @@
         "NSPhotoLibraryUsageDescription": "Students Life uses your photo library so you can choose and upload a profile photo, an applicant photo, or admission documents such as a passport, transcript, or certificate.",
         "NSPhotoLibraryAddUsageDescription": "Students Life may save selected images while you prepare profile photos and admission documents for your application."
       },
-      "buildNumber": "6"
+      "buildNumber": "7"
     },
     "android": {
       "adaptiveIcon": {
@@ -33,7 +33,7 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.students.life",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 6
+      "versionCode": 7
     },
     "web": {
       "favicon": "./src/assets/favicon.png"

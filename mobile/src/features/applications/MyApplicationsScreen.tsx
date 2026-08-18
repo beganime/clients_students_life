@@ -27,7 +27,7 @@ export function MyApplicationsScreen() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
   if (!isAuthenticated) {
-    return <LoginRequired title="Мои заявки доступны после входа" description="Чтобы видеть историю заявок и статусы, войдите или зарегистрируйтесь." />;
+    return <LoginRequired title="История доступна после входа" description="Войдите по SL-ID после одобрения экспресс-заявки, чтобы видеть статусы и историю действий." />;
   }
 
   return <MyApplicationsContent />;
