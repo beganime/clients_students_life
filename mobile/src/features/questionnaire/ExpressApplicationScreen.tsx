@@ -31,6 +31,9 @@ const SERVICES = [
   'Общежитие и встреча',
 ];
 
+const EXPRESS_COMMENT_MAX_LENGTH = 1000;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.(?:com|ru)$/i;
+
 export function ExpressApplicationScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -95,8 +98,13 @@ export function ExpressApplicationScreen() {
   });
 
   const handleSubmit = () => {
-    if (!fullName.trim() || !phone.trim() || !services.length || !requestText.trim()) {
-      Alert.alert('Заполните обязательные поля', 'Нужны ФИО, контакт, хотя бы одна услуга и краткое описание запроса.');
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!fullName.trim() || !phone.trim() || !normalizedEmail || !services.length || !requestText.trim()) {
+      Alert.alert('Заполните обязательные поля', 'Нужны ФИО, контакт, Email, хотя бы одна услуга и краткое описание запроса.');
+      return;
+    }
+    if (!EMAIL_PATTERN.test(normalizedEmail)) {
+      Alert.alert('Проверьте Email', 'Укажите адрес в формате name@provider.com или name@provider.ru.');
       return;
     }
     submitMutation.mutate();
@@ -166,7 +174,17 @@ export function ExpressApplicationScreen() {
         <AppCard style={styles.form}>
           <AppInput label="ФИО *" value={fullName} onChangeText={setFullName} placeholder="Полностью, как в документах" />
           <AppInput label="Телефон или мессенджер *" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+993 ..." />
-          <AppInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          <AppInput
+            label="Email *"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="emailAddress"
+            placeholder="name@provider.com"
+            helper="Допустим адрес с окончанием .com или .ru"
+          />
           <Text style={styles.label}>Какие услуги нужны *</Text>
           <View style={styles.choices}>
             {SERVICES.map(service => {
@@ -190,8 +208,11 @@ export function ExpressApplicationScreen() {
             value={requestText}
             onChangeText={setRequestText}
             multiline
+            maxLength={EXPRESS_COMMENT_MAX_LENGTH}
+            blurOnSubmit={false}
             style={styles.multiline}
             placeholder="Например: хочу поступить на лечебное дело в России, нужна помощь с подбором и документами"
+            helper={`${requestText.length}/${EXPRESS_COMMENT_MAX_LENGTH}`}
           />
           <AppButton title="Отправить заявку" onPress={handleSubmit} loading={submitMutation.isPending} />
         </AppCard>

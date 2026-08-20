@@ -65,6 +65,7 @@ const QUESTIONNAIRE_FIELD_LABELS: Record<string, string> = {
   full_name: 'Полное ФИО',
   birth_date: 'Дата рождения',
   gender: 'Пол',
+  is_conscript: 'Призывник',
   citizenship: 'Гражданство',
   marital_status: 'Семейное положение',
   residence_country: 'Страна проживания',
@@ -423,6 +424,14 @@ export function ApplicantQuestionnaireScreen() {
         <DateField label="Дата рождения *" value={form.birth_date || ''} onChange={value => update('birth_date', value)} maximumDate={new Date()} />
         {!isSchoolStudent ? (
           <ChoiceGroup value={form.gender || ''} options={[{ label: 'Мужской', value: 'male' }, { label: 'Женский', value: 'female' }]} onChange={value => update('gender', value)} />
+        ) : null}
+        {!isSchoolStudent ? (
+          <Pressable style={styles.pendingRow} onPress={() => update('is_conscript', !form.is_conscript)}>
+            <View style={[styles.checkbox, form.is_conscript && styles.checkboxActive]}>
+              {form.is_conscript ? <SvgIcon name="check" size={15} color={colors.white} /> : null}
+            </View>
+            <Text style={styles.pendingText}>Призывник</Text>
+          </Pressable>
         ) : null}
         <DropdownSelect label="Гражданство *" options={CITIZENSHIPS} value={form.citizenship || ''} onChange={value => update('citizenship', value)} allowCustom />
         {!isSchoolStudent ? <DropdownSelect label="Семейное положение *" options={MARITAL_STATUSES} value={form.marital_status || ''} onChange={value => update('marital_status', value)} /> : null}

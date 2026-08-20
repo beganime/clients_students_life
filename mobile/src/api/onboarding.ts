@@ -136,7 +136,7 @@ export function buildExpressOnboardingPayload(input: {
   academicYear: number;
   fullName: string;
   phone: string;
-  email?: string;
+  email: string;
   requestedServices: string[];
   requestText: string;
   fcmToken?: string;
@@ -147,7 +147,7 @@ export function buildExpressOnboardingPayload(input: {
     academic_year: input.academicYear,
     full_name: input.fullName.trim(),
     phone: input.phone.trim(),
-    email: input.email?.trim(),
+    email: input.email.trim().toLowerCase(),
     payload: {
       requested_services: input.requestedServices,
       request_text: input.requestText.trim(),

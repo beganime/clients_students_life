@@ -27,6 +27,7 @@ export function Screen({ children, scroll = false, style, refreshing = false, on
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding }, style]}
+      automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       showsVerticalScrollIndicator={false}

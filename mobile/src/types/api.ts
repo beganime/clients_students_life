@@ -341,6 +341,7 @@ export type ApplicantQuestionnaire = {
   full_name?: string;
   birth_date?: string | null;
   gender?: 'male' | 'female' | '';
+  is_conscript?: boolean;
   citizenship?: string;
   marital_status?: string;
   face_photo?: string | null;
