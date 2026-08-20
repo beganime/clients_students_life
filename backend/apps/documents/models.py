@@ -12,7 +12,7 @@ from apps.common.models import SortableModel, TimeStampedModel
 
 def user_document_upload_to(instance, filename):
     ext = os.path.splitext(filename or '')[1].lower()
-    if ext not in {'.pdf', '.jpg', '.jpeg', '.png', '.webp'}:
+    if ext not in {'.pdf', '.docx', '.jpg', '.jpeg', '.png', '.webp'}:
         ext = '.bin'
     return f'user_documents/{instance.user_id}/{uuid.uuid4().hex}{ext}'
 
@@ -93,6 +93,8 @@ class UserDocument(TimeStampedModel):
         default='pending',
     )
     manager_sl_sync_error = models.TextField('Manager SL sync error', blank=True)
+    disk_path = models.CharField('DiskSL path', max_length=1000, blank=True)
+    disk_folder_url = models.URLField('DiskSL manager folder URL', max_length=1000, blank=True)
 
     class Meta:
         verbose_name = 'Документ клиента'
