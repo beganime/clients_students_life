@@ -1,4 +1,5 @@
 import hashlib
+import logging
 
 from django.conf import settings
 from rest_framework import permissions, status, viewsets
@@ -13,6 +14,10 @@ from .services import notify_chat_message, staff_profile_for
 from .models import ChatMessage, ChatRoom
 from .serializers import ChatMessageCreateSerializer, ChatMessageSerializer, ChatRoomSerializer
 from .akyl import AkylChatClient, AkylChatError, provision_akylchat_client
+from .disk_archive import archive_chat_attachment
+
+
+logger = logging.getLogger(__name__)
 
 
 class LocalChatEnabled(permissions.BasePermission):
@@ -198,6 +203,21 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
                     upload_field=upload_field,
                     manager_name=(request.user.get_full_name() or request.user.username) if actor == 'manager' else '',
                 )
+                if upload:
+                    try:
+                        archive_result = archive_chat_attachment(
+                            upload,
+                            sl_id=sl_id,
+                            mobile_user_id=request.user.id if actor == 'client' else '',
+                            actor=(request.user.get_full_name() or request.user.username or actor),
+                        )
+                        message['disk_archive'] = {
+                            'status': 'stored',
+                            'path': archive_result.get('disk_path', '') if archive_result else '',
+                        }
+                    except Exception as exc:
+                        logger.exception('Chat attachment was sent but could not be archived in DiskSL: %s', exc)
+                        message['disk_archive'] = {'status': 'retry_required'}
             except AkylChatError as exc:
                 return akyl_error_response(exc)
             return Response(message, status=status.HTTP_201_CREATED)
@@ -218,7 +238,24 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         room.save(update_fields=['assigned_manager', 'updated_at'] if sender_staff else ['updated_at'])
         notify_chat_message(message)
         response_serializer = ChatMessageSerializer(message, context={'request': request})
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        response_data = dict(response_serializer.data)
+        local_upload = request.FILES.get('image') or request.FILES.get('file')
+        if local_upload:
+            try:
+                archive_result = archive_chat_attachment(
+                    local_upload,
+                    sl_id=room.user.username,
+                    mobile_user_id=room.user_id,
+                    actor=(request.user.get_full_name() or request.user.username),
+                )
+                response_data['disk_archive'] = {
+                    'status': 'stored',
+                    'path': archive_result.get('disk_path', '') if archive_result else '',
+                }
+            except Exception as exc:
+                logger.exception('Local chat attachment was not archived in DiskSL: %s', exc)
+                response_data['disk_archive'] = {'status': 'retry_required'}
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def mark_read(self, request, pk=None):

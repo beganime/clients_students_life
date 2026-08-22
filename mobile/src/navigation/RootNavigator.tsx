@@ -19,6 +19,7 @@ import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
 import { EditProfileScreen } from '../features/profile/EditProfileScreen';
 import { ApplicantQuestionnaireScreen, DataConsentScreen, ExpressApplicationScreen } from '../features/questionnaire';
 import { ServiceDetailScreen } from '../features/services/ServiceDetailScreen';
+import { GovernmentLinePricesScreen } from '../features/services/GovernmentLinePricesScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { StaffScreen } from '../features/staff/StaffScreen';
 import { CityDetailScreen } from '../features/universities/CityDetailScreen';
@@ -64,6 +65,7 @@ export function RootNavigator() {
         <Stack.Screen name="VisaInfo" component={VisaInfoScreen} options={{ title: 'Виза' }} />
         <Stack.Screen name="ToursInfo" component={ToursInfoScreen} options={{ title: 'Туры' }} />
         <Stack.Screen name="AdmissionInfo" component={AdmissionInfoScreen} options={{ title: 'Поступление' }} />
+        <Stack.Screen name="GovernmentLinePrices" component={GovernmentLinePricesScreen} options={{ title: 'Цены Гослинии' }} />
         <Stack.Screen name="Chat" component={ChatListScreen} options={{ title: 'Чат с менеджером' }} />
         <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'История действий' }} />
         <Stack.Screen name="MyDocuments" component={MyDocumentsScreen} options={{ title: 'Мои документы' }} />

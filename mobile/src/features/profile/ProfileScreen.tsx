@@ -94,7 +94,7 @@ export function ProfileScreen() {
       </RedGradientHero>
 
       <View style={styles.quickGrid}>
-        <QuickAction icon="document" title="Мои заявки" onPress={() => navigation.navigate('MyApplications')} />
+        <QuickAction icon="document" title="История действий" onPress={() => navigation.navigate('MyApplications')} />
         <QuickAction icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
         <QuickAction icon="application" title="Анкета" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
         <QuickAction icon="chat" title="Мои чаты" onPress={() => navigation.navigate('Chat')} />
@@ -132,7 +132,7 @@ export function ProfileScreen() {
         <ProfileMenuItem icon="edit" title="Редактировать профиль" onPress={() => navigation.navigate('EditProfile')} />
         <ProfileMenuItem icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
         <ProfileMenuItem icon="calendar" title="Экзамены" onPress={() => navigation.navigate('Exams')} />
-        <ProfileMenuItem icon="document" title={isManager ? 'Заявки клиентов' : 'Мои заявки'} onPress={() => navigation.navigate('MyApplications')} />
+        <ProfileMenuItem icon="document" title={isManager ? 'Заявки клиентов' : 'История действий'} onPress={() => navigation.navigate('MyApplications')} />
         <ProfileMenuItem icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
         <ProfileMenuItem icon="application" title="Анкета абитуриента" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
         {!isManager ? <ProfileMenuItem icon="application" title="Заполнить анкету" onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} /> : null}

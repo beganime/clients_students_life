@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
@@ -60,6 +61,32 @@ class AkylChatProxyTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['id'], 'message-uuid')
         send_message.assert_called_once()
+
+    @patch('apps.chat.views.archive_chat_attachment')
+    @patch('apps.chat.views.AkylChatClient.send_message')
+    def test_chat_file_is_archived_in_disksl_after_send(self, send_message, archive_chat_attachment):
+        send_message.return_value = {
+            'id': 'file-message-uuid',
+            'room': 'chat-uuid',
+            'message_type': 'file',
+            'text': '',
+            'is_mine': True,
+            'is_read': False,
+            'created_at': '2026-08-08T00:00:00Z',
+        }
+        archive_chat_attachment.return_value = {
+            'disk_path': '2027/Контракт/Тест (SL-001)/чат/document.pdf',
+        }
+
+        response = self.client.post(
+            '/api/v1/chat/chat-uuid/send_message/',
+            {'file': SimpleUploadedFile('document.pdf', b'%PDF-1.4', content_type='application/pdf')},
+            format='multipart',
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data['disk_archive']['status'], 'stored')
+        archive_chat_attachment.assert_called_once()
 
     @patch('apps.chat.views.provision_akylchat_client')
     @patch('apps.chat.views.AkylChatClient.rooms')

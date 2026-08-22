@@ -18,9 +18,11 @@ from apps.documents.views import has_manager_or_service_access
 from apps.chat.akyl import AkylChatError, provision_akylchat_client
 from apps.notifications.models import DeviceToken, UserNotification
 from apps.notifications.services import send_push_to_user, send_raw_push_to_tokens
+from apps.common.manager_sl import ManagerSLClient, ManagerSLClientError, ManagerSLConfigError
 
 from .models import AppRole, AppUserActivity, ClientProfile, ensure_client_profile
 from .manager_sl_sync import sync_mobile_client_to_manager_sl
+from .name_parser import parse_russian_full_name
 from .serializers import (
     ClientProfileAdminSerializer,
     LoginSerializer,
@@ -166,17 +168,22 @@ class ProvisionClientAccountView(APIView):
         if not full_name or len(full_name) > 255:
             return Response({'detail': 'A valid full_name is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        parts = full_name.split(maxsplit=1)
+        parsed_name = parse_russian_full_name(full_name)
         defaults = {
-            'first_name': parts[0],
-            'last_name': parts[1] if len(parts) > 1 else '',
+            'first_name': parsed_name.first_name,
+            'last_name': parsed_name.last_name,
             'email': email,
             'is_active': True,
         }
         with transaction.atomic():
             user, created = User.objects.select_for_update().get_or_create(username=sl_id, defaults=defaults)
             user.set_password(password)
-            user.save(update_fields=['password'])
+            user.first_name = parsed_name.first_name
+            user.last_name = parsed_name.last_name
+            if email:
+                user.email = email
+            user.is_active = True
+            user.save(update_fields=['password', 'first_name', 'last_name', 'email', 'is_active'])
             profile = ensure_client_profile(user)
             if phone and profile.phone != phone:
                 profile.phone = phone
@@ -361,6 +368,49 @@ class MeView(APIView):
             )
         return Response(serializer.data)
 
+
+class QuestionnaireAccessView(APIView):
+    """Bind the already approved ManagerSL submission to the signed-in app account."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        public_id = clean_device_value(request.data.get('public_id'), 64)
+        access_token = clean_device_value(request.data.get('access_token'), 255)
+        kind = clean_device_value(request.data.get('kind') or 'applicant', 32)
+        if not public_id or not access_token:
+            return Response(
+                {'detail': 'public_id and access_token are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            submission = ManagerSLClient.from_settings().request_json(
+                'GET',
+                f'client/v1/onboarding/submissions/{public_id}/',
+                extra_headers={'X-Onboarding-Token': access_token},
+            )
+        except ManagerSLClientError as exc:
+            return Response(
+                {'detail': 'Анкета не найдена или доступ к ней истёк.'},
+                status=status.HTTP_404_NOT_FOUND if exc.status_code in {403, 404} else status.HTTP_502_BAD_GATEWAY,
+            )
+        except ManagerSLConfigError:
+            return Response({'detail': 'ManagerSL is not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        submission_sl_id = str(submission.get('sl_id') or '').strip().upper()
+        current_sl_id = str(request.user.username or '').strip().upper()
+        if not submission_sl_id or submission_sl_id != current_sl_id:
+            return Response({'detail': 'Эта анкета принадлежит другому аккаунту.'}, status=status.HTTP_403_FORBIDDEN)
+
+        profile = ensure_client_profile(request.user)
+        profile.onboarding_public_id = public_id
+        profile.onboarding_access_token = access_token
+        profile.onboarding_kind = kind if kind in {'applicant', 'school_student'} else 'applicant'
+        profile.save(update_fields=[
+            'onboarding_public_id', 'onboarding_access_token', 'onboarding_kind', 'updated_at',
+        ])
+        return Response({'status': 'linked'})
 
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]

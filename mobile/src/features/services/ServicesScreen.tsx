@@ -57,6 +57,25 @@ export function ServicesScreen() {
         <ServiceActionCard icon="mapPin" title="Туры" subtitle="Ознакомительные поездки" onPress={() => navigation.navigate('ToursInfo')} />
       </View>
 
+      <SectionHeader
+        eyebrow="Гослиния"
+        title="Цены по направлениям"
+        description="Отдельный каталог актуальных направлений и стоимости услуг в долларах США."
+      />
+      <AnimatedPressable
+        style={[styles.governmentPriceCard, shadows.soft]}
+        onPress={() => navigation.navigate('GovernmentLinePrices')}
+      >
+        <View style={styles.priceIcon}>
+          <SvgIcon name="money" size={28} color={colors.white} />
+        </View>
+        <View style={styles.priceTextBox}>
+          <Text style={styles.priceTitle}>Каталог цен Гослинии</Text>
+          <Text style={styles.priceText}>Поиск по коду, программе и уровню обучения</Text>
+        </View>
+        <SvgIcon name="chevronRight" size={23} color={colors.secondary} />
+      </AnimatedPressable>
+
       <AppCard style={styles.includesCard}>
         <Text style={styles.includesTitle}>Что обычно входит в сопровождение</Text>
         <InfoLine icon="check" text="подбор страны, вуза и программы" />
@@ -166,7 +185,7 @@ const styles = StyleSheet.create({
     gap: CARD_GAP,
   },
   actionCard: {
-    minHeight: 132,
+    height: 154,
     borderRadius: radius.lg,
     padding: spacing.md,
     backgroundColor: colors.card,
@@ -197,6 +216,39 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     fontWeight: typography.weights.medium,
     textAlign: 'center',
+    minHeight: 38,
+  },
+  governmentPriceCard: {
+    minHeight: 96,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  priceIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: radius.md,
+    backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  priceTextBox: { flex: 1 },
+  priceTitle: {
+    color: colors.text,
+    fontSize: typography.subtitle,
+    fontWeight: typography.weights.heavy,
+  },
+  priceText: {
+    color: colors.muted,
+    fontSize: typography.small,
+    lineHeight: 19,
+    marginTop: 4,
+    fontWeight: typography.weights.medium,
   },
   includesCard: {
     marginTop: spacing.xl,

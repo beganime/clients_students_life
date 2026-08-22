@@ -117,6 +117,7 @@ export function buildOnboardingPayload(form: Partial<ApplicantQuestionnaire>): O
     payload: {
       ...form,
       university_choices: undefined,
+      family_members: undefined,
       academic_year: undefined,
       attachments: undefined,
       generated_document_url: undefined,

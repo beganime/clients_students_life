@@ -35,6 +35,7 @@ export type RootStackParamList = {
   VisaInfo: undefined;
   ToursInfo: undefined;
   AdmissionInfo: undefined;
+  GovernmentLinePrices: undefined;
 
   MyApplications: undefined;
   MyDocuments: undefined;

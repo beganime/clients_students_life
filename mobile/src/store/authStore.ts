@@ -14,6 +14,15 @@ async function restoreQuestionnaireAccess(user: UserMe) {
       access_token: profile.onboarding_access_token,
       kind: profile.onboarding_kind || 'applicant',
     });
+    return;
+  }
+  // The raw questionnaire token is created on the phone before ManagerSL
+  // approves the express application. Older provision responses did not copy
+  // it to the app backend. Preserve the valid local token and bind it after
+  // login instead of clearing it and creating a second application/profile.
+  const stored = await onboardingSubmissionStorage.get();
+  if (stored && (!profile?.onboarding_public_id || profile.onboarding_public_id === stored.public_id)) {
+    await authApi.linkQuestionnaireAccess(stored).catch(() => undefined);
   }
 }
 
@@ -68,12 +77,14 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   async logout() {
     await authApi.logout();
+    await onboardingSubmissionStorage.clear();
     await clearLocalAvatarUri();
     set({ user: null, isAuthenticated: false });
   },
 
   async deleteAccount() {
     await authApi.deleteAccount();
+    await onboardingSubmissionStorage.clear();
     await clearLocalAvatarUri();
     set({ user: null, isAuthenticated: false });
   },

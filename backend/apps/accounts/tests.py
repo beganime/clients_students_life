@@ -118,6 +118,38 @@ class ProvisionClientAccountTests(TestCase):
             1,
         )
 
+    @patch('apps.accounts.views.ManagerSLClient.request_json')
+    def test_questionnaire_access_is_saved_only_for_its_sl_id(self, manager_request):
+        user = User.objects.create_user(username='SL-2027-001', password='x')
+        self.client.force_authenticate(user)
+        manager_request.return_value = {'sl_id': 'SL-2027-001', 'status': 'approved'}
+
+        response = self.client.post(
+            '/api/v1/accounts/questionnaire-access/',
+            {'public_id': 'f44ae94f-8f52-4881-ae4f-86526ead1fc5', 'access_token': 'private-token'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        profile = user.client_profile
+        profile.refresh_from_db()
+        self.assertEqual(profile.onboarding_access_token, 'private-token')
+        manager_request.assert_called_once()
+
+    @patch('apps.accounts.views.ManagerSLClient.request_json')
+    def test_questionnaire_access_rejects_another_students_submission(self, manager_request):
+        user = User.objects.create_user(username='SL-2027-001', password='x')
+        self.client.force_authenticate(user)
+        manager_request.return_value = {'sl_id': 'SL-2027-002', 'status': 'approved'}
+
+        response = self.client.post(
+            '/api/v1/accounts/questionnaire-access/',
+            {'public_id': 'f44ae94f-8f52-4881-ae4f-86526ead1fc5', 'access_token': 'private-token'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 403, response.data)
+
     def test_location_update_is_saved_in_action_history(self):
         user = User.objects.create_user(username='SL-021', password='x')
         self.client.force_authenticate(user)

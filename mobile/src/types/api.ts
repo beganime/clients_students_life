@@ -76,6 +76,12 @@ export type Program = {
   university_cover?: string | null;
   required_documents?: string;
   requirements?: string;
+  priority_offer?: {
+    code: string;
+    degree: string;
+    program_name: string;
+    service_fee_usd: number;
+  } | null;
 };
 
 export type University = {
@@ -112,6 +118,7 @@ export type University = {
   contact_people?: unknown[];
   programs_count?: number;
   programs?: Program[];
+  fees_summary?: Array<Record<string, any>>;
   is_favorite?: boolean;
 };
 
@@ -376,6 +383,7 @@ export type ApplicantQuestionnaire = {
   achievements?: string[];
   languages?: Array<{ language: string; level: string }>;
   desired_program?: string;
+  desired_universities?: string;
   admission_goal?: string;
   desired_city?: string;
   desired_country?: string;
@@ -390,6 +398,7 @@ export type ApplicantQuestionnaire = {
   has_international_passport?: string;
   passport_pending?: boolean;
   requested_services?: string[];
+  funding_type?: 'government' | 'budget' | 'contract' | 'medical' | '';
   request_text?: string;
   hobbies?: string;
   applicant_comment?: string;

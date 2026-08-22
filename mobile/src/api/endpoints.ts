@@ -128,6 +128,11 @@ export const authApi = {
     return uploadFormData<UserMe>('/accounts/me/', formData, 'patch');
   },
 
+  async linkQuestionnaireAccess(payload: { public_id: string; access_token: string; kind?: string }) {
+    const { data } = await apiClient.post<{ status: string }>('/accounts/questionnaire-access/', payload);
+    return data;
+  },
+
   async logout() {
     const refresh = await tokenStorage.getRefreshToken();
 

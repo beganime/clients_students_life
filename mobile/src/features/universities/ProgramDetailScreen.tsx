@@ -51,7 +51,11 @@ export function ProgramDetailScreen() {
         {program.university_logo ? (
           <Image source={{ uri: program.university_logo }} style={styles.logo} resizeMode="cover" />
         ) : null}
-        <Badge label="Программа" variant="mint" icon="document" />
+        <Badge
+          label={program.priority_offer ? 'Приоритет Гослинии' : 'Программа'}
+          variant="mint"
+          icon={program.priority_offer ? 'check' : 'document'}
+        />
         <Text style={styles.title}>{program.title}</Text>
         <Text style={styles.subtitle}>{program.university_name || 'Университет уточняется'}</Text>
       </RedGradientHero>
@@ -64,6 +68,14 @@ export function ProgramDetailScreen() {
         <Info icon="building" label="Факультет" value={program.faculty || 'уточняется'} />
         <Info icon="calendar" label="Intakes / дедлайны" value={intakeText || 'уточняется'} />
       </View>
+
+      {program.priority_offer ? (
+        <AppCard style={styles.priorityCard}>
+          <Text style={styles.cardTitle}>Приоритетное предложение</Text>
+          <Text style={styles.priorityPrice}>Услуги по Гослинии: ${program.priority_offer.service_fee_usd.toLocaleString('ru-RU')}</Text>
+          <Text style={styles.text}>Код {program.priority_offer.code} · {program.priority_offer.degree}</Text>
+        </AppCard>
+      ) : null}
 
       {program.description_markdown ? (
         <MarkdownCard title="Описание программы" text={program.description_markdown} />
@@ -163,6 +175,8 @@ const styles = StyleSheet.create({
   label: { color: colors.muted, fontWeight: typography.weights.bold },
   value: { color: colors.text, fontSize: typography.body, fontWeight: typography.weights.heavy, marginTop: 4 },
   card: { marginTop: spacing.lg },
+  priorityCard: { marginTop: spacing.lg, borderColor: colors.primary },
+  priorityPrice: { color: colors.primary, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.xs },
   cardTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.sm },
   text: { color: colors.muted, lineHeight: 22, fontWeight: typography.weights.medium },
   actions: { gap: spacing.sm },

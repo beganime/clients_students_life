@@ -21,6 +21,9 @@ export function DataConsentScreen() {
         <Text style={styles.text}>
           Ваши персональные данные используются только для подготовки анкеты, оформления документов и сопровождения процесса поступления. Данные не передаются третьим лицам, кроме случаев, когда это необходимо для подачи документов в учебные заведения, оформления приглашения, визы или других услуг, связанных с поступлением. Мы бережно храним ваши данные и используем их только в рамках работы с вашей заявкой.
         </Text>
+        <Text style={styles.notice}>
+          Отправляя экспресс-заявку или полную анкету, пользователь подтверждает согласие с этими условиями и даёт согласие на обработку указанных персональных данных.
+        </Text>
       </AppCard>
     </Screen>
   );
@@ -32,4 +35,5 @@ const styles = StyleSheet.create({
   heroTitle: { color: colors.white, fontSize: 30, lineHeight: 36, fontWeight: typography.weights.heavy, marginTop: spacing.md },
   heroText: { color: 'rgba(255,255,255,0.92)', lineHeight: 23, marginTop: spacing.sm, fontWeight: typography.weights.medium },
   text: { color: colors.text, fontSize: typography.body, lineHeight: 24, fontWeight: typography.weights.medium },
+  notice: { color: colors.text, fontSize: typography.body, lineHeight: 24, fontWeight: typography.weights.bold, marginTop: spacing.md },
 });

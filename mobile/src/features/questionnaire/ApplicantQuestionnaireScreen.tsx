@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -23,7 +23,8 @@ import { SvgIcon } from '../../components/SvgIcon';
 import { colors, radius, spacing, typography } from '../../constants/colors';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getDevicePushToken } from '../../hooks/usePushNotifications';
-import { ApplicantQuestionnaire, OnboardingSubmissionStatus, Program, UniversityChoiceDraft } from '../../types/api';
+import { useAuthStore } from '../../store/authStore';
+import { ApplicantQuestionnaire, OnboardingSubmissionStatus } from '../../types/api';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
   loadOfflineQuestionnaireDraft,
@@ -37,6 +38,12 @@ const LANGUAGE_OPTIONS = ['русский', 'английский', 'туркм�
 const LANGUAGE_LEVELS = ['базовый', 'средний', 'хороший', 'свободно', 'родной'];
 const DESIRED_LEVELS = ['школа', 'колледж', 'бакалавриат', 'специалитет', 'магистратура', 'аспирантура', 'языковые курсы', 'подготовительный курс'];
 const HELP_OPTIONS = ['выбором вуза', 'подачей документов', 'визой', 'переводом документов', 'общежитием', 'встречей в аэропорту', 'полным сопровождением'];
+const FUNDING_OPTIONS = [
+  { label: 'Гослиния', value: 'government' },
+  { label: 'Бюджет', value: 'budget' },
+  { label: 'Контракт', value: 'contract' },
+  { label: 'Медик', value: 'medical' },
+];
 const CONTACT_METHODS = ['звонок', 'Imo', 'Telegram', 'email'];
 const URGENCY_OPTIONS = ['в этом году', 'в следующем году', 'пока только интересуюсь'];
 const PASSPORT_OPTIONS = ['да', 'нет', 'в процессе оформления'];
@@ -88,7 +95,6 @@ const QUESTIONNAIRE_FIELD_LABELS: Record<string, string> = {
   parent_relation: 'Кем является родитель',
   parent_contacts: 'Контакты родителя',
   parent_workplace: 'Кем и где работает родитель',
-  family_members: 'Состав семьи',
   education_level: 'Уровень образования',
   school_class: 'Класс',
   school_name: 'Учебное заведение',
@@ -96,7 +102,9 @@ const QUESTIONNAIRE_FIELD_LABELS: Record<string, string> = {
   school_city: 'Город учебного заведения',
   graduation_year: 'Год окончания',
   education_status: 'Текущий статус образования',
-  desired_program: 'Желаемая программа / вуз',
+  desired_program: 'Желаемые направления',
+  desired_universities: 'Желаемые вузы',
+  admission_goal: 'Цель поступления',
   desired_country: 'Желаемая страна поступления',
   desired_city: 'Желаемый город поступления',
   desired_language: 'Желаемый язык обучения',
@@ -109,6 +117,8 @@ export function ApplicantQuestionnaireScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { isOnline } = useNetworkStatus();
+  const user = useAuthStore(state => state.user);
+  const draftOwner = user?.username || user?.id || 'guest';
   const initialFormType = route.params?.formType === 'school_student' ? 'school_student' : 'applicant';
   const [form, setForm] = useState<Partial<ApplicantQuestionnaire>>({
     form_type: initialFormType,
@@ -126,7 +136,7 @@ export function ApplicantQuestionnaireScreen() {
 
   useEffect(() => {
     let active = true;
-    loadOfflineQuestionnaireDraft()
+    loadOfflineQuestionnaireDraft(draftOwner)
       .then(draft => {
         if (!active || !draft) return;
         setForm(prev => ({ ...prev, ...draft.form }));
@@ -138,7 +148,31 @@ export function ApplicantQuestionnaireScreen() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [draftOwner]);
+
+  const initialUniversityQuery = useQuery({
+    queryKey: ['questionnaire-initial-university', route.params?.universityId],
+    queryFn: () => educationCatalogApi.getUniversity(route.params.universityId),
+    enabled: Boolean(route.params?.universityId),
+    staleTime: 1000 * 60 * 30,
+  });
+  const initialProgramQuery = useQuery({
+    queryKey: ['questionnaire-initial-program', route.params?.programId],
+    queryFn: () => educationCatalogApi.getProgram(route.params.programId),
+    enabled: Boolean(route.params?.programId),
+    staleTime: 1000 * 60 * 30,
+  });
+
+  useEffect(() => {
+    const universityName = initialUniversityQuery.data?.name;
+    const programName = initialProgramQuery.data?.title;
+    if (!universityName && !programName) return;
+    setForm(previous => ({
+      ...previous,
+      desired_universities: previous.desired_universities || universityName || '',
+      desired_program: previous.desired_program || programName || '',
+    }));
+  }, [initialProgramQuery.data, initialUniversityQuery.data]);
 
   useEffect(() => {
     onboardingSubmissionStorage.get().then(stored => {
@@ -208,7 +242,7 @@ export function ApplicantQuestionnaireScreen() {
       const stored = await onboardingSubmissionStorage.get();
       setStoredSubmission(stored);
       setSubmissionStatus(data);
-      const draft = await saveOfflineQuestionnaireDraft(form);
+      const draft = await saveOfflineQuestionnaireDraft(form, draftOwner);
       setOfflineDraftSavedAt(draft.saved_at);
       Alert.alert('Анкета отправлена', 'Данные отправлены менеджеру на проверку. Статус можно смотреть на этом экране.');
     },
@@ -242,7 +276,7 @@ export function ApplicantQuestionnaireScreen() {
   };
 
   const handleSaveDraft = async () => {
-    const draft = await saveOfflineQuestionnaireDraft(form);
+    const draft = await saveOfflineQuestionnaireDraft(form, draftOwner);
     setForm(draft.form);
     setOfflineDraftSavedAt(draft.saved_at);
     Alert.alert('Черновик сохранён', 'Черновик хранится только на этом устройстве и не отправлен на сервер.');
@@ -257,6 +291,28 @@ export function ApplicantQuestionnaireScreen() {
       Alert.alert('Не хватает данных', 'Укажите ФИО, телефон и год поступления.');
       return;
     }
+    const commonRequired: Array<keyof ApplicantQuestionnaire> = [
+      'birth_date', 'citizenship', 'residence_country', 'residence_city',
+      'parent_full_name', 'parent_contacts', 'school_name', 'graduation_year',
+      'desired_program', 'desired_universities', 'desired_country', 'admission_goal', 'funding_type',
+    ];
+    const applicantRequired: Array<keyof ApplicantQuestionnaire> = [
+      'gender', 'marital_status', 'residence_region', 'email', 'preferred_contact_method',
+      'education_level', 'education_status', 'school_country', 'school_city',
+      'desired_city', 'desired_language', 'desired_education_level', 'admission_urgency',
+    ];
+    const schoolRequired: Array<keyof ApplicantQuestionnaire> = ['school_class', 'education_status'];
+    const missingRequired = [
+      ...commonRequired,
+      ...(form.form_type === 'school_student' ? schoolRequired : applicantRequired),
+    ].filter(field => !String(form[field] ?? '').trim());
+    if (missingRequired.length) {
+      Alert.alert(
+        'Заполните обязательные поля',
+        missingRequired.map(field => QUESTIONNAIRE_FIELD_LABELS[field] || field).join(', '),
+      );
+      return;
+    }
     if (form.form_type !== 'school_student') {
       if (!form.birth_date || !form.citizenship || !form.marital_status || !form.residence_country || !form.residence_region || !form.residence_city) {
         Alert.alert('Не хватает личных данных', 'Заполните дату рождения, гражданство, семейное положение и адрес проживания.');
@@ -266,16 +322,14 @@ export function ApplicantQuestionnaireScreen() {
         Alert.alert('Нужны данные загранпаспорта', 'Заполните обязательные поля или отметьте, что загранпаспорт пока отсутствует либо оформляется.');
         return;
       }
-      const choices = form.university_choices || [];
-      const programCount = new Set(choices.flatMap(item => item.program_ids)).size;
-      if (choices.length < 3 || choices.length > 5 || programCount < 3 || programCount > 6 || choices.some(item => item.program_ids.length === 0)) {
-        Alert.alert('Проверьте выбор', 'Нужно выбрать от 3 до 5 вузов, минимум одну программу в каждом вузе и от 3 до 6 программ всего.');
+      if (!form.desired_universities?.trim() || !form.desired_program?.trim()) {
+        Alert.alert('Проверьте поступление', 'Укажите желаемые вузы и направления обучения.');
         return;
       }
     }
     if (!isOnline) {
       const nextForm = { ...form, data_processing_consent: true };
-      const draft = await saveOfflineQuestionnaireDraft(nextForm);
+      const draft = await saveOfflineQuestionnaireDraft(nextForm, draftOwner);
       setForm(nextForm);
       setOfflineDraftSavedAt(draft.saved_at);
       Alert.alert('Анкета сохранена offline', 'После восстановления интернета нажмите «Синхронизировать».');
@@ -416,14 +470,17 @@ export function ApplicantQuestionnaireScreen() {
             ? 'Короткая предварительная заявка: без паспортных и визовых данных, чтобы начать подготовку заранее.'
             : 'Полная анкета для поступления с документами, паспортными данными и подготовкой пакета.'}
         </Text>
-        <DropdownSelect label="Год поступления *" options={ADMISSION_YEARS} value={form.academic_year || ''} onChange={value => update('academic_year', value)} />
+        <DropdownSelect required label="Год поступления" options={ADMISSION_YEARS} value={form.academic_year || ''} onChange={value => update('academic_year', value)} />
       </Section>
 
       <Section title="Личные данные">
-        <Field label="Полное ФИО" value={form.full_name} onChangeText={value => update('full_name', value)} />
-        <DateField label="Дата рождения *" value={form.birth_date || ''} onChange={value => update('birth_date', value)} maximumDate={new Date()} />
+        <Field required maxLength={255} label="Полное ФИО" value={form.full_name} onChangeText={value => update('full_name', value)} />
+        <DateField required label="Дата рождения" value={form.birth_date || ''} onChange={value => update('birth_date', value)} maximumDate={new Date()} />
         {!isSchoolStudent ? (
-          <ChoiceGroup value={form.gender || ''} options={[{ label: 'Мужской', value: 'male' }, { label: 'Женский', value: 'female' }]} onChange={value => update('gender', value)} />
+          <View style={styles.selectBlock}>
+            <RequiredLabel label="Пол" />
+            <ChoiceGroup value={form.gender || ''} options={[{ label: 'Мужской', value: 'male' }, { label: 'Женский', value: 'female' }]} onChange={value => update('gender', value)} />
+          </View>
         ) : null}
         {!isSchoolStudent ? (
           <Pressable style={styles.pendingRow} onPress={() => update('is_conscript', !form.is_conscript)}>
@@ -433,21 +490,21 @@ export function ApplicantQuestionnaireScreen() {
             <Text style={styles.pendingText}>Призывник</Text>
           </Pressable>
         ) : null}
-        <DropdownSelect label="Гражданство *" options={CITIZENSHIPS} value={form.citizenship || ''} onChange={value => update('citizenship', value)} allowCustom />
-        {!isSchoolStudent ? <DropdownSelect label="Семейное положение *" options={MARITAL_STATUSES} value={form.marital_status || ''} onChange={value => update('marital_status', value)} /> : null}
+        <DropdownSelect required label="Гражданство" options={CITIZENSHIPS} value={form.citizenship || ''} onChange={value => update('citizenship', value)} allowCustom />
+        {!isSchoolStudent ? <DropdownSelect required label="Семейное положение" options={MARITAL_STATUSES} value={form.marital_status || ''} onChange={value => update('marital_status', value)} /> : null}
       </Section>
 
       <Section title="Адрес проживания">
-        <DropdownSelect label="Страна *" options={COUNTRIES} value={form.residence_country || ''} onChange={value => update('residence_country', value)} allowCustom />
+        <DropdownSelect required label="Страна" options={COUNTRIES} value={form.residence_country || ''} onChange={value => update('residence_country', value)} allowCustom />
         {form.residence_country === 'Туркменистан' ? (
-          <DropdownSelect label="Область *" options={TURKMENISTAN_REGIONS} value={form.residence_region || ''} onChange={value => update('residence_region', value)} />
+          <DropdownSelect required label="Область" options={TURKMENISTAN_REGIONS} value={form.residence_region || ''} onChange={value => update('residence_region', value)} />
         ) : (
-          <Field label="Область / регион *" value={form.residence_region} onChangeText={value => update('residence_region', value)} />
+          <Field required maxLength={160} label="Область / регион" value={form.residence_region} onChangeText={value => update('residence_region', value)} />
         )}
-        <Field label="Город / населенный пункт *" value={form.residence_city} onChangeText={value => update('residence_city', value)} />
-        <Field label="Улица (необязательно)" value={form.residence_street} onChangeText={value => update('residence_street', value)} />
-        <Field label="Дом / квартира (необязательно)" value={form.residence_house} onChangeText={value => update('residence_house', value)} />
-        <Field label="Почтовый индекс (необязательно)" value={form.residence_postal_code} onChangeText={value => update('residence_postal_code', value)} />
+        <Field required maxLength={160} label="Город / населенный пункт" value={form.residence_city} onChangeText={value => update('residence_city', value)} />
+        <Field maxLength={180} label="Улица (необязательно)" value={form.residence_street} onChangeText={value => update('residence_street', value)} />
+        <Field maxLength={80} label="Дом / квартира (необязательно)" value={form.residence_house} onChangeText={value => update('residence_house', value)} />
+        <Field maxLength={40} label="Почтовый индекс (необязательно)" value={form.residence_postal_code} onChangeText={value => update('residence_postal_code', value)} />
       </Section>
 
       {!isSchoolStudent ? <Section title="Паспортные данные">
@@ -459,38 +516,37 @@ export function ApplicantQuestionnaireScreen() {
           <Text style={styles.pendingText}>Загранпаспорта пока нет или он в процессе оформления</Text>
         </Pressable>
         {!form.passport_pending ? <>
-          <Field label="Серия и номер загранпаспорта *" value={form.passport_number} onChangeText={value => update('passport_number', value)} />
-          <Field label="Кем выдан загранпаспорт *" value={form.passport_issued_by} onChangeText={value => update('passport_issued_by', value)} />
-          <DateField label="Дата выдачи *" value={form.passport_issue_date || ''} onChange={value => update('passport_issue_date', value)} maximumDate={new Date()} />
-          <DateField label="Действителен до *" value={form.passport_expiry_date || ''} onChange={value => update('passport_expiry_date', value)} minimumDate={new Date()} />
+          <Field required maxLength={120} label="Серия и номер загранпаспорта" value={form.passport_number} onChangeText={value => update('passport_number', value)} />
+          <Field required maxLength={255} label="Кем выдан загранпаспорт" value={form.passport_issued_by} onChangeText={value => update('passport_issued_by', value)} />
+          <DateField required label="Дата выдачи" value={form.passport_issue_date || ''} onChange={value => update('passport_issue_date', value)} maximumDate={new Date()} />
+          <DateField required label="Действителен до" value={form.passport_expiry_date || ''} onChange={value => update('passport_expiry_date', value)} minimumDate={new Date()} />
         </> : null}
       </Section> : null}
 
       <Section title="Контакты абитуриента">
-        <Field label="Основной номер телефона" value={form.phone} keyboardType="phone-pad" onChangeText={value => update('phone', value)} />
-        <Field label="Email" value={form.email} keyboardType="email-address" onChangeText={value => update('email', value)} />
-        <Field label="Дополнительный телефон" value={form.extra_phone} onChangeText={value => update('extra_phone', value)} />
-        <Field label="Imo" value={form.imo} onChangeText={value => update('imo', value)} />
-        <Field label="Telegram" value={form.telegram} onChangeText={value => update('telegram', value)} />
-        <SelectChips label="Предпочтительный способ связи" options={CONTACT_METHODS} value={form.preferred_contact_method || ''} onChange={value => update('preferred_contact_method', value)} />
+        <Field required maxLength={80} label="Основной номер телефона" value={form.phone} keyboardType="phone-pad" onChangeText={value => update('phone', value)} />
+        <Field required={!isSchoolStudent} maxLength={254} label="Email" value={form.email} keyboardType="email-address" autoCapitalize="none" onChangeText={value => update('email', value)} />
+        <Field maxLength={80} label="Дополнительный телефон" value={form.extra_phone} onChangeText={value => update('extra_phone', value)} />
+        <Field maxLength={120} label="Imo" value={form.imo} onChangeText={value => update('imo', value)} />
+        <Field maxLength={120} label="Telegram" value={form.telegram} onChangeText={value => update('telegram', value)} />
+        <SelectChips required={!isSchoolStudent} label="Предпочтительный способ связи" options={CONTACT_METHODS} value={form.preferred_contact_method || ''} onChange={value => update('preferred_contact_method', value)} />
       </Section>
 
       <Section title="Родители / законные представители">
-        <Field label="ФИО родителя" value={form.parent_full_name} onChangeText={value => update('parent_full_name', value)} />
+        <Field required maxLength={255} label="ФИО родителя" value={form.parent_full_name} onChangeText={value => update('parent_full_name', value)} />
         <DropdownSelect label="Кем является" options={PARENT_RELATIONS} value={form.parent_relation || ''} onChange={value => update('parent_relation', value)} allowCustom />
-        <Field label="Контакты родителя" value={form.parent_contacts} onChangeText={value => update('parent_contacts', value)} />
-        <Field label="Кем и где работает" value={form.parent_workplace} onChangeText={value => update('parent_workplace', value)} />
-        <Field label="В семье имеется" value={form.family_members} onChangeText={value => update('family_members', value)} />
+        <Field required maxLength={180} label="Контакты родителя" value={form.parent_contacts} onChangeText={value => update('parent_contacts', value)} />
+        <Field maxLength={255} label="Кем и где работает" value={form.parent_workplace} onChangeText={value => update('parent_workplace', value)} />
       </Section>
 
       <Section title="Образование">
-        <SelectChips label="Текущий статус образования" options={CURRENT_EDUCATION_STATUS_OPTIONS} value={form.education_status || (isSchoolStudent ? 'школьник' : '')} onChange={value => update('education_status', value)} />
-        <SelectChips label="Уровень образования" options={EDUCATION_LEVELS} value={form.education_level || ''} onChange={value => update('education_level', value)} />
-        {isSchoolStudent || form.education_status === 'школьник' || form.education_level === 'Учусь в школе' ? <SelectChips label="Класс" options={SCHOOL_CLASSES} value={form.school_class || ''} onChange={value => update('school_class', value)} /> : null}
-        <Field label="Учебное заведение" value={form.school_name} onChangeText={value => update('school_name', value)} />
-        <DropdownSelect label="Страна учебного заведения" options={COUNTRIES} value={form.school_country || ''} onChange={value => update('school_country', value)} allowCustom />
-        <Field label="Город учебного заведения" value={form.school_city} onChangeText={value => update('school_city', value)} />
-        <DropdownSelect label="Год окончания" options={GRADUATION_YEARS} value={form.graduation_year || ''} onChange={value => update('graduation_year', value)} />
+        <SelectChips required label="Текущий статус образования" options={CURRENT_EDUCATION_STATUS_OPTIONS} value={form.education_status || (isSchoolStudent ? 'школьник' : '')} onChange={value => update('education_status', value)} />
+        <SelectChips required={!isSchoolStudent} label="Уровень образования" options={EDUCATION_LEVELS} value={form.education_level || ''} onChange={value => update('education_level', value)} />
+        {isSchoolStudent || form.education_status === 'школьник' || form.education_level === 'Учусь в школе' ? <SelectChips required label="Класс" options={SCHOOL_CLASSES} value={form.school_class || ''} onChange={value => update('school_class', value)} /> : null}
+        <Field required maxLength={255} label="Учебное заведение" value={form.school_name} onChangeText={value => update('school_name', value)} />
+        <DropdownSelect required label="Страна учебного заведения" options={COUNTRIES} value={form.school_country || ''} onChange={value => update('school_country', value)} allowCustom />
+        <Field required={!isSchoolStudent} maxLength={120} label="Город учебного заведения" value={form.school_city} onChangeText={value => update('school_city', value)} />
+        <DropdownSelect required label="Год окончания" options={GRADUATION_YEARS} value={form.graduation_year || ''} onChange={value => update('graduation_year', value)} />
       </Section>
 
       {!isSchoolStudent ? <Section title="Достижения">
@@ -512,20 +568,40 @@ export function ApplicantQuestionnaireScreen() {
       </Section> : null}
 
       <Section title="Поступление">
-        {!isSchoolStudent ? (
-          <UniversityProgramSelection
-            value={form.university_choices || []}
-            onChange={value => setForm(prev => ({ ...prev, university_choices: value }))}
-            initialUniversityId={route.params?.universityId}
-            initialProgramId={route.params?.programId}
+        <View style={styles.selectBlock}>
+          <RequiredLabel label="Услуга / тип поступления" />
+          <ChoiceGroup
+            value={form.funding_type || ''}
+            options={FUNDING_OPTIONS}
+            onChange={value => update('funding_type', value)}
           />
-        ) : null}
-        <Field label="Цель поступления" multiline value={form.admission_goal} onChangeText={value => update('admission_goal', value)} />
-        <Field label="Желаемый город" value={form.desired_city} onChangeText={value => update('desired_city', value)} />
-        <Field label="Желаемая страна" value={form.desired_country} onChangeText={value => update('desired_country', value)} />
-        <Field label="Желаемый язык обучения" value={form.desired_language} onChangeText={value => update('desired_language', value)} />
-        <SelectChips label="Желаемый уровень обучения" options={DESIRED_LEVELS} value={form.desired_education_level || ''} onChange={value => update('desired_education_level', value)} />
-        <SelectChips label="Срочность поступления" options={URGENCY_OPTIONS} value={form.admission_urgency || ''} onChange={value => update('admission_urgency', value)} />
+        </View>
+        <SearchableProgramSuggestions
+          value={form.desired_program || ''}
+          onChange={value => update('desired_program', value)}
+        />
+        <Field
+          required
+          maxLength={255}
+          label="Желаемые направления (можно дополнить вручную)"
+          placeholder="Например: лечебное дело и стоматология"
+          value={form.desired_program}
+          onChangeText={value => update('desired_program', value)}
+        />
+        <Field
+          required
+          maxLength={255}
+          label="Желаемые вузы"
+          placeholder="Например: РУДН / Сеченова / БГМУ"
+          value={form.desired_universities}
+          onChangeText={value => update('desired_universities', value)}
+        />
+        <Field required maxLength={1000} label="Цель поступления" multiline value={form.admission_goal} onChangeText={value => update('admission_goal', value)} />
+        <Field required={!isSchoolStudent} maxLength={120} label="Желаемый город" value={form.desired_city} onChangeText={value => update('desired_city', value)} />
+        <Field required maxLength={120} label="Желаемая страна" value={form.desired_country} onChangeText={value => update('desired_country', value)} />
+        <Field required={!isSchoolStudent} maxLength={120} label="Желаемый язык обучения" value={form.desired_language} onChangeText={value => update('desired_language', value)} />
+        <SelectChips required={!isSchoolStudent} label="Желаемый уровень обучения" options={DESIRED_LEVELS} value={form.desired_education_level || ''} onChange={value => update('desired_education_level', value)} />
+        <SelectChips required={!isSchoolStudent} label="Срочность поступления" options={URGENCY_OPTIONS} value={form.admission_urgency || ''} onChange={value => update('admission_urgency', value)} />
         <Text style={styles.subLabel}>Нужна помощь с</Text>
         <Checklist options={HELP_OPTIONS} selected={form.help_needed || []} onToggle={value => toggleListValue('help_needed', value)} />
       </Section>
@@ -534,16 +610,16 @@ export function ApplicantQuestionnaireScreen() {
         <SelectChips label="Виза имеется?" options={['да', 'нет']} value={form.has_visa || ''} onChange={value => update('has_visa', value)} />
         {form.has_visa === 'да' ? (
           <>
-            <Field label="Страна оформления визы" value={form.visa_country} onChangeText={value => update('visa_country', value)} />
-            <Field label="Город оформления визы" value={form.visa_city} onChangeText={value => update('visa_city', value)} />
+            <Field maxLength={120} label="Страна оформления визы" value={form.visa_country} onChangeText={value => update('visa_country', value)} />
+            <Field maxLength={120} label="Город оформления визы" value={form.visa_city} onChangeText={value => update('visa_city', value)} />
             <DateField label="Срок действия визы" value={form.visa_valid_until || ''} onChange={value => update('visa_valid_until', value)} />
           </>
         ) : null}
       </Section> : null}
 
       <Section title="Дополнительная информация">
-        <Field label="Любимые хобби" multiline value={form.hobbies} onChangeText={value => update('hobbies', value)} />
-        <Field label="Комментарий абитуриента" multiline value={form.applicant_comment} onChangeText={value => update('applicant_comment', value)} />
+        <Field maxLength={1000} label="Любимые хобби" multiline value={form.hobbies} onChangeText={value => update('hobbies', value)} />
+        <Field maxLength={1000} label="Комментарий абитуриента" multiline value={form.applicant_comment} onChangeText={value => update('applicant_comment', value)} />
         <SelectChips label="Откуда узнали о Student’s Life" options={REFERRAL_OPTIONS} value={form.referral_source || ''} onChange={value => update('referral_source', value)} />
       </Section>
 
@@ -621,165 +697,6 @@ function submissionStatusLabel(status: OnboardingSubmissionStatus['status']) {
   return 'Анкета на проверке';
 }
 
-function UniversityProgramSelection({
-  value,
-  onChange,
-  initialUniversityId,
-  initialProgramId,
-}: {
-  value: UniversityChoiceDraft[];
-  onChange: (value: UniversityChoiceDraft[]) => void;
-  initialUniversityId?: number;
-  initialProgramId?: number;
-}) {
-  const [search, setSearch] = useState('');
-  const [activeUniversityId, setActiveUniversityId] = useState<number | null>(initialUniversityId || null);
-  const initialSelectionApplied = useRef(false);
-  const universitiesQuery = useQuery({
-    queryKey: ['onboarding-universities', search],
-    queryFn: () => educationCatalogApi.getUniversities({ search, limit: 20 }),
-    staleTime: 1000 * 60 * 10,
-  });
-  const initialUniversityQuery = useQuery({
-    queryKey: ['onboarding-university', initialUniversityId],
-    queryFn: () => educationCatalogApi.getUniversity(initialUniversityId!),
-    enabled: Boolean(initialUniversityId),
-    staleTime: 1000 * 60 * 30,
-  });
-  const programsQuery = useQuery({
-    queryKey: ['onboarding-programs', activeUniversityId],
-    queryFn: () => educationCatalogApi.getPrograms({ university: activeUniversityId!, limit: 100 }),
-    enabled: Boolean(activeUniversityId),
-    staleTime: 1000 * 60 * 20,
-  });
-
-  useEffect(() => {
-    const university = initialUniversityQuery.data;
-    if (!university || initialSelectionApplied.current) return;
-    initialSelectionApplied.current = true;
-    if (value.some(item => item.university_id === Number(university.id))) return;
-    onChange([
-      ...value,
-      {
-        university_id: Number(university.id),
-        university_name: university.name,
-        program_ids: [],
-        program_names: [],
-      },
-    ]);
-  }, [initialUniversityQuery.data, onChange, value]);
-
-  useEffect(() => {
-    if (!initialProgramId || !activeUniversityId || !programsQuery.data) return;
-    const program = programsQuery.data.find(item => Number(item.id) === Number(initialProgramId));
-    const choice = value.find(item => item.university_id === activeUniversityId);
-    if (!program || !choice || choice.program_ids.includes(Number(program.id))) return;
-    onChange(value.map(item => item.university_id === activeUniversityId
-      ? {
-          ...item,
-          program_ids: [...item.program_ids, Number(program.id)],
-          program_names: [...item.program_names, program.title],
-        }
-      : item));
-  }, [activeUniversityId, initialProgramId, onChange, programsQuery.data, value]);
-
-  const totalPrograms = new Set(value.flatMap(item => item.program_ids)).size;
-  const selectUniversity = (university: any) => {
-    const universityId = Number(university.id);
-    setActiveUniversityId(universityId);
-    if (value.some(item => item.university_id === universityId)) return;
-    if (value.length >= 5) {
-      Alert.alert('Лимит выбора', 'Можно выбрать не больше 5 вузов.');
-      return;
-    }
-    onChange([...value, {
-      university_id: universityId,
-      university_name: university.name,
-      program_ids: [],
-      program_names: [],
-    }]);
-  };
-  const toggleProgram = (program: Program) => {
-    if (!activeUniversityId) return;
-    const programId = Number(program.id);
-    const choice = value.find(item => item.university_id === activeUniversityId);
-    if (!choice) return;
-    const selected = choice.program_ids.includes(programId);
-    if (!selected && totalPrograms >= 6) {
-      Alert.alert('Лимит выбора', 'Можно выбрать не больше 6 программ.');
-      return;
-    }
-    onChange(value.map(item => item.university_id === activeUniversityId
-      ? {
-          ...item,
-          program_ids: selected ? item.program_ids.filter(id => id !== programId) : [...item.program_ids, programId],
-          program_names: selected ? item.program_names.filter((_, index) => item.program_ids[index] !== programId) : [...item.program_names, program.title],
-        }
-      : item));
-  };
-
-  return (
-    <View style={styles.universityPicker}>
-      <Text style={styles.subLabel}>Выберите 3–5 вузов и 3–6 программ</Text>
-      <Text style={styles.selectionCounter}>Вузов: {value.length}/5 · программ: {totalPrograms}/6</Text>
-      {value.map(choice => (
-        <View key={choice.university_id} style={styles.selectedUniversity}>
-          <Pressable style={styles.selectedUniversityMain} onPress={() => setActiveUniversityId(choice.university_id)}>
-            <Text style={styles.selectedUniversityTitle}>{choice.university_name}</Text>
-            <Text style={styles.selectedUniversityPrograms}>
-              {choice.program_names.length ? choice.program_names.join(', ') : 'Выберите минимум одну программу'}
-            </Text>
-          </Pressable>
-          <Pressable onPress={() => {
-            onChange(value.filter(item => item.university_id !== choice.university_id));
-            if (activeUniversityId === choice.university_id) setActiveUniversityId(null);
-          }}>
-            <SvgIcon name="close" size={20} color={colors.danger} />
-          </Pressable>
-        </View>
-      ))}
-
-      <Field label="Найти вуз" value={search} onChangeText={setSearch} placeholder="Название вуза" />
-      {universitiesQuery.isLoading ? <LoadingSkeleton rows={2} height={54} /> : null}
-      <View style={styles.catalogChoices}>
-        {(universitiesQuery.data || []).map(university => (
-          <Pressable
-            key={university.id}
-            style={[
-              styles.catalogChoice,
-              value.some(item => item.university_id === Number(university.id)) && styles.catalogChoiceActive,
-            ]}
-            onPress={() => selectUniversity(university)}
-          >
-            <Text style={styles.catalogChoiceText}>{university.name}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {activeUniversityId ? (
-        <View style={styles.programPicker}>
-          <Text style={styles.subLabel}>Программы выбранного вуза</Text>
-          {programsQuery.isLoading ? <LoadingSkeleton rows={2} height={48} /> : null}
-          <View style={styles.catalogChoices}>
-            {(programsQuery.data || []).map(program => {
-              const selected = value.find(item => item.university_id === activeUniversityId)?.program_ids.includes(Number(program.id));
-              return (
-                <Pressable
-                  key={program.id}
-                  style={[styles.catalogChoice, selected && styles.catalogChoiceActive]}
-                  onPress={() => toggleProgram(program)}
-                >
-                  <Text style={styles.catalogChoiceText}>{program.title}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
-}
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <AppCard style={styles.section}>
@@ -790,7 +707,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Field(props: React.ComponentProps<typeof AppInput>) {
-  return <AppInput {...props} style={[props.multiline && styles.multilineInput, props.style]} />;
+  const currentLength = typeof props.value === 'string' ? props.value.length : 0;
+  const helper = props.helper || (props.multiline && props.maxLength ? `${currentLength}/${props.maxLength}` : undefined);
+  return <AppInput {...props} helper={helper} style={[props.multiline && styles.multilineInput, props.style]} />;
+}
+
+function RequiredLabel({ label, required = true }: { label: string; required?: boolean }) {
+  return (
+    <Text style={styles.subLabel}>
+      {label}{required ? <Text style={styles.requiredMark}> *</Text> : null}
+    </Text>
+  );
 }
 
 function DateField({
@@ -799,18 +726,20 @@ function DateField({
   onChange,
   minimumDate,
   maximumDate,
+  required = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   minimumDate?: Date;
   maximumDate?: Date;
+  required?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date();
   return (
     <View style={styles.selectBlock}>
-      <Text style={styles.subLabel}>{label}</Text>
+      <RequiredLabel label={label} required={required} />
       <Pressable style={styles.dropdownButton} onPress={() => setOpen(true)}>
         <Text style={[styles.dropdownText, !value && styles.dropdownPlaceholder]}>{value || 'Выберите дату'}</Text>
         <SvgIcon name="calendar" size={18} color={colors.secondary} />
@@ -843,18 +772,20 @@ function DropdownSelect({
   value,
   onChange,
   allowCustom = false,
+  required = false,
 }: {
   label: string;
   options: string[];
   value: string;
   onChange: (value: string) => void;
   allowCustom?: boolean;
+  required?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const custom = allowCustom && Boolean(value) && (value === 'Другое' || !options.includes(value));
   return (
     <View style={styles.selectBlock}>
-      <Text style={styles.subLabel}>{label}</Text>
+      <RequiredLabel label={label} required={required} />
       <Pressable style={styles.dropdownButton} onPress={() => setOpen(current => !current)}>
         <Text style={[styles.dropdownText, !value && styles.dropdownPlaceholder]}>{value || 'Выберите значение'}</Text>
         <SvgIcon name="chevronRight" size={18} color={colors.secondary} />
@@ -899,11 +830,61 @@ function ChoiceGroup({ value, options, onChange }: { value: string; options: Arr
   );
 }
 
-function SelectChips({ label, options, value, onChange }: { label: string; options: string[]; value: string; onChange: (value: string) => void }) {
+function SelectChips({ label, options, value, onChange, required = false }: { label: string; options: string[]; value: string; onChange: (value: string) => void; required?: boolean }) {
   return (
     <View style={styles.selectBlock}>
-      <Text style={styles.subLabel}>{label}</Text>
+      <RequiredLabel label={label} required={required} />
       <ChoiceGroup value={value} options={options.map(item => ({ label: item, value: item }))} onChange={onChange} />
+    </View>
+  );
+}
+
+function SearchableProgramSuggestions({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [search, setSearch] = useState('');
+  const programsQuery = useQuery({
+    queryKey: ['questionnaire-program-search', search],
+    queryFn: () => educationCatalogApi.getProgramsPage({ search: search.trim(), limit: 8 }),
+    enabled: search.trim().length >= 2,
+  });
+
+  const addProgram = (title: string) => {
+    const selected = value.split(/\s*\/\s*/).map(item => item.trim()).filter(Boolean);
+    if (!selected.some(item => item.toLocaleLowerCase() === title.toLocaleLowerCase())) {
+      onChange([...selected, title].join(' / ').slice(0, 255));
+    }
+    setSearch('');
+  };
+
+  return (
+    <View style={styles.selectBlock}>
+      <RequiredLabel label="Найти программу в каталоге" required={false} />
+      <AppInput
+        value={search}
+        onChangeText={setSearch}
+        maxLength={255}
+        placeholder="Начните вводить, например: лечебное дело"
+      />
+      {search.trim().length >= 2 ? (
+        <View style={styles.dropdownOptions}>
+          {[...(programsQuery.data?.results || [])]
+            .sort((left, right) => Number(Boolean(right.priority_offer)) - Number(Boolean(left.priority_offer)))
+            .map(program => (
+            <Pressable key={program.id} style={styles.dropdownOption} onPress={() => addProgram(program.title)}>
+              <View style={styles.programSuggestionHeader}>
+                <Text style={styles.dropdownOptionText}>{program.title}</Text>
+                {program.priority_offer ? <Text style={styles.priorityLabel}>ПРИОРИТЕТ</Text> : null}
+              </View>
+              {program.university_name ? <Text style={styles.programUniversity}>{program.university_name}</Text> : null}
+              {program.priority_offer ? (
+                <Text style={styles.priorityPrice}>Гослиния · услуги ${program.priority_offer.service_fee_usd}</Text>
+              ) : null}
+            </Pressable>
+          ))}
+          {!programsQuery.isLoading && !(programsQuery.data?.results || []).length ? (
+            <Text style={styles.searchEmpty}>Совпадений нет — укажите направление вручную ниже.</Text>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -974,6 +955,11 @@ const styles = StyleSheet.create({
   dropdownOption: { minHeight: 44, paddingHorizontal: spacing.md, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
   dropdownOptionActive: { backgroundColor: colors.surface },
   dropdownOptionText: { color: colors.text, fontWeight: typography.weights.bold },
+  programUniversity: { color: colors.muted, fontSize: typography.small, marginTop: 3 },
+  programSuggestionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  priorityLabel: { color: colors.primary, fontSize: 10, fontWeight: typography.weights.heavy, letterSpacing: 0.5 },
+  priorityPrice: { color: colors.secondary, fontSize: typography.small, fontWeight: typography.weights.bold, marginTop: 3 },
+  searchEmpty: { color: colors.muted, padding: spacing.md, lineHeight: 20 },
   subLabel: { color: colors.text, fontSize: typography.small, fontWeight: typography.weights.bold, marginBottom: spacing.xs },
   universityPicker: { gap: spacing.sm, marginBottom: spacing.md },
   selectionCounter: { color: colors.secondary, fontWeight: typography.weights.heavy, marginBottom: spacing.xs },
@@ -998,12 +984,13 @@ const styles = StyleSheet.create({
   offlineCard: {
     marginBottom: spacing.lg,
     gap: spacing.sm,
-    borderColor: 'rgba(13,65,109,0.22)',
-    backgroundColor: 'rgba(13,65,109,0.06)',
+    borderColor: colors.border,
+    borderWidth: 1,
+    backgroundColor: colors.card,
   },
-  offlineTitle: { color: colors.secondary, fontSize: typography.body, fontWeight: typography.weights.heavy },
+  offlineTitle: { color: colors.text, fontSize: typography.body, fontWeight: typography.weights.heavy },
   offlineHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  offlineIcon: { width: 34, height: 34, borderRadius: radius.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  offlineIcon: { width: 34, height: 34, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   offlineText: { color: colors.text, lineHeight: 21, fontWeight: typography.weights.medium },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   checkbox: { width: 24, height: 24, borderRadius: 7, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
@@ -1011,5 +998,6 @@ const styles = StyleSheet.create({
   pendingRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, marginBottom: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   pendingText: { flex: 1, color: colors.text, lineHeight: 21, fontWeight: typography.weights.bold },
   consentText: { flex: 1, color: colors.text, lineHeight: 22, fontWeight: typography.weights.bold },
+  requiredMark: { color: colors.danger },
   actions: { gap: spacing.sm },
 });

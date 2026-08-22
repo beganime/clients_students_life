@@ -1,6 +1,6 @@
 {
     "name": "students-life",
-    "version": "1.0.8",
+    "version": "1.0.10",
     "main": "index.ts",
     "scripts": {
         "start": "expo start",
