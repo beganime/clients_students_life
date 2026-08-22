@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.students.life",
-      "googleServicesFile": "$GOOGLE_SERVICES_INFO_PLIST",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "Students Life uses your photo library so you can choose and upload a profile photo, an applicant photo, or admission documents such as a passport, transcript, or certificate.",
@@ -32,7 +32,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "package": "com.students.life",
-      "googleServicesFile": "$GOOGLE_SERVICES_JSON",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 10
     },
     "web": {
