@@ -40,7 +40,13 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             'citizenship',
             'avatar',
             'language',
+            'onboarding_public_id',
+            'onboarding_access_token',
+            'onboarding_kind',
+            'current_location',
+            'location_updated_at',
         )
+        read_only_fields = ('onboarding_public_id', 'onboarding_access_token', 'onboarding_kind', 'location_updated_at')
 
 
 class UserMeSerializer(serializers.ModelSerializer):
@@ -94,6 +100,9 @@ class UserMeSerializer(serializers.ModelSerializer):
         )
         for attr, value in profile_data.items():
             setattr(profile, attr, value)
+        if 'current_location' in profile_data:
+            from django.utils import timezone
+            profile.location_updated_at = timezone.now()
         if not profile.role_id:
             profile.role = AppRole.default_role()
         profile.save()

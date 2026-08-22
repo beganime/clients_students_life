@@ -5,16 +5,21 @@ import { colors, radius, spacing, typography } from '../constants/colors';
 
 type Props = TextInputProps & {
   label?: string;
+  required?: boolean;
   error?: string;
   helper?: string;
   right?: React.ReactNode;
   wrapperStyle?: StyleProp<ViewStyle>;
 };
 
-export function AppInput({ label, error, helper, right, style, wrapperStyle, ...props }: Props) {
+export function AppInput({ label, required = false, error, helper, right, style, wrapperStyle, ...props }: Props) {
   return (
     <View style={[styles.wrapper, wrapperStyle]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? (
+        <Text style={styles.label}>
+          {label}{required ? <Text style={styles.required}> *</Text> : null}
+        </Text>
+      ) : null}
       <View style={[styles.inputShell, error && styles.inputError]}>
         <TextInput
           placeholderTextColor={colors.mutedLight}
@@ -37,6 +42,9 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: typography.small,
     fontWeight: typography.weights.bold,
+  },
+  required: {
+    color: colors.danger,
   },
   inputShell: {
     minHeight: 54,

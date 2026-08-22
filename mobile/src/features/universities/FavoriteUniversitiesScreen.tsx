@@ -47,7 +47,7 @@ export function FavoriteUniversitiesScreen() {
           <UniversityCard
             university={item.university_detail}
             onPress={() => navigation.navigate('UniversityDetail', { slug: item.university_detail.slug })}
-            onApplyPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant', universityId: item.university_detail.id })}
+            onApplyPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
           />
         )}
       />

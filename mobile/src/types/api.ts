@@ -76,6 +76,12 @@ export type Program = {
   university_cover?: string | null;
   required_documents?: string;
   requirements?: string;
+  priority_offer?: {
+    code: string;
+    degree: string;
+    program_name: string;
+    service_fee_usd: number;
+  } | null;
 };
 
 export type University = {
@@ -112,6 +118,7 @@ export type University = {
   contact_people?: unknown[];
   programs_count?: number;
   programs?: Program[];
+  fees_summary?: Array<Record<string, any>>;
   is_favorite?: boolean;
 };
 
@@ -197,7 +204,8 @@ export type ApplicationFile = {
 };
 
 export type ChatRoom = {
-  id: number;
+  id: number | string;
+  sl_id?: string;
   user?: number;
   user_name?: string;
   user_email?: string;
@@ -230,7 +238,7 @@ export type MyDocument = {
 };
 
 export type ChatAttachment = {
-  id: number;
+  id: number | string;
   url?: string | null;
   original_name?: string;
   content_type?: string;
@@ -241,9 +249,9 @@ export type ChatAttachment = {
 };
 
 export type ChatMessage = {
-  id: number;
-  room: number;
-  sender_user?: number | null;
+  id: number | string;
+  room: number | string;
+  sender_user?: number | string | null;
   sender_user_name?: string;
   sender_staff?: StaffProfile | null;
   sender_role?: 'user' | 'manager';
@@ -266,6 +274,11 @@ export type UserProfile = {
   citizenship?: string;
   avatar?: string | null;
   language?: string;
+  onboarding_public_id?: string;
+  onboarding_access_token?: string;
+  onboarding_kind?: 'applicant' | 'school_student';
+  current_location?: string;
+  location_updated_at?: string | null;
 };
 
 export type UserActivity = {
@@ -309,18 +322,11 @@ export type UserNotification = {
 
 export type ClientExam = {
   id: number;
-  subject: string;
+  university: string;
   exam_date: string;
-  exam_time: string;
-  timezone?: string;
-  comment?: string;
-  reminder_start_at?: string | null;
-  repeat_until_acknowledged?: boolean;
   acknowledged_at?: string | null;
   acknowledged_by_user: boolean;
   is_active: boolean;
-  last_reminded_at?: string | null;
-  next_reminder_at?: string | null;
   created_at: string;
   updated_at?: string;
 };
@@ -342,6 +348,7 @@ export type ApplicantQuestionnaire = {
   full_name?: string;
   birth_date?: string | null;
   gender?: 'male' | 'female' | '';
+  is_conscript?: boolean;
   citizenship?: string;
   marital_status?: string;
   face_photo?: string | null;
@@ -376,6 +383,7 @@ export type ApplicantQuestionnaire = {
   achievements?: string[];
   languages?: Array<{ language: string; level: string }>;
   desired_program?: string;
+  desired_universities?: string;
   admission_goal?: string;
   desired_city?: string;
   desired_country?: string;
@@ -388,6 +396,10 @@ export type ApplicantQuestionnaire = {
   visa_city?: string;
   visa_valid_until?: string | null;
   has_international_passport?: string;
+  passport_pending?: boolean;
+  requested_services?: string[];
+  funding_type?: 'government' | 'budget' | 'contract' | 'medical' | '';
+  request_text?: string;
   hobbies?: string;
   applicant_comment?: string;
   referral_source?: string;
@@ -411,9 +423,36 @@ export type UniversityChoiceDraft = {
 
 export type OnboardingSubmissionStatus = {
   public_id: string;
-  status: 'submitted' | 'changes_requested' | 'approved' | 'rejected';
+  kind: 'applicant' | 'school_student';
+  stage: 'express' | 'full';
+  status: 'submitted' | 'in_review' | 'changes_requested' | 'approved' | 'rejected';
   review_comment?: string;
   sl_id?: string | null;
+  can_fill_full_questionnaire?: boolean;
+  payload?: Partial<ApplicantQuestionnaire>;
+  full_name?: string;
+  phone?: string;
+  email?: string;
+  date_of_birth?: string | null;
+  citizenship?: string;
+  academic_year?: number;
+  service_credentials?: {
+    mobile_login: string;
+    shared_password: string;
+  } | null;
+  university_choices?: Array<{
+    rank: number;
+    university_id: number;
+    university_name: string;
+    programs: Array<{ id: number; name: string }>;
+  }>;
+  admission_status?: {
+    current_status: string;
+    invitation_city: string;
+    meeting: string;
+    current_location: string;
+    updated_at: string;
+  } | null;
   submitted_at: string;
   reviewed_at?: string | null;
 };

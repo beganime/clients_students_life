@@ -1,5 +1,6 @@
 import os
 import mimetypes
+import zipfile
 
 from django.conf import settings
 from PIL import Image, UnidentifiedImageError
@@ -8,6 +9,7 @@ from rest_framework import serializers
 
 ALLOWED_APPLICATION_FILE_TYPES = {
     'application/pdf': {'.pdf'},
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {'.docx'},
     'image/jpeg': {'.jpg', '.jpeg'},
     'image/png': {'.png'},
     'image/webp': {'.webp'},
@@ -35,7 +37,7 @@ def validate_application_file(uploaded):
     allowed_extensions = ALLOWED_APPLICATION_FILE_TYPES.get(content_type)
 
     if not allowed_extensions or extension not in allowed_extensions:
-        raise serializers.ValidationError('Разрешены только PDF, JPEG, PNG или WebP.')
+        raise serializers.ValidationError('Разрешены только PDF, DOCX, JPEG, PNG или WebP.')
 
     try:
         uploaded.seek(0)
@@ -47,6 +49,17 @@ def validate_application_file(uploaded):
     if content_type == 'application/pdf':
         if not head.startswith(b'%PDF-'):
             raise serializers.ValidationError('PDF файл поврежден или имеет неверный формат.')
+        return original_name
+
+    if extension == '.docx':
+        try:
+            with zipfile.ZipFile(uploaded) as archive:
+                names = set(archive.namelist())
+                if '[Content_Types].xml' not in names or 'word/document.xml' not in names:
+                    raise serializers.ValidationError('DOCX файл поврежден или имеет неверный формат.')
+            uploaded.seek(0)
+        except (zipfile.BadZipFile, OSError) as exc:
+            raise serializers.ValidationError('DOCX файл поврежден или имеет неверный формат.') from exc
         return original_name
 
     try:

@@ -24,6 +24,18 @@ Copy `backend/.env.example` and set:
 
 No manager-sl keys are stored in the mobile app.
 
+Public self-registration is disabled by default. ManagerSL approves the
+onboarding form and creates the account. Akylchat is the canonical chat;
+the legacy local chat API is available only when `LOCAL_CHAT_ENABLED=True`.
+
+ManagerSL creates the mobile account through the protected
+`POST /api/v1/accounts/internal/provision/` endpoint. The operation is
+idempotent by SL-ID and requires `MANAGER_SL_PROVISION_TOKEN`.
+
+Until the shared document disk is selected, uploaded files use the persistent
+Docker volume mounted at `/app/media`. Do not store production uploads inside
+the Git checkout.
+
 ### Mobile catalog configuration
 
 The Expo app reads public education catalog data directly from manager-sl client API:

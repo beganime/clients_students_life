@@ -43,7 +43,7 @@ export function SideMenu({ visible, onClose, navigation }: Props) {
 
           <View style={styles.menuList}>
             <MenuItem icon="chat" title="Чат" onPress={() => navigate('Chat')} />
-            <MenuItem icon="application" title="Мои заявки" onPress={() => navigate('MyApplications')} />
+            <MenuItem icon="application" title="История действий" onPress={() => navigate('MyApplications')} />
             <MenuItem icon="university" title="Каталог вузов" onPress={() => navigate('App', { screen: 'Universities' })} />
             <MenuItem icon="application" title="Поступление" onPress={() => navigate('AdmissionInfo')} />
             <MenuItem icon="visa" title="Виза" onPress={() => navigate('VisaInfo')} />

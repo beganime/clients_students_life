@@ -106,7 +106,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
 
 class ChatMessageCreateSerializer(serializers.Serializer):
-    text = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True, max_length=4000)
+    text = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True, max_length=1000)
     image = serializers.ImageField(required=False, allow_null=True)
     file = serializers.FileField(required=False, allow_null=True)
 

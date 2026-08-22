@@ -222,7 +222,7 @@ export function UniversitiesScreen() {
               <Text style={styles.kicker}>Каталог вузов</Text>
               <Text style={styles.title}>Страны, города, вузы и программы</Text>
               <Text style={styles.subtitle}>
-                Данные загружаются через прокси students-life.ru. Используйте фильтры, чтобы быстро перейти к подходящим вариантам.
+                Данные загружаются через защищённый сервер Student's Life. Используйте фильтры, чтобы быстро перейти к подходящим вариантам.
               </Text>
             </RedGradientHero>
 
@@ -363,13 +363,13 @@ export function UniversitiesScreen() {
             <ProgramResultCard
               program={item as Program}
               onOpen={() => navigation.navigate('ProgramDetail', { id: item.id })}
-              onApply={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant', universityId: (item as Program).university_id || (item as Program).university, programId: item.id })}
+              onApply={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
             />
           ) : (
             <UniversityCard
               university={item}
               onPress={() => navigation.navigate('UniversityDetail', { id: item.id })}
-              onApplyPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant', universityId: item.id })}
+              onApplyPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
             />
           )
         )}

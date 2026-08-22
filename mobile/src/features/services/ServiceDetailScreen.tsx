@@ -63,7 +63,7 @@ export function ServiceDetailScreen() {
         <Text style={styles.title}>{data.title}</Text>
         <Text style={styles.description}>{data.short_description || 'Комплексная поддержка по выбранной услуге.'}</Text>
         <View style={styles.heroActions}>
-          <AppButton title={data.button_text || 'Заполнить анкету'} onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} />
+          <AppButton title={data.button_text || 'Оставить экспресс-заявку'} onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })} />
           <AppButton title="Написать в чат" variant="outline" onPress={() => navigation.navigate('Chat')} />
         </View>
       </RedGradientHero>
@@ -98,7 +98,7 @@ export function ServiceDetailScreen() {
         title="Оставьте заявку — она ни к чему не обязывает"
         description="Менеджер свяжется с вами и объяснит, какие действия нужны дальше."
         primaryText="Оставить заявку"
-        onPrimaryPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
+        onPrimaryPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
         secondaryText="Открыть чат"
         onSecondaryPress={() => navigation.navigate('Chat')}
       />

@@ -55,6 +55,8 @@ export function UniversityDetailScreen() {
     });
 
     return programs.sort((left, right) => {
+      const priorityDifference = Number(Boolean(right.priority_offer)) - Number(Boolean(left.priority_offer));
+      if (priorityDifference) return priorityDifference;
       if (programSort === 'price') {
         return parseMoney(left.tuition_fee) - parseMoney(right.tuition_fee);
       }
@@ -65,7 +67,7 @@ export function UniversityDetailScreen() {
     });
   }, [programSearch, programSort, universityPrograms]);
 
-  const handleApplyPress = () => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant', universityId: universityQuery.data?.id });
+  const handleApplyPress = () => navigation.navigate('ExpressApplication', { kind: 'applicant' });
 
   if (universityQuery.isLoading) return <Loading />;
   if (universityQuery.isError) {
@@ -81,6 +83,9 @@ export function UniversityDetailScreen() {
   const imageUrl = data.cover_image || data.logo || null;
   const location = [data.country_name, data.city_name].filter(Boolean).join(', ') || 'Локация уточняется';
   const contacts = [data.phone, data.email, data.official_website].filter(Boolean).join('\n');
+  const governmentFees = (data.fees_summary || []).filter(
+    (fee: Record<string, any>) => String(fee.source || '').toLowerCase() === 'гослиния' || fee.priority_code,
+  );
 
   return (
     <Screen
@@ -128,6 +133,17 @@ export function UniversityDetailScreen() {
         />
       </View>
 
+      {governmentFees.length ? (
+        <AppCard style={styles.textBlock}>
+          <Text style={styles.sectionTitle}>Услуги по Гослинии</Text>
+          {governmentFees.map((fee: Record<string, any>, index: number) => (
+            <Text key={`${fee.priority_code || fee.program_name || index}`} style={styles.text}>
+              {fee.program_name || 'Приоритетная программа'} — ${Number(fee.service_fee_usd || 0).toLocaleString('ru-RU')}
+            </Text>
+          ))}
+        </AppCard>
+      ) : null}
+
       {data.description_markdown ? (
         <MarkdownCard title="Описание" text={data.description_markdown} />
       ) : null}
@@ -169,7 +185,7 @@ export function UniversityDetailScreen() {
               key={program.id}
               program={program}
               onOpen={() => navigation.navigate('ProgramDetail', { id: program.id })}
-              onApply={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant', universityId: data.id, programId: program.id })}
+              onApply={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
             />
           ))}
           {!visiblePrograms.length ? (
@@ -234,14 +250,27 @@ function ProgramCard({ program, onOpen, onApply }: { program: Program; onOpen: (
   const fee = program.tuition_fee
     ? `${program.tuition_fee}${program.currency ? ` ${program.currency}` : ''}`
     : 'Стоимость уточняется';
+  const governmentFee = (program.fees || []).find(
+    item => String(item.source || '').toLowerCase() === 'гослиния' || item.priority_code,
+  );
 
   return (
     <AppCard style={styles.programCard}>
+      {program.priority_offer ? <Badge label="Приоритет Гослинии" variant="mint" icon="check" /> : null}
       <Text style={styles.programTitle}>{program.title}</Text>
       <ProgramMeta icon="document" text={`Уровень: ${program.level || 'уточняется'}`} />
       <ProgramMeta icon="language" text={`Язык: ${program.language || 'уточняется'}`} />
       <ProgramMeta icon="clock" text={`Срок: ${program.duration || 'уточняется'}`} />
       <ProgramMeta icon="money" text={`Стоимость: ${fee}`} />
+      {governmentFee ? (
+        <ProgramMeta
+          icon="money"
+          text={`Услуги по Гослинии: $${Number(governmentFee.service_fee_usd || 0).toLocaleString('ru-RU')}`}
+        />
+      ) : null}
+      {program.priority_offer && !governmentFee ? (
+        <ProgramMeta icon="money" text={`Услуги по Гослинии: $${program.priority_offer.service_fee_usd.toLocaleString('ru-RU')}`} />
+      ) : null}
       <View style={styles.programActions}>
         <AppButton title="Открыть" variant="outline" onPress={onOpen} style={styles.programButton} />
         <AppButton title="Заявка" onPress={onApply} style={styles.programButton} />
