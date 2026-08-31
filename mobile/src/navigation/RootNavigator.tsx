@@ -5,7 +5,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Loading } from '../components/Loading';
 import { useAuthStore } from '../store/authStore';
 
-import { ApplicationCreateScreen } from '../features/applications/ApplicationCreateScreen';
 import { MyApplicationsScreen } from '../features/applications/MyApplicationsScreen';
 import { ChatListScreen } from '../features/chat/ChatListScreen';
 import { ChatRoomScreen } from '../features/chat/ChatRoomScreen';
@@ -15,10 +14,12 @@ import { KnowledgeDetailScreen } from '../features/knowledge/KnowledgeDetailScre
 import { KnowledgeListScreen } from '../features/knowledge/KnowledgeListScreen';
 import { NewsDetailScreen } from '../features/news/NewsDetailScreen';
 import { NotificationsScreen } from '../features/notifications/NotificationsScreen';
+import { ExamsScreen } from '../features/exams/ExamsScreen';
 import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
 import { EditProfileScreen } from '../features/profile/EditProfileScreen';
-import { ApplicantQuestionnaireScreen, DataConsentScreen } from '../features/questionnaire';
+import { ApplicantQuestionnaireScreen, DataConsentScreen, ExpressApplicationScreen } from '../features/questionnaire';
 import { ServiceDetailScreen } from '../features/services/ServiceDetailScreen';
+import { GovernmentLinePricesScreen } from '../features/services/GovernmentLinePricesScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { StaffScreen } from '../features/staff/StaffScreen';
 import { CityDetailScreen } from '../features/universities/CityDetailScreen';
@@ -64,14 +65,16 @@ export function RootNavigator() {
         <Stack.Screen name="VisaInfo" component={VisaInfoScreen} options={{ title: 'Виза' }} />
         <Stack.Screen name="ToursInfo" component={ToursInfoScreen} options={{ title: 'Туры' }} />
         <Stack.Screen name="AdmissionInfo" component={AdmissionInfoScreen} options={{ title: 'Поступление' }} />
-        <Stack.Screen name="ApplicationCreate" component={ApplicationCreateScreen} options={{ title: 'Подать заявку' }} />
+        <Stack.Screen name="GovernmentLinePrices" component={GovernmentLinePricesScreen} options={{ title: 'Бюджет' }} />
         <Stack.Screen name="Chat" component={ChatListScreen} options={{ title: 'Чат с менеджером' }} />
-        <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'Мои заявки' }} />
+        <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'История действий' }} />
         <Stack.Screen name="MyDocuments" component={MyDocumentsScreen} options={{ title: 'Мои документы' }} />
         <Stack.Screen name="ApplicantQuestionnaire" component={ApplicantQuestionnaireScreen} options={{ title: 'Анкета абитуриента' }} />
+        <Stack.Screen name="ExpressApplication" component={ExpressApplicationScreen} options={{ title: 'Экспресс-заявка' }} />
         <Stack.Screen name="DataConsent" component={DataConsentScreen} options={{ title: 'Согласие на данные' }} />
         <Stack.Screen name="FavoriteUniversities" component={FavoriteUniversitiesScreen} options={{ title: 'Избранные вузы' }} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Уведомления' }} />
+        <Stack.Screen name="Exams" component={ExamsScreen} options={{ title: 'Экзамены' }} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Редактировать профиль' }} />
         <Stack.Screen name="ChatRoom" component={ChatRoomScreen} options={{ title: 'Чат' }} />
       </Stack.Navigator>

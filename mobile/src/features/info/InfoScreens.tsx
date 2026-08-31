@@ -52,18 +52,18 @@ const ADMISSION_INFO: InfoData = {
   subtitle: 'От подбора программы до подачи документов и связи с университетом.',
   imageKey: 'admission',
   sections: [
-    { icon: 'search', title: 'Подбор', text: 'Сравниваем страну, город, вуз, программу, язык, стоимость и требования.' },
+    { icon: 'search', title: 'Подбор', text: 'Сравниваем страну, город, вуз, программу, язык и требования.' },
     { icon: 'document', title: 'Пакет документов', text: 'Помогаем понять, какие документы нужны для конкретной программы.' },
     { icon: 'check', title: 'Сопровождение', text: 'После заявки менеджер ведёт клиента по этапам и сохраняет историю в личном кабинете.' },
   ],
 };
 
 export function VisaInfoScreen() {
-  return <InfoScreen data={VISA_INFO} />;
+  return <ComingSoonScreen title="Заявка на визу" />;
 }
 
 export function ToursInfoScreen() {
-  return <InfoScreen data={TOURS_INFO} />;
+  return <ComingSoonScreen title="Заявка на тур" />;
 }
 
 export function AdmissionInfoScreen() {
@@ -101,10 +101,22 @@ function InfoScreen({ data }: { data: InfoData }) {
         title="Обсудить с менеджером"
         description="Оставьте заявку или напишите в чат, чтобы получить персональную консультацию."
         primaryText="Оставить заявку"
-        onPrimaryPress={() => navigation.navigate('ApplicationCreate')}
+        onPrimaryPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
         secondaryText="Открыть чат"
         onSecondaryPress={() => navigation.navigate('Chat')}
       />
+    </Screen>
+  );
+}
+
+function ComingSoonScreen({ title }: { title: string }) {
+  return (
+    <Screen style={styles.screen}>
+      <AppCard style={styles.comingSoon}>
+        <SvgIcon name="clock" size={34} color={colors.secondary} />
+        <Text style={styles.comingSoonTitle}>{title}</Text>
+        <Text style={styles.cardText}>Скоро</Text>
+      </AppCard>
     </Screen>
   );
 }
@@ -138,4 +150,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy },
   cardText: { color: colors.muted, fontSize: typography.body, lineHeight: 23, marginTop: spacing.xs, fontWeight: typography.weights.medium },
+  comingSoon: { minHeight: 240, alignItems: 'center', justifyContent: 'center' },
+  comingSoonTitle: { color: colors.text, fontSize: 26, fontWeight: typography.weights.heavy, marginTop: spacing.md },
 });

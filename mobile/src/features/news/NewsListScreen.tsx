@@ -32,7 +32,7 @@ export function NewsListScreen() {
     <Screen>
       <FlatList
         contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
-        data={newsQuery.isLoading || newsQuery.isError ? [] : newsQuery.data || []}
+        data={newsQuery.data || []}
         keyExtractor={item => String(item.id)}
         refreshing={newsQuery.isRefetching}
         onRefresh={newsQuery.refetch}
@@ -44,7 +44,7 @@ export function NewsListScreen() {
               <Text style={styles.description}>Новости, гайды, объявления, дедлайны и важная информация от Student’s Life.</Text>
             </RedGradientHero>
             {newsQuery.isLoading ? <LoadingSkeleton rows={3} height={180} /> : null}
-            {newsQuery.isError ? <ErrorState onAction={() => newsQuery.refetch()} /> : null}
+            {newsQuery.isError && !newsQuery.data?.length ? <ErrorState onAction={() => newsQuery.refetch()} /> : null}
           </View>
         }
         ListEmptyComponent={!newsQuery.isLoading && !newsQuery.isError ? <EmptyState title="Новостей пока нет" description="Добавьте опубликованные новости через админ-панель." /> : null}

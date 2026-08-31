@@ -39,9 +39,6 @@ export function ProgramDetailScreen() {
   }
 
   const program = query.data;
-  const fee = program.tuition_fee
-    ? `${program.tuition_fee}${program.currency ? ` ${program.currency}` : ''}`
-    : 'Стоимость уточняется';
   const imageUrl = program.university_cover || program.university_logo;
   const intakeText = formatIntakes(program.intakes, program.application_deadline, program.start_date);
 
@@ -51,7 +48,11 @@ export function ProgramDetailScreen() {
         {program.university_logo ? (
           <Image source={{ uri: program.university_logo }} style={styles.logo} resizeMode="cover" />
         ) : null}
-        <Badge label="Программа" variant="mint" icon="document" />
+        <Badge
+          label={program.priority_offer ? 'Приоритет программы «Бюджет»' : 'Программа'}
+          variant="mint"
+          icon={program.priority_offer ? 'check' : 'document'}
+        />
         <Text style={styles.title}>{program.title}</Text>
         <Text style={styles.subtitle}>{program.university_name || 'Университет уточняется'}</Text>
       </RedGradientHero>
@@ -60,10 +61,16 @@ export function ProgramDetailScreen() {
         <Info icon="document" label="Уровень" value={program.level || 'уточняется'} />
         <Info icon="language" label="Язык" value={program.language || 'уточняется'} />
         <Info icon="clock" label="Срок" value={program.duration || 'уточняется'} />
-        <Info icon="money" label="Стоимость" value={fee} />
         <Info icon="building" label="Факультет" value={program.faculty || 'уточняется'} />
         <Info icon="calendar" label="Intakes / дедлайны" value={intakeText || 'уточняется'} />
       </View>
+
+      {program.priority_offer ? (
+        <AppCard style={styles.priorityCard}>
+          <Text style={styles.cardTitle}>Приоритет программы «Бюджет»</Text>
+          <Text style={styles.text}>Код {program.priority_offer.code} · {program.priority_offer.degree}</Text>
+        </AppCard>
+      ) : null}
 
       {program.description_markdown ? (
         <MarkdownCard title="Описание программы" text={program.description_markdown} />
@@ -75,7 +82,7 @@ export function ProgramDetailScreen() {
       <View style={styles.actions}>
         <AppButton
           title="Подать заявку на программу"
-          onPress={() => navigation.navigate('ApplicationCreate', { universityId: program.university, programId: program.id })}
+          onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
         />
         {program.university ? (
           <AppButton
@@ -163,6 +170,8 @@ const styles = StyleSheet.create({
   label: { color: colors.muted, fontWeight: typography.weights.bold },
   value: { color: colors.text, fontSize: typography.body, fontWeight: typography.weights.heavy, marginTop: 4 },
   card: { marginTop: spacing.lg },
+  priorityCard: { marginTop: spacing.lg, borderColor: colors.primary },
+  priorityPrice: { color: colors.primary, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.xs },
   cardTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginBottom: spacing.sm },
   text: { color: colors.muted, lineHeight: 22, fontWeight: typography.weights.medium },
   actions: { gap: spacing.sm },

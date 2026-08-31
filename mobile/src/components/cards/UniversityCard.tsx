@@ -28,7 +28,6 @@ export function UniversityCard({ item, onPress }: Props) {
         <Text style={styles.location}>{[item.country_name, item.city_name].filter(Boolean).join(', ')}</Text>
 
         <View style={styles.infoRow}>
-          <Text style={styles.info}>{item.tuition_from || 'Цена уточняется'}</Text>
           <Text style={styles.info}>{item.languages || 'Язык уточняется'}</Text>
         </View>
       </View>

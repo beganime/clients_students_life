@@ -1,0 +1,41 @@
+services:
+  db:
+    profiles: ["local-db"]
+
+  backend:
+    ports: !override
+      - "127.0.0.1:8103:8000"
+    depends_on: !override
+      redis:
+        condition: service_healthy
+    networks:
+      default:
+      sl_services_internal:
+        aliases:
+          - students-life-internal
+
+  exam-reminder-worker:
+    build:
+      context: ./backend
+    container_name: students_life_exam_reminder_worker
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    command: >
+      sh -c "while true; do
+               python manage.py send_exam_reminders;
+               sleep 60;
+             done"
+    volumes:
+      - ./backend/secrets:/app/secrets:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      default:
+      sl_services_internal:
+
+networks:
+  sl_services_internal:
+    external: true
+    name: sl-services-internal

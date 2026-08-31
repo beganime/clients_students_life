@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { bannerImages } from '../../assets/banners';
+import { onboardingSubmissionStorage } from '../../api/onboarding';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
 import { AppInput } from '../../components/AppInput';
@@ -12,14 +13,15 @@ import { SvgIcon } from '../../components/SvgIcon';
 import { colors, radius, spacing, typography } from '../../constants/colors';
 import { AuthStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
+import { clearOfflineQuestionnaireDraft } from '../../utils/offlineStorage';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 type StatusState = { type: 'success' | 'error' | 'info'; text: string } | null;
 
-export function LoginScreen({ navigation }: Props) {
+export function LoginScreen({ navigation, route }: Props) {
   const login = useAuthStore(state => state.login);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(route.params?.slId || '');
+  const [password, setPassword] = useState(route.params?.password || '');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
@@ -27,9 +29,9 @@ export function LoginScreen({ navigation }: Props) {
   const closeAuth = () => navigation.getParent<any>()?.navigate('App');
 
   const handleLogin = async () => {
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = email.trim();
     if (!cleanEmail || !password) {
-      setStatus({ type: 'error', text: 'Введите email и пароль.' });
+      setStatus({ type: 'error', text: 'Введите SL-ID или текущий логин и пароль.' });
       return;
     }
     if (password.length < 6) {
@@ -41,6 +43,12 @@ export function LoginScreen({ navigation }: Props) {
       setLoading(true);
       setStatus({ type: 'info', text: 'Проверяем данные...' });
       await login(cleanEmail, password);
+      if (route.params?.fromApprovedOnboarding) {
+        await Promise.all([
+          onboardingSubmissionStorage.clear(),
+          clearOfflineQuestionnaireDraft(),
+        ]);
+      }
       setStatus({ type: 'success', text: 'Вы успешно вошли в систему.' });
       setTimeout(() => navigation.getParent<any>()?.navigate('App'), 400);
     } catch (error) {
@@ -61,21 +69,20 @@ export function LoginScreen({ navigation }: Props) {
       <RedGradientHero backgroundImage={bannerImages.profile} style={styles.heroCard}>
         <Text style={styles.title}>Вход в Student's Life</Text>
         <Text style={styles.subtitle}>
-          Войдите, чтобы сохранять заявки, писать менеджеру и быстрее оформлять новые услуги.
+          Войдите по SL-ID, который менеджер передаст после одобрения анкеты.
         </Text>
       </RedGradientHero>
 
       <AppCard style={styles.formCard}>
         <AppInput
-          label="Email"
+          label="SL-ID или текущий логин"
           value={email}
           onChangeText={text => {
             setEmail(text);
             setStatus(null);
           }}
           autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="student@example.com"
+          placeholder="SL-001"
         />
         <AppInput
           label="Пароль"
@@ -94,9 +101,9 @@ export function LoginScreen({ navigation }: Props) {
         />
         {status ? <StatusBox type={status.type} text={status.text} /> : null}
         <AppButton title="Войти" onPress={handleLogin} loading={loading} />
-        <Pressable style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.registerText}>Нет аккаунта? Зарегистрироваться</Text>
-        </Pressable>
+        <Text style={styles.accountHint}>
+          Аккаунт создаётся после одобрения анкеты менеджером. Чтобы поступить через нас, закройте окно входа и заполните анкету.
+        </Text>
       </AppCard>
     </Screen>
   );
@@ -133,6 +140,5 @@ const styles = StyleSheet.create({
   toggleText: { color: colors.secondary, fontWeight: typography.weights.heavy },
   statusBox: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1 },
   statusText: { flex: 1, fontWeight: typography.weights.bold, lineHeight: 20 },
-  registerLink: { marginTop: spacing.lg, alignItems: 'center' },
-  registerText: { color: colors.secondary, fontSize: typography.body, fontWeight: typography.weights.bold },
+  accountHint: { color: colors.muted, fontSize: typography.small, lineHeight: 20, marginTop: spacing.lg, textAlign: 'center' },
 });

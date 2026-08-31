@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { educationCatalogApi } from '../api/educationCatalog';
+import { contentApi } from '../api/endpoints';
 import { queryClient } from '../api/queryClient';
 import { cacheRemoteMediaBatch } from '../utils/localMediaCache';
 import { useNetworkStatus } from './useNetworkStatus';
@@ -19,11 +20,12 @@ export function useCatalogWarmup() {
 
     async function warmup() {
       try {
-        const [countries, cities, universities, programsPage] = await Promise.all([
+        const [countries, cities, universities, programsPage, news] = await Promise.all([
           educationCatalogApi.getCountries({ limit: 100 }),
           educationCatalogApi.getCities({ limit: 100 }),
           educationCatalogApi.getAllUniversities(),
-          educationCatalogApi.getProgramsPage({ limit: 60, ordering: 'price_asc' }),
+          educationCatalogApi.getProgramsPage({ limit: 100, ordering: 'title_asc' }),
+          contentApi.getNews(),
         ]);
         const programs = programsPage.results;
 
@@ -33,6 +35,7 @@ export function useCatalogWarmup() {
         queryClient.setQueryData(['catalog', 'cities'], cities);
         queryClient.setQueryData(['catalog', 'universities', 'all'], universities);
         queryClient.setQueryData(['catalog', 'programs', 'all'], programs);
+        queryClient.setQueryData(['news'], news);
         queryClient.setQueryData(WARMUP_KEY, { warmed_at: new Date().toISOString() });
 
         const imageUrls = [
@@ -40,6 +43,7 @@ export function useCatalogWarmup() {
           ...cities.flatMap((item: any) => [item.image, item.cover_image]),
           ...universities.flatMap((item: any) => [item.logo, item.cover_image]),
           ...programs.flatMap((item: any) => [item.university_logo, item.university_cover]),
+          ...news.flatMap((item: any) => [item.cover_image]),
         ].filter(Boolean) as string[];
 
         await cacheRemoteMediaBatch(imageUrls.slice(0, 320), 'catalog');

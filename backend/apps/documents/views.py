@@ -1,3 +1,5 @@
+import secrets
+
 from django.conf import settings
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
@@ -10,7 +12,10 @@ from apps.accounts.models import is_manager_user
 from apps.applications.models import ApplicationFile
 from apps.notifications.services import send_push_to_user
 
-from .manager_sl_sync import sync_user_document_to_manager_sl
+from apps.applications.file_utils import clean_original_name, validate_application_file
+from apps.common.manager_sl import ManagerSLClientError, ManagerSLConfigError
+
+from .manager_sl_sync import sync_user_document_to_manager_sl, upload_user_document_to_manager_sl
 from .models import RequiredDocumentType, UserDocument
 from .serializers import MyDocumentSerializer, RequiredDocumentTypeSerializer, UserDocumentUploadSerializer
 
@@ -33,9 +38,15 @@ def unsafe_local_api_allowed():
 
 
 def has_service_api_access(request):
-    api_key = request.headers.get('X-API-KEY')
-    if api_key and api_key in configured_review_api_keys():
-        return True
+    api_key = str(
+        request.headers.get('X-Service-API-Key')
+        or request.headers.get('X-API-KEY')
+        or ''
+    ).strip()
+    if api_key:
+        for configured_key in configured_review_api_keys():
+            if secrets.compare_digest(api_key, configured_key):
+                return True
     return unsafe_local_api_allowed()
 
 
@@ -207,11 +218,25 @@ class MyDocumentViewSet(viewsets.GenericViewSet):
         if not document_type:
             return Response({'detail': 'Document type not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+        uploaded_file = request.FILES.get('file')
+        original_name = validate_application_file(uploaded_file)
         document, _ = UserDocument.objects.get_or_create(user=request.user, document_type=document_type)
-        serializer = UserDocumentUploadSerializer(document, data=request.data, partial=True, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        document = serializer.save()
-        sync_user_document_to_manager_sl(document, request=request)
+        try:
+            upload_user_document_to_manager_sl(document, uploaded_file)
+        except (ManagerSLClientError, ManagerSLConfigError) as exc:
+            return Response(
+                {'detail': f'Не удалось сохранить документ в DiskSL: {exc}'},
+                status=getattr(exc, 'status_code', status.HTTP_502_BAD_GATEWAY),
+            )
+
+        old_file = document.file
+        document.file = None
+        document.mark_uploaded(clean_original_name(uploaded_file) or original_name)
+        document.manager_sl_sync_status = 'synced'
+        document.manager_sl_sync_error = ''
+        document.save()
+        if old_file:
+            old_file.delete(save=False)
         return Response(MyDocumentSerializer(document, context={'request': request}).data, status=status.HTTP_200_OK)
 
 

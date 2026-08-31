@@ -107,6 +107,15 @@ else:
             'PASSWORD': config('DB_PASSWORD', default='students_life_password'),
             'HOST': config('DB_HOST', default='localhost'),
             'PORT': config('DB_PORT', default='5432'),
+            'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
+            'OPTIONS': {
+                key: value
+                for key, value in {
+                    'sslmode': config('DB_SSLMODE', default=''),
+                    'options': config('DB_OPTIONS', default=''),
+                }.items()
+                if value
+            },
         },
     }
 
@@ -126,7 +135,7 @@ STATIC_URL = config('STATIC_URL', default='/static/')
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = config('MEDIA_URL', default='/media/')
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(config('MEDIA_ROOT', default=str(BASE_DIR / 'media')))
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = config('DATA_UPLOAD_MAX_MEMORY_SIZE', default=50 * 1024 * 1024, cast=int)
 FILE_UPLOAD_MAX_MEMORY_SIZE = config('FILE_UPLOAD_MAX_MEMORY_SIZE', default=10 * 1024 * 1024, cast=int)
@@ -246,13 +255,27 @@ ALLOW_UNSAFE_LOCAL_API = DEBUG and config('ALLOW_UNSAFE_LOCAL_API', default=Fals
 
 MANAGER_SL_API_BASE_URL = config('MANAGER_SL_API_BASE_URL', default='')
 MANAGER_SL_LEADS_API_KEY = config('MANAGER_SL_LEADS_API_KEY', default='')
+STUDENTS_LIFE_API_KEY = config('STUDENTS_LIFE_API_KEY', default='')
+EXAM_SL_CALLBACK_URL = config('EXAM_SL_CALLBACK_URL', default='')
+EXAM_SL_API_KEY = config('EXAM_SL_API_KEY', default=STUDENTS_LIFE_API_KEY)
 MANAGER_SL_TIMEOUT_SECONDS = config('MANAGER_SL_TIMEOUT_SECONDS', default=8, cast=int)
+
+# The public account is created only after ManagerSL approves an onboarding
+# submission. Keep the old endpoint gated for rollback and data migrations.
+PUBLIC_REGISTRATION_ENABLED = config('PUBLIC_REGISTRATION_ENABLED', default=False, cast=bool)
+MANAGER_SL_PROVISION_TOKEN = config('MANAGER_SL_PROVISION_TOKEN', default='')
+
+# Akylchat is the canonical client/manager chat. The legacy local chat remains
+# available only as an explicit compatibility switch during migration.
+LOCAL_CHAT_ENABLED = config('LOCAL_CHAT_ENABLED', default=DEBUG, cast=bool)
+AKYLCHAT_API_BASE_URL = config('AKYLCHAT_API_BASE_URL', default='')
+AKYLCHAT_SERVICE_TOKEN = config('AKYLCHAT_SERVICE_TOKEN', default='')
 
 CHAT_IMAGE_MAX_UPLOAD_SIZE = config('CHAT_IMAGE_MAX_UPLOAD_SIZE', default=6 * 1024 * 1024, cast=int)
 CHAT_IMAGE_MAX_STORED_SIZE = config('CHAT_IMAGE_MAX_STORED_SIZE', default=2 * 1024 * 1024, cast=int)
 CHAT_IMAGE_MAX_DIMENSION = config('CHAT_IMAGE_MAX_DIMENSION', default=1600, cast=int)
 
-APPLICATION_FILE_MAX_UPLOAD_SIZE = config('APPLICATION_FILE_MAX_UPLOAD_SIZE', default=10 * 1024 * 1024, cast=int)
+APPLICATION_FILE_MAX_UPLOAD_SIZE = config('APPLICATION_FILE_MAX_UPLOAD_SIZE', default=50 * 1024 * 1024, cast=int)
 
 CHAT_WEBSOCKET_ENABLED = config('CHAT_WEBSOCKET_ENABLED', default=False, cast=bool)
 CHAT_WEBSOCKET_ALLOW_QUERY_TOKEN = config('CHAT_WEBSOCKET_ALLOW_QUERY_TOKEN', default=False, cast=bool)

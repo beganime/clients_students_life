@@ -43,7 +43,6 @@ export function UniversityCard({ university, onPress, onApplyPress }: Props) {
         </View>
         <View style={styles.tags}>
           <Badge label={university.languages || 'Языки уточняются'} variant="neutral" icon="language" />
-          <Badge label={university.tuition_from || 'Стоимость уточняется'} variant="blue" icon="money" />
           {university.has_dormitory ? (
             <Badge label="Есть общежитие" variant="mint" icon="building" />
           ) : null}

@@ -22,7 +22,10 @@ class UserDocumentAdmin(ModelAdmin):
     list_filter = ('status', 'manager_sl_sync_status', 'document_type', 'uploaded_at', 'reviewed_at')
     search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'document_type__title', 'original_name', 'admin_comment')
     autocomplete_fields = ('user', 'document_type', 'reviewed_by')
-    readonly_fields = ('created_at', 'updated_at', 'uploaded_at', 'manager_sl_sync_status', 'manager_sl_sync_error')
+    readonly_fields = (
+        'created_at', 'updated_at', 'uploaded_at', 'manager_sl_sync_status',
+        'manager_sl_sync_error', 'disk_path', 'disk_folder_url',
+    )
     actions = ('approve_documents', 'reject_documents')
     list_per_page = 100
 

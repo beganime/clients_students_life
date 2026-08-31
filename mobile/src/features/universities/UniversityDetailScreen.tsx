@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { notificationsApi } from '../../api/endpoints';
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
@@ -21,14 +22,16 @@ import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
 import { colors, radius, spacing, typography } from '../../constants/colors';
 import { RootStackParamList } from '../../navigation/types';
 import { Program } from '../../types/api';
+import { useAuthStore } from '../../store/authStore';
 
 type R = RouteProp<RootStackParamList, 'UniversityDetail'>;
 
 export function UniversityDetailScreen() {
   const route = useRoute<R>();
   const navigation = useNavigation<any>();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const [programSearch, setProgramSearch] = useState('');
-  const [programSort, setProgramSort] = useState<'title' | 'price' | 'duration'>('title');
+  const [programSort, setProgramSort] = useState<'title' | 'duration'>('title');
   const universityQuery = useQuery({
     queryKey: ['catalog', 'university', route.params.id],
     queryFn: () => educationCatalogApi.getUniversity(route.params.id),
@@ -39,6 +42,11 @@ export function UniversityDetailScreen() {
     queryFn: () => educationCatalogApi.getPrograms({ university: universityQuery.data?.id || route.params.id }),
     enabled: Boolean(universityQuery.data?.id || route.params.id),
     staleTime: 1000 * 60 * 30,
+  });
+  const examsQuery = useQuery({
+    queryKey: ['my-exams'],
+    queryFn: notificationsApi.getMyExams,
+    enabled: isAuthenticated,
   });
   const universityPrograms = useMemo(() => {
     const fetchedPrograms = programsQuery.data || [];
@@ -55,9 +63,8 @@ export function UniversityDetailScreen() {
     });
 
     return programs.sort((left, right) => {
-      if (programSort === 'price') {
-        return parseMoney(left.tuition_fee) - parseMoney(right.tuition_fee);
-      }
+      const priorityDifference = Number(Boolean(right.priority_offer)) - Number(Boolean(left.priority_offer));
+      if (priorityDifference) return priorityDifference;
       if (programSort === 'duration') {
         return String(left.duration || '').localeCompare(String(right.duration || ''), 'ru');
       }
@@ -65,7 +72,7 @@ export function UniversityDetailScreen() {
     });
   }, [programSearch, programSort, universityPrograms]);
 
-  const handleApplyPress = () => navigation.navigate('ApplicationCreate', { universityId: universityQuery.data?.id });
+  const handleApplyPress = () => navigation.navigate('ExpressApplication', { kind: 'applicant' });
 
   if (universityQuery.isLoading) return <Loading />;
   if (universityQuery.isError) {
@@ -81,6 +88,11 @@ export function UniversityDetailScreen() {
   const imageUrl = data.cover_image || data.logo || null;
   const location = [data.country_name, data.city_name].filter(Boolean).join(', ') || 'Локация уточняется';
   const contacts = [data.phone, data.email, data.official_website].filter(Boolean).join('\n');
+  const universityAliases = [data.name, data.abbreviation].map(normalizeUniversityName).filter(Boolean);
+  const universityExams = (examsQuery.data || []).filter(exam => {
+    const examUniversity = normalizeUniversityName(exam.university);
+    return universityAliases.some(alias => alias.length >= 2 && (examUniversity.includes(alias) || alias.includes(examUniversity)));
+  });
 
   return (
     <Screen
@@ -116,15 +128,33 @@ export function UniversityDetailScreen() {
         ) : null}
       </View>
 
+      {universityExams.length ? (
+        <AppCard style={styles.examCard}>
+          <View style={styles.examHeading}>
+            <View style={styles.examIcon}><SvgIcon name="calendar" size={22} color={colors.primary} /></View>
+            <View style={styles.examHeadingText}>
+              <Text style={styles.sectionTitle}>Экзамены в этом вузе</Text>
+              <Text style={styles.examHint}>Показаны только название вуза и дата</Text>
+            </View>
+          </View>
+          {universityExams.map(exam => (
+            <View key={exam.id} style={styles.examRow}>
+              <Text style={styles.examUniversity}>{exam.university}</Text>
+              <Text style={styles.examDate}>{formatExamDate(exam.exam_date)}</Text>
+            </View>
+          ))}
+          <AppButton title="Все экзамены" variant="outline" onPress={() => navigation.navigate('Exams')} />
+        </AppCard>
+      ) : null}
+
       <SectionHeader eyebrow="Ключевая информация" title="Что важно знать" />
       <View style={styles.infoGrid}>
         <InfoCard icon="language" label="Языки" value={data.languages || 'уточняется'} />
         <InfoCard icon="document" label="Уровни" value={data.education_levels || 'уточняется'} />
-        <InfoCard icon="money" label="Стоимость от" value={data.tuition_from || 'уточняется'} />
         <InfoCard
           icon="building"
           label="Общежитие"
-          value={data.has_dormitory ? data.dormitory_cost || 'есть' : 'уточняется'}
+          value={data.has_dormitory ? 'есть' : 'уточняется'}
         />
       </View>
 
@@ -158,7 +188,6 @@ export function UniversityDetailScreen() {
             </View>
             <View style={styles.sortRow}>
               <SortChip label="Название" active={programSort === 'title'} onPress={() => setProgramSort('title')} />
-              <SortChip label="Стоимость" active={programSort === 'price'} onPress={() => setProgramSort('price')} />
               <SortChip label="Срок" active={programSort === 'duration'} onPress={() => setProgramSort('duration')} />
             </View>
             <Text style={styles.programCount}>Показано программ: {visiblePrograms.length}</Text>
@@ -169,7 +198,7 @@ export function UniversityDetailScreen() {
               key={program.id}
               program={program}
               onOpen={() => navigation.navigate('ProgramDetail', { id: program.id })}
-              onApply={() => navigation.navigate('ApplicationCreate', { universityId: data.id, programId: program.id })}
+              onApply={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
             />
           ))}
           {!visiblePrograms.length ? (
@@ -231,17 +260,13 @@ function TextBlock({ title, text, actionUrl }: { title: string; text?: string | 
 }
 
 function ProgramCard({ program, onOpen, onApply }: { program: Program; onOpen: () => void; onApply: () => void }) {
-  const fee = program.tuition_fee
-    ? `${program.tuition_fee}${program.currency ? ` ${program.currency}` : ''}`
-    : 'Стоимость уточняется';
-
   return (
     <AppCard style={styles.programCard}>
+      {program.priority_offer ? <Badge label="Приоритет программы «Бюджет»" variant="mint" icon="check" /> : null}
       <Text style={styles.programTitle}>{program.title}</Text>
       <ProgramMeta icon="document" text={`Уровень: ${program.level || 'уточняется'}`} />
       <ProgramMeta icon="language" text={`Язык: ${program.language || 'уточняется'}`} />
       <ProgramMeta icon="clock" text={`Срок: ${program.duration || 'уточняется'}`} />
-      <ProgramMeta icon="money" text={`Стоимость: ${fee}`} />
       <View style={styles.programActions}>
         <AppButton title="Открыть" variant="outline" onPress={onOpen} style={styles.programButton} />
         <AppButton title="Заявка" onPress={onApply} style={styles.programButton} />
@@ -267,10 +292,13 @@ function SortChip({ label, active, onPress }: { label: string; active: boolean; 
   );
 }
 
-function parseMoney(value?: string | number | null) {
-  if (value === null || value === undefined || value === '') return Number.MAX_SAFE_INTEGER;
-  const normalized = String(value).replace(/\s/g, '').replace(',', '.').match(/\d+(\.\d+)?/);
-  return normalized ? Number(normalized[0]) : Number.MAX_SAFE_INTEGER;
+function normalizeUniversityName(value?: string | null) {
+  return String(value || '').toLocaleLowerCase('ru-RU').replace(/[^a-zа-яё0-9]+/gi, '');
+}
+
+function formatExamDate(value: string) {
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 const styles = StyleSheet.create({
@@ -278,6 +306,14 @@ const styles = StyleSheet.create({
   hero: { minHeight: 300, marginBottom: spacing.lg },
   logoImage: { width: 78, height: 78, borderRadius: radius.md, backgroundColor: colors.white, marginBottom: spacing.md },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
+  examCard: { marginBottom: spacing.lg, gap: spacing.md, borderColor: 'rgba(185,28,28,0.22)' },
+  examHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  examIcon: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: 'rgba(185,28,28,0.09)', alignItems: 'center', justifyContent: 'center' },
+  examHeadingText: { flex: 1 },
+  examHint: { color: colors.muted, fontSize: typography.small, marginTop: 3 },
+  examRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  examUniversity: { flex: 1, color: colors.text, fontWeight: typography.weights.heavy },
+  examDate: { color: colors.secondary, fontWeight: typography.weights.bold },
   title: { color: colors.white, fontSize: 32, lineHeight: 38, fontWeight: typography.weights.heavy },
   locationRow: { marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   location: { flex: 1, color: colors.white, fontWeight: typography.weights.bold },

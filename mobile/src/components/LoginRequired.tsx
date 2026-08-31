@@ -14,7 +14,7 @@ type Props = {
 
 export function LoginRequired({
   title = 'Нужен вход в аккаунт',
-  description = 'Эта функция доступна только после регистрации или входа. Смотреть услуги, вузы и новости можно без аккаунта.',
+  description = 'Эта функция доступна после одобрения анкеты и входа по SL-ID. Смотреть услуги, вузы и новости можно без аккаунта.',
 }: Props) {
   const navigation = useNavigation<any>();
 
@@ -36,9 +36,9 @@ export function LoginRequired({
             />
 
             <AppButton
-              title="Зарегистрироваться"
+              title="Заполнить анкету"
               variant="outline"
-              onPress={() => navigation.navigate('Auth', { screen: 'Register' })}
+              onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
             />
           </View>
         </View>

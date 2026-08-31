@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -22,8 +23,26 @@ Notifications.setNotificationHandler({
   }),
 });
 
+export async function getDevicePushToken(requestPermission = true): Promise<string> {
+  if (Platform.OS === 'web' || !Device.isDevice) return '';
+
+  const existing = await Notifications.getPermissionsAsync();
+  let finalStatus = existing.status;
+  if (requestPermission && existing.status !== 'granted') {
+    const requested = await Notifications.requestPermissionsAsync();
+    finalStatus = requested.status;
+  }
+  if (finalStatus !== 'granted') return '';
+
+  const tokenData = USE_NATIVE_DEVICE_TOKEN
+    ? await Notifications.getDevicePushTokenAsync()
+    : await Notifications.getExpoPushTokenAsync();
+  return String(tokenData.data || '');
+}
+
 export function usePushNotifications() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let cancelled = false;
@@ -31,25 +50,7 @@ export function usePushNotifications() {
     async function register() {
       try {
         if (!isAuthenticated) return;
-        if (Platform.OS === 'web') return;
-        if (!Device.isDevice) return;
-
-        const existing = await Notifications.getPermissionsAsync();
-        let finalStatus = existing.status;
-
-        if (existing.status !== 'granted') {
-          const requested = await Notifications.requestPermissionsAsync();
-          finalStatus = requested.status;
-        }
-
-        if (finalStatus !== 'granted') return;
-        if (cancelled) return;
-
-        const tokenData = USE_NATIVE_DEVICE_TOKEN
-          ? await Notifications.getDevicePushTokenAsync()
-          : await Notifications.getExpoPushTokenAsync();
-
-        const token = String(tokenData.data);
+        const token = await getDevicePushToken(true);
 
         if (!token || cancelled) return;
 
@@ -69,4 +70,18 @@ export function usePushNotifications() {
       cancelled = true;
     };
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const refreshClientData = () => {
+      queryClient.invalidateQueries({ queryKey: ['my-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['my-application-history'] });
+      queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+    };
+    const received = Notifications.addNotificationReceivedListener(refreshClientData);
+    const opened = Notifications.addNotificationResponseReceivedListener(refreshClientData);
+    return () => {
+      received.remove();
+      opened.remove();
+    };
+  }, [queryClient]);
 }

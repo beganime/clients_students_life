@@ -66,7 +66,7 @@ export function HomeScreen() {
           <AppButton
             title="Оставить заявку"
             variant="outline"
-            onPress={() => navigation.navigate('ApplicationCreate')}
+            onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
           />
         </View>
       </RedGradientHero>
@@ -77,8 +77,32 @@ export function HomeScreen() {
         <StatCard value="24/7" label="поддержка" />
       </View>
 
+      <AppCard style={styles.budgetCard}>
+        <View style={styles.budgetIcon}><SvgIcon name="star" size={26} color={colors.white} /></View>
+        <View style={styles.documentsTextBox}>
+          <Text style={styles.documentsTitle}>Бюджет</Text>
+          <Text style={styles.documentsText}>Приоритетные направления и отдельные условия сопровождения</Text>
+        </View>
+        <AppButton title="Открыть" variant="outline" onPress={() => navigation.navigate('GovernmentLinePrices')} style={styles.documentsButton} />
+      </AppCard>
+
       {isAuthenticated ? (
         <>
+          <AppCard style={styles.documentsCard}>
+            <View style={styles.examIcon}>
+              <SvgIcon name="calendar" size={23} color={colors.primary} />
+            </View>
+            <View style={styles.documentsTextBox}>
+              <Text style={styles.documentsTitle}>Мои экзамены</Text>
+              <Text style={styles.documentsText}>Даты экзаменов и подтверждение просмотра уведомлений</Text>
+            </View>
+            <AppButton
+              title="Открыть экзамены"
+              variant="outline"
+              onPress={() => navigation.navigate('Exams')}
+              style={styles.documentsButton}
+            />
+          </AppCard>
           <AppCard style={styles.documentsCard}>
             <View style={styles.documentsIcon}>
               <SvgIcon name="file" size={23} color={colors.secondary} />
@@ -93,23 +117,26 @@ export function HomeScreen() {
               style={styles.documentsButton}
             />
           </AppCard>
-          <AppCard style={styles.documentsCard}>
-            <View style={styles.documentsIcon}>
-              <SvgIcon name="application" size={23} color={colors.secondary} />
-            </View>
-            <View style={styles.documentsTextBox}>
-              <Text style={styles.documentsTitle}>Анкета абитуриента</Text>
-              <Text style={styles.documentsText}>Заполните данные для подготовки документов</Text>
-            </View>
-            <AppButton
-              title="Открыть анкету"
-              variant="outline"
-              onPress={() => navigation.navigate('ApplicantQuestionnaire')}
-              style={styles.documentsButton}
-            />
-          </AppCard>
         </>
       ) : null}
+
+      <AppCard style={styles.documentsCard}>
+        <View style={styles.documentsIcon}>
+          <SvgIcon name="application" size={23} color={colors.secondary} />
+        </View>
+        <View style={styles.documentsTextBox}>
+          <Text style={styles.documentsTitle}>Поступить через нас</Text>
+          <Text style={styles.documentsText}>Заполните анкету — аккаунт появится после одобрения менеджером</Text>
+        </View>
+        <AppButton
+          title={isAuthenticated ? 'Открыть полную анкету' : 'Заполнить анкету'}
+          variant="outline"
+          onPress={() => isAuthenticated
+            ? navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })
+            : navigation.navigate('ExpressApplication', { kind: 'applicant' })}
+          style={styles.documentsButton}
+        />
+      </AppCard>
 
       <AppCard style={styles.schoolCard}>
         <View style={styles.documentsIcon}>
@@ -124,7 +151,7 @@ export function HomeScreen() {
         <AppButton
           title="Оставить заявку заранее"
           variant="outline"
-          onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'school_student' })}
+          onPress={() => navigation.navigate('ExpressApplication', { kind: 'school_student' })}
           style={styles.documentsButton}
         />
       </AppCard>
@@ -196,13 +223,17 @@ export function HomeScreen() {
         <QuickService icon="mapPin" title="Туры" onPress={() => navigation.navigate('ToursInfo')} />
       </View>
 
-      <AppCard style={styles.registerCard}>
-        <Badge label="Личный кабинет" variant="mint" icon="check" />
-        <Text style={styles.registerTitle}>Аккаунт ускоряет оформление</Text>
-        <Text style={styles.registerText}>
-          Зарегистрированные клиенты видят историю заявок, чаты, персональные предложения и скидки
-          в одном месте.
+      <AppCard style={styles.onboardingCard}>
+        <Badge label="Поступление" variant="mint" icon="check" />
+        <Text style={styles.onboardingTitle}>Начните с анкеты</Text>
+        <Text style={styles.onboardingText}>
+          После проверки менеджер назначит SL-ID и передаст данные для входа в приложение.
         </Text>
+        <AppButton
+          title="Заполнить анкету"
+          variant="outline"
+          onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
+        />
       </AppCard>
 
       <CTASection
@@ -212,7 +243,7 @@ export function HomeScreen() {
         primaryText="Открыть чат"
         onPrimaryPress={() => navigation.navigate('Chat')}
         secondaryText="Оставить заявку"
-        onSecondaryPress={() => navigation.navigate('ApplicationCreate')}
+        onSecondaryPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
       />
     </Screen>
   );
@@ -293,10 +324,13 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.medium,
   },
   heroActions: { gap: spacing.sm, marginTop: spacing.lg },
+  examIcon: { width: 46, height: 46, borderRadius: radius.md, backgroundColor: 'rgba(185,28,28,0.08)', alignItems: 'center', justifyContent: 'center' },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   statCard: { flex: 1, padding: spacing.md },
   statValue: { color: colors.secondary, fontSize: 22, fontWeight: typography.weights.heavy },
   statLabel: { color: colors.muted, fontSize: 12, fontWeight: typography.weights.bold, marginTop: 4 },
+  budgetCard: { marginBottom: spacing.lg, borderColor: 'rgba(185,28,28,0.2)', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md },
+  budgetIcon: { width: 50, height: 50, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   documentsCard: {
     marginBottom: spacing.lg,
     borderColor: 'rgba(13,65,109,0.14)',
@@ -386,14 +420,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   quickServiceText: { color: colors.text, fontWeight: typography.weights.heavy, textAlign: 'center' },
-  registerCard: { marginTop: spacing.xl },
-  registerTitle: {
+  onboardingCard: { marginTop: spacing.xl, gap: spacing.md },
+  onboardingTitle: {
     color: colors.text,
     fontSize: typography.subtitle,
     fontWeight: typography.weights.heavy,
     marginTop: spacing.md,
   },
-  registerText: {
+  onboardingText: {
     color: colors.muted,
     fontSize: typography.body,
     lineHeight: 23,

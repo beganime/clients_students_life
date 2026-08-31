@@ -1,4 +1,4 @@
-import { API_ROOT_URL, MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/config';
+import { API_ROOT_URL, CLIENT_PROXY_ORIGIN, MANAGER_SL_API_BASE_URL, MANAGER_SL_ROOT_URL } from '../constants/config';
 import { getApiEndpointConfig, getApiEndpointConfigSync } from '../utils/apiProxySettings';
 
 export const EDUCATION_CATALOG_BASE_URL = MANAGER_SL_API_BASE_URL;
@@ -10,6 +10,13 @@ export type CatalogPage<T> = {
   next: string | null;
   previous: string | null;
   results: T[];
+};
+
+export type GovernmentLinePrice = {
+  code: string;
+  degree: string;
+  name: string;
+  service_fee_usd: number;
 };
 
 function list<T>(data: ListResponse<T>): T[] {
@@ -63,6 +70,9 @@ export function resolveCatalogMediaUrl(value?: string | null) {
 
   const cleanValue = String(value).trim();
   if (!cleanValue) return null;
+  if (/^https?:\/\/(?:www\.)?manager-sl\.ru\/media\//i.test(cleanValue)) {
+    return cleanValue.replace(/^https?:\/\/(?:www\.)?manager-sl\.ru\/media\//i, `${CLIENT_PROXY_ORIGIN}/manager-media/`);
+  }
   if (/^https?:\/\//i.test(cleanValue)) return cleanValue;
   if (cleanValue.startsWith('//')) return `https:${cleanValue}`;
   const endpointConfig = getApiEndpointConfigSync();
@@ -337,6 +347,10 @@ function programsFromUniversities(universities: any[]) {
 }
 
 export const educationCatalogApi = {
+  async getGovernmentLinePrices() {
+    return list(await request<ListResponse<GovernmentLinePrice>>('/priority-programs/'));
+  },
+
   async getCountries(params?: CatalogParams) {
     return list(await request<ListResponse<any>>('/countries/', withLimit(params, 50))).map(toCountry);
   },

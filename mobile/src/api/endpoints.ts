@@ -14,8 +14,6 @@ import {
   NewsPost,
   PaginatedResponse,
   Program,
-  ApplicantQuestionnaire,
-  QuestionnaireAttachment,
   Service,
   StaffProfile,
   University,
@@ -32,48 +30,6 @@ export type LoginResponse = {
   access: string;
   refresh: string;
   user?: UserMe;
-};
-
-export type RegisterPayload = {
-  email: string;
-  first_name: string;
-  last_name: string;
-  password: string;
-  password_confirm: string;
-  phone?: string;
-  whatsapp?: string;
-  country?: string;
-  city?: string;
-  citizenship?: string;
-  language?: string;
-};
-
-export type ApplicationCreatePayload = {
-  service?: number | null;
-  idempotency_key?: string;
-  full_name: string;
-  birth_date?: string;
-  citizenship?: string;
-  country?: string;
-  city?: string;
-  phone?: string;
-  whatsapp?: string;
-  telegram?: string;
-  email?: string;
-  preferred_contact_method?: 'phone' | 'whatsapp' | 'telegram' | 'email';
-  target_country?: number | null;
-  target_country_name?: string;
-  target_city?: number | null;
-  target_city_name?: string;
-  target_university?: number | null;
-  target_university_name?: string;
-  target_program?: number | null;
-  target_program_title?: string;
-  education_level?: string;
-  specialty?: string;
-  study_language?: string;
-  start_year?: string;
-  comment?: string;
 };
 
 export type UniversityFilters = {
@@ -99,6 +55,7 @@ function inferFileType(file: { name?: string; type?: string }) {
 
   const name = String(file.name || '').toLowerCase();
   if (name.endsWith('.pdf')) return 'application/pdf';
+  if (name.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg';
   if (name.endsWith('.png')) return 'image/png';
   if (name.endsWith('.webp')) return 'image/webp';
@@ -157,11 +114,6 @@ export const authApi = {
     return data;
   },
 
-  async register(payload: RegisterPayload) {
-    const { data } = await apiClient.post<UserMe>('/accounts/register/', payload);
-    return data;
-  },
-
   async me() {
     const { data } = await apiClient.get<UserMe>('/accounts/me/');
     return data;
@@ -174,6 +126,11 @@ export const authApi = {
 
   async updateMeFormData(formData: FormData) {
     return uploadFormData<UserMe>('/accounts/me/', formData, 'patch');
+  },
+
+  async linkQuestionnaireAccess(payload: { public_id: string; access_token: string; kind?: string }) {
+    const { data } = await apiClient.post<{ status: string }>('/accounts/questionnaire-access/', payload);
+    return data;
   },
 
   async logout() {
@@ -289,14 +246,6 @@ export const contentApi = {
 };
 
 export const applicationsApi = {
-  async createApplication(payload: ApplicationCreatePayload) {
-    const idempotencyKey = payload.idempotency_key;
-    const { data } = await apiClient.post<Application>('/applications/', payload, {
-      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
-    });
-    return data;
-  },
-
   async getMyApplications() {
     const { data } = await apiClient.get<PaginatedResponse<Application>>('/applications/my/');
     return data.results;
@@ -331,48 +280,6 @@ export const documentsApi = {
   },
 };
 
-export const questionnaireApi = {
-  async getMyQuestionnaire() {
-    const { data } = await apiClient.get<ApplicantQuestionnaire>('/questionnaire/my-application-form/');
-    return data;
-  },
-
-  async saveMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
-    if (payload instanceof FormData) {
-      return uploadFormData<ApplicantQuestionnaire>('/questionnaire/my-application-form/', payload, 'patch');
-    }
-    const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my-application-form/', payload);
-    return data;
-  },
-
-  async saveMyQuestionnaireDraft(payload: Partial<ApplicantQuestionnaire> | FormData) {
-    if (payload instanceof FormData) {
-      return uploadFormData<ApplicantQuestionnaire>('/questionnaire/my-application-form/draft/', payload, 'patch');
-    }
-    const { data } = await apiClient.patch<ApplicantQuestionnaire>('/questionnaire/my-application-form/draft/', payload);
-    return data;
-  },
-
-  async submitMyQuestionnaire(payload: Partial<ApplicantQuestionnaire> | FormData) {
-    if (payload instanceof FormData) {
-      return uploadFormData<ApplicantQuestionnaire>('/questionnaire/my-application-form/submit/', payload);
-    }
-    const { data } = await apiClient.post<ApplicantQuestionnaire>('/questionnaire/my-application-form/submit/', payload);
-    return data;
-  },
-
-  async regenerateMyQuestionnaireDocument() {
-    const { data } = await apiClient.post<ApplicantQuestionnaire>('/questionnaire/my-application-form/regenerate-document/');
-    return data;
-  },
-
-  async uploadAttachment(file: UploadableFile) {
-    const formData = new FormData();
-    appendUploadFile(formData, 'file', file);
-    return uploadFormData<QuestionnaireAttachment>('/questionnaire/my/attachments/', formData);
-  },
-};
-
 export const chatApi = {
   async getRooms() {
     const { data } = await apiClient.get<PaginatedResponse<ChatRoom>>('/chat/');
@@ -384,19 +291,19 @@ export const chatApi = {
     return data;
   },
 
-  async getMessages(roomId: number) {
+  async getMessages(roomId: number | string) {
     const { data } = await apiClient.get<PaginatedResponse<ChatMessage>>(`/chat/${roomId}/messages/`);
     return data.results;
   },
 
-  async sendMessage(roomId: number, text: string) {
+  async sendMessage(roomId: number | string, text: string) {
     const { data } = await apiClient.post<ChatMessage>(`/chat/${roomId}/send_message/`, {
       text,
     });
     return data;
   },
 
-  async sendImage(roomId: number, file: UploadableFile, text = '') {
+  async sendImage(roomId: number | string, file: UploadableFile, text = '') {
     const formData = new FormData();
     if (text.trim()) {
       formData.append('text', text.trim());
@@ -406,7 +313,7 @@ export const chatApi = {
     return uploadFormData<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
   },
 
-  async sendFile(roomId: number, file: UploadableFile, text = '') {
+  async sendFile(roomId: number | string, file: UploadableFile, text = '') {
     const formData = new FormData();
     if (text.trim()) {
       formData.append('text', text.trim());
@@ -416,7 +323,7 @@ export const chatApi = {
     return uploadFormData<ChatMessage>(`/chat/${roomId}/send_message/`, formData);
   },
 
-  async markRead(roomId: number) {
+  async markRead(roomId: number | string) {
     const { data } = await apiClient.post(`/chat/${roomId}/mark_read/`);
     return data;
   },
@@ -429,8 +336,8 @@ export const notificationsApi = {
   },
 
   async getMyNotifications() {
-    const { data } = await apiClient.get<PaginatedResponse<UserNotification>>('/notifications/my/');
-    return data.results;
+    const { data } = await apiClient.get<PaginatedResponse<UserNotification> | UserNotification[]>('/notifications/my/');
+    return Array.isArray(data) ? data : data.results || [];
   },
 
   async getMyExams() {

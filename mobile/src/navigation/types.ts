@@ -1,8 +1,11 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
+  Login: {
+    slId?: string;
+    password?: string;
+    fromApprovedOnboarding?: boolean;
+  } | undefined;
 };
 
 export type MainTabParamList = {
@@ -32,23 +35,24 @@ export type RootStackParamList = {
   VisaInfo: undefined;
   ToursInfo: undefined;
   AdmissionInfo: undefined;
+  GovernmentLinePrices: undefined;
 
   MyApplications: undefined;
   MyDocuments: undefined;
-  ApplicantQuestionnaire: { formType?: 'school_student' | 'applicant' } | undefined;
+  ApplicantQuestionnaire: {
+    formType?: 'school_student' | 'applicant';
+    universityId?: number;
+    programId?: number;
+  } | undefined;
+  ExpressApplication: {
+    kind?: 'school_student' | 'applicant';
+  } | undefined;
   DataConsent: undefined;
   FavoriteUniversities: undefined;
   Notifications: undefined;
+  Exams: undefined;
   Chat: undefined;
-  ChatRoom: { id: number };
-
-  ApplicationCreate:
-    | {
-        serviceId?: number;
-        universityId?: number;
-        programId?: number;
-      }
-    | undefined;
+  ChatRoom: { id: number | string };
 
   EditProfile: undefined;
 };

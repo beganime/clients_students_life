@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.conf import settings
+from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils.html import escape
@@ -26,7 +28,25 @@ We do not ask users to submit passwords, access tokens, or payment secrets in ch
 Users can contact Student's Life to request updates or removal of their personal data where applicable."""
 
 DEVELOPER_NOTIFICATION_USER = 'begenchyagmurow2008@gmail.com'
-DEVELOPER_PAGE_URL = 'https://students-life.ru/developer/'
+DEVELOPER_PAGE_URL = 'https://stud-life.com/developer/'
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def health(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT 1')
+            cursor.fetchone()
+    except Exception:
+        return Response({'status': 'unhealthy', 'database': 'unavailable'}, status=503)
+    return Response({
+        'status': 'ok',
+        'database': 'ok',
+        'storage': 'local',
+        'public_registration': settings.PUBLIC_REGISTRATION_ENABLED,
+        'local_chat': settings.LOCAL_CHAT_ENABLED,
+    })
 
 
 def get_active_privacy_policy():
@@ -83,8 +103,15 @@ def _client_ip(request):
 
 def _notify_developer_request(developer_request):
     User = get_user_model()
+    notification_identity = (
+        AppSetting.objects
+        .filter(key='developer_notification_user')
+        .values_list('value', flat=True)
+        .first()
+        or DEVELOPER_NOTIFICATION_USER
+    ).strip()
     user = User.objects.filter(
-        Q(email__iexact=DEVELOPER_NOTIFICATION_USER) | Q(username__iexact=DEVELOPER_NOTIFICATION_USER)
+        Q(email__iexact=notification_identity) | Q(username__iexact=notification_identity)
     ).first()
     if not user:
         return
@@ -99,16 +126,15 @@ def _notify_developer_request(developer_request):
         related_object_type='developer_request',
         related_object_id=developer_request.id,
     )
-    latest_token = (
+    active_tokens = list(
         DeviceToken.objects
         .filter(user=user, is_active=True)
         .order_by('-updated_at', '-created_at')
         .values_list('token', flat=True)
-        .first()
     )
-    if latest_token:
+    if active_tokens:
         send_raw_push_to_tokens(
-            [latest_token],
+            active_tokens,
             title,
             body,
             data={
@@ -121,18 +147,38 @@ def _notify_developer_request(developer_request):
 
 def _developer_contacts():
     settings = {item.key: item.value for item in AppSetting.objects.filter(
-        key__in=('developer_telegram', 'developer_phone', 'developer_email')
+        key__in=(
+            'developer_telegram',
+            'developer_phone',
+            'developer_email',
+            'developer_instagram',
+        )
     )}
+    telegram = settings.get('developer_telegram', '').strip()
+    instagram = settings.get('developer_instagram', '').strip()
+    emails = tuple(part.strip() for part in settings.get('developer_email', '').split('/') if part.strip())
+    phones = tuple(part.strip() for part in settings.get('developer_phone', '').split('/') if part.strip())
     return {
-        'telegram': settings.get('developer_telegram', ''),
-        'phone': settings.get('developer_phone', ''),
-        'email': settings.get('developer_email', ''),
+        'telegram': telegram,
+        'telegram_url': f'https://t.me/{telegram.lstrip("@").strip()}' if telegram else '',
+        'instagram': instagram,
+        'instagram_url': f'https://instagram.com/{instagram.lstrip("@").strip()}' if instagram else '',
+        'emails': emails,
+        'email': ' / '.join(emails),
+        'phones': tuple({
+            'label': phone,
+            'url': f'tel:{"".join(character for character in phone if character.isdigit() or character == "+")}',
+        } for phone in phones),
+        'phone': ' / '.join(phones),
     }
 
 
 def developer_page(request):
+    language = request.POST.get('language') if request.method == 'POST' else request.GET.get('lang')
+    language = language if language in ('ru', 'tk') else 'ru'
+
     if request.method == 'POST':
-        form = DeveloperRequestForm(request.POST)
+        form = DeveloperRequestForm(request.POST, language=language)
         if form.is_valid():
             developer_request = form.save(commit=False)
             developer_request.source_path = request.path
@@ -140,13 +186,20 @@ def developer_page(request):
             developer_request.ip_address = _client_ip(request)
             developer_request.save()
             _notify_developer_request(developer_request)
-            messages.success(request, 'Спасибо, что оставили заявку! Я свяжусь с вами по указанному контакту.')
-            form = DeveloperRequestForm()
+            success_message = (
+                'Arzaňyz üçin sag boluň! Görkezen aragatnaşyk maglumatlaryňyz boýunça siziň bilen habarlaşaryn.'
+                if language == 'tk'
+                else 'Спасибо, что оставили заявку! Я свяжусь с вами по указанному контакту.'
+            )
+            messages.success(request, success_message)
+            form = DeveloperRequestForm(language=language)
     else:
-        form = DeveloperRequestForm()
+        form = DeveloperRequestForm(language=language)
 
     return render(request, 'common/developer.html', {
         'form': form,
+        'language': language,
+        'is_turkmen': language == 'tk',
         'contacts': _developer_contacts(),
         'projects': (
             ('students-life.ru', 'https://students-life.ru/'),

@@ -1,18 +1,4 @@
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: students_life_db
-    restart: unless-stopped
-    env_file:
-      - ./backend/.env
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U students_life_user -d students_life"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
   redis:
     image: redis:7-alpine
     container_name: students_life_redis
@@ -38,16 +24,29 @@ services:
              daphne -b 0.0.0.0 -p 8000 config.asgi:application"
     volumes:
       - ./backend/staticfiles:/app/staticfiles
-      - ./backend/media:/app/media
+      - media_data:/app/media
       - ./backend/secrets:/app/secrets:ro
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8103:8000"
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      default:
+      sl-services-internal:
+        aliases:
+          - students-life-internal
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/common/health/', timeout=5).read()\""]
+      interval: 20s
+      timeout: 7s
+      retries: 10
+      start_period: 60s
 
 volumes:
-  postgres_data:
   redis_data:
+  media_data:
+
+networks:
+  sl-services-internal:
+    external: true

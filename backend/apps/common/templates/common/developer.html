@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ language|default:'ru' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Заказать сайт или приложение — Ягмуров Бегенч</title>
-  <meta name="description" content="Разработка сайтов, мобильных приложений, CRM, ERP, HRM, Telegram-ботов, интеграций и деплой на сервер.">
+  <title>{% if is_turkmen %}Web sahypa ýa-da programma sargyt etmek — Ýagmyrow Begenç{% else %}Заказать сайт или приложение — Ягмуров Бегенч{% endif %}</title>
+  <meta name="description" content="{% if is_turkmen %}Web sahypalary, mobil programmalar, CRM, ERP, HRM, Telegram botlary, integrasiýalar we serwere ýerleşdirmek.{% else %}Разработка сайтов, мобильных приложений, CRM, ERP, HRM, Telegram-ботов, интеграций и деплой на сервер.{% endif %}">
   <style>
     :root {
       --canvas: #05060f;
@@ -98,6 +98,9 @@
     .nav-links { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
     .pill { color: var(--frost); font-weight: 500; }
     .pill:hover { background: rgba(186,214,247,0.12); }
+    .language-switch { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(186,214,247,0.06); box-shadow: inset 0 0 0 1px var(--edge); }
+    .language-switch a { min-width: 42px; padding: 7px 10px; border-radius: 999px; text-align: center; color: var(--mist); font-size: 13px; font-weight: 700; }
+    .language-switch a.active { color: var(--white); background: var(--violet); }
 
     .hero {
       padding: 88px 0 64px;
@@ -238,6 +241,7 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 16px;
     }
+    .delivery-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .service-card, .project-card, .contact-card {
       padding: 24px;
       min-height: 180px;
@@ -266,6 +270,8 @@
       font-size: 14px;
     }
     .project-card { min-height: 132px; }
+    .delivery-card { min-height: 150px; text-align: center; }
+    .delivery-card strong { display: block; margin-bottom: 10px; color: var(--white); font-family: var(--font-display); font-size: 28px; font-weight: 600; }
     .project-card span {
       color: var(--mist);
       font-family: var(--font-mono);
@@ -320,6 +326,9 @@
       overflow-wrap: anywhere;
     }
     .contact-item small { display: block; color: var(--fog); margin-bottom: 4px; }
+    .contact-values { display: grid; gap: 6px; }
+    .contact-value { color: var(--frost); text-decoration: none; }
+    .contact-value:hover { color: var(--white); text-decoration: underline; }
     form { display: grid; gap: 14px; }
     .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     label {
@@ -395,7 +404,7 @@
       .nav { align-items: flex-start; flex-direction: column; }
       .floating-stack { min-height: auto; }
       .side-card { position: relative; width: auto; inset: auto; transform: none !important; margin-top: 14px; }
-      .grid, .form-layout { grid-template-columns: 1fr; }
+      .grid, .delivery-grid, .form-layout { grid-template-columns: 1fr; }
     }
     @media (max-width: 620px) {
       .container { width: min(100% - 28px, 1200px); }
@@ -416,66 +425,80 @@
 <body>
   <div class="page">
     <header class="container nav">
-      <a class="brand" href="/developer/"><span class="brand-mark"></span> Ягмуров Бегенч</a>
-      <nav class="nav-links" aria-label="Навигация">
-        <a class="pill" href="#services">Что делаю</a>
-        <a class="pill" href="#tech">Стек</a>
-        <a class="pill" href="#projects">Проекты</a>
-        <a class="pill" href="#request">Оставить заявку</a>
-        <a class="pill" href="/developer/business-card/">Визитка</a>
+      <a class="brand" href="/developer/?lang={{ language }}"><span class="brand-mark"></span> {% if is_turkmen %}Ýagmyrow Begenç{% else %}Ягмуров Бегенч{% endif %}</a>
+      <nav class="nav-links" aria-label="{% if is_turkmen %}Nawigasiýa{% else %}Навигация{% endif %}">
+        <a class="pill" href="#services">{% if is_turkmen %}Hyzmatlar{% else %}Что делаю{% endif %}</a>
+        <a class="pill" href="#terms">{% if is_turkmen %}Möhletler{% else %}Сроки{% endif %}</a>
+        <a class="pill" href="#projects">{% if is_turkmen %}Taslamalar{% else %}Проекты{% endif %}</a>
+        <a class="pill" href="#request">{% if is_turkmen %}Arza goýmak{% else %}Оставить заявку{% endif %}</a>
+        <div class="language-switch" aria-label="Language">
+          <a class="{% if not is_turkmen %}active{% endif %}" href="?lang=ru">RU</a>
+          <a class="{% if is_turkmen %}active{% endif %}" href="?lang=tk">TM</a>
+        </div>
       </nav>
     </header>
 
     <main>
       <section class="container hero">
         <div class="eyebrow"><span>Developer for business</span></div>
-        <h1>Сайт, приложение и система для вашего бизнеса</h1>
+        <h1>{% if is_turkmen %}Işiňiz üçin web sahypa, programma we ulgam{% else %}Сайт, приложение и система для вашего бизнеса{% endif %}</h1>
         <p class="lead">
-          Меня зовут Ягмуров Бегенч. Я программист и айтишник: помогаю бизнесу получить своё место в интернете,
-          запустить сайт любой сложности, мобильное приложение для Android и iOS, CRM, ERP или HRM систему.
+          {% if is_turkmen %}Men Ýagmyrow Begenç, programmaçy we IT hünärmeni. Biznesiňize internetde öz ornuny tapmaga, dürli çylşyrymly web sahypany, Android we iOS mobil programmasyny ýa-da CRM, ERP, HRM ulgamyny işe girizmäge kömek edýärin.{% else %}Меня зовут Ягмуров Бегенч. Я программист и IT-специалист: помогаю бизнесу получить своё место в интернете, запустить сайт любой сложности, мобильное приложение для Android и iOS, CRM, ERP или HRM-систему.{% endif %}
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#request">Заказать разработку</a>
-          <a class="btn" href="https://play.google.com/store/apps/developer?id=SL_projects" target="_blank" rel="noopener">Приложения в Google Play</a>
+          <a class="btn btn-primary" href="#request">{% if is_turkmen %}Taslama sargyt etmek{% else %}Заказать разработку{% endif %}</a>
+          <a class="btn" href="https://play.google.com/store/apps/developer?id=SL_projects" target="_blank" rel="noopener">{% if is_turkmen %}Google Play programmalary{% else %}Приложения в Google Play{% endif %}</a>
           <a class="btn" href="https://github.com/beganime/" target="_blank" rel="noopener">GitHub</a>
         </div>
 
         <div class="floating-stack" aria-hidden="true">
           <div class="side-card left glass-card">
-            <strong>Интеграции</strong>
-            Telegram-боты, Google Sheets, базы данных, push-уведомления и автоматизация процессов.
+            <strong>{% if is_turkmen %}Integrasiýalar{% else %}Интеграции{% endif %}</strong>
+            {% if is_turkmen %}Telegram botlary, Google Sheets, maglumat bazalary, push habarnamalary we işleriň awtomatlaşdyrylmagy.{% else %}Telegram-боты, Google Sheets, базы данных, push-уведомления и автоматизация процессов.{% endif %}
           </div>
           <div class="showcase-main glass-card">
-            <h2>Проект под ключ</h2>
-            <p>От покупки сервера и домена до деплоя, подключения HTTPS, базы данных и стабильного запуска.</p>
+            <h2>{% if is_turkmen %}Taýýar görnüşdäki taslama{% else %}Проект под ключ{% endif %}</h2>
+            <p>{% if is_turkmen %}Serweri we domeni satyn almakdan başlap, HTTPS, maglumat bazasy we durnukly işe girizmäge çenli.{% else %}От покупки сервера и домена до деплоя, подключения HTTPS, базы данных и стабильного запуска.{% endif %}</p>
             <div class="mock-input">example.com → backend → database → push notifications</div>
           </div>
           <div class="side-card right glass-card">
-            <strong>Команда</strong>
-            Есть команда из нескольких разработчиков для задач, где нужен дизайн, backend, frontend и мобильная разработка.
+            <strong>{% if is_turkmen %}Topar{% else %}Команда{% endif %}</strong>
+            {% if is_turkmen %}Dizaýn, backend, frontend we mobil taýýarlyk gerek bolan işler üçin birnäçe hünärmenden ybarat topar bar.{% else %}Есть команда из нескольких разработчиков для задач, где нужен дизайн, backend, frontend и мобильная разработка.{% endif %}
           </div>
         </div>
       </section>
 
       <section class="container section" id="services">
-        <div class="eyebrow"><span>Возможности</span></div>
-        <h2>Разработка от идеи до запуска на сервере</h2>
-        <p class="section-copy">Можно начать с простого сайта и постепенно вырастить его в полноценную бизнес-систему.</p>
+        <div class="eyebrow"><span>{% if is_turkmen %}Mümkinçilikler{% else %}Возможности{% endif %}</span></div>
+        <h2>{% if is_turkmen %}Pikirden serwerde işe girizmäge çenli{% else %}Разработка от идеи до запуска на сервере{% endif %}</h2>
+        <p class="section-copy">{% if is_turkmen %}Ýönekeý web sahypadan başlap, ony kem-kemden doly biznes ulgamyna öwrüp bolýar.{% else %}Можно начать с простого сайта и постепенно вырастить его в полноценную бизнес-систему.{% endif %}</p>
         <div class="grid">
-          <article class="service-card glass-card"><div class="icon-tile">⌘</div><h3>Сайты любой сложности</h3><p>Лендинги, корпоративные сайты, каталоги, личные кабинеты, формы заявок и SEO-готовая структура.</p></article>
-          <article class="service-card glass-card"><div class="icon-tile">▣</div><h3>Мобильные приложения</h3><p>Android и iOS приложения, авторизация, профили, загрузка файлов, push-уведомления и API-интеграции.</p></article>
-          <article class="service-card glass-card"><div class="icon-tile">◈</div><h3>CRM / ERP / HRM</h3><p>Системы для клиентов, сотрудников, заявок, документов, продаж, склада, задач и аналитики.</p></article>
-          <article class="service-card glass-card"><div class="icon-tile">✦</div><h3>Telegram и Google Sheets</h3><p>Боты, уведомления, формы, автоматические таблицы, синхронизация и рабочие сценарии для менеджеров.</p></article>
-          <article class="service-card glass-card"><div class="icon-tile">⬡</div><h3>Сервер и домен</h3><p>Помощь с покупкой сервера и домена, настройкой базы данных, деплоем, SSL и прокси.</p></article>
-          <article class="service-card glass-card"><div class="icon-tile">◌</div><h3>Поддержка проекта</h3><p>Доработки, исправления, мониторинг, обновления, переносы, оптимизация скорости и стабильности.</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">⌘</div><h3>{% if is_turkmen %}Dürli çylşyrymly web sahypalar{% else %}Сайты любой сложности{% endif %}</h3><p>{% if is_turkmen %}Landingler, korporatiw sahypalar, kataloglar, şahsy kabinetler, arza formalary we SEO-a taýýar gurluş.{% else %}Лендинги, корпоративные сайты, каталоги, личные кабинеты, формы заявок и SEO-готовая структура.{% endif %}</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">▣</div><h3>{% if is_turkmen %}Mobil programmalar{% else %}Мобильные приложения{% endif %}</h3><p>{% if is_turkmen %}Android we iOS, giriş, profiller, faýl ýüklemek, push habarnamalary we API integrasiýalary.{% else %}Android и iOS приложения, авторизация, профили, загрузка файлов, push-уведомления и API-интеграции.{% endif %}</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">◈</div><h3>CRM / ERP / HRM</h3><p>{% if is_turkmen %}Müşderiler, işgärler, arzalar, resminamalar, satuwlar, ammar, wezipeler we analitika üçin ulgamlar.{% else %}Системы для клиентов, сотрудников, заявок, документов, продаж, склада, задач и аналитики.{% endif %}</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">✦</div><h3>{% if is_turkmen %}Telegram we Google Sheets{% else %}Telegram и Google Sheets{% endif %}</h3><p>{% if is_turkmen %}Botlar, habarnamalar, formalar, awtomatiki tablisalar, sinhronizasiýa we menejerler üçin iş ssenariýalary.{% else %}Боты, уведомления, формы, автоматические таблицы, синхронизация и рабочие сценарии для менеджеров.{% endif %}</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">⬡</div><h3>{% if is_turkmen %}Serwer we domen{% else %}Сервер и домен{% endif %}</h3><p>{% if is_turkmen %}Serweri we domeni satyn almak, maglumat bazasyny, ýerleşdirişi, SSL-i we proksini sazlamak.{% else %}Помощь с покупкой сервера и домена, настройкой базы данных, деплоем, SSL и прокси.{% endif %}</p></article>
+          <article class="service-card glass-card"><div class="icon-tile">◌</div><h3>{% if is_turkmen %}Taslamany goldamak{% else %}Поддержка проекта{% endif %}</h3><p>{% if is_turkmen %}Goşmaçalar, düzedişler, monitoring, täzelenmeler, göçürmek, tizligi we durnuklylygy gowulandyrmak.{% else %}Доработки, исправления, мониторинг, обновления, переносы, оптимизация скорости и стабильности.{% endif %}</p></article>
+        </div>
+      </section>
+
+      <section class="container section" id="terms">
+        <div class="eyebrow"><span>{% if is_turkmen %}Işe girizmegiň görnüşleri{% else %}Форматы запуска{% endif %}</span></div>
+        <h2>{% if is_turkmen %}Gerek bolan möhleti saýlaň{% else %}Выберите подходящий срок{% endif %}</h2>
+        <p class="section-copy">{% if is_turkmen %}Islegiňize laýyk ýönekeý we ýeňil web sahypany taýýarlaýarys. Domeni siziň adyňyza saýlap we bellige alyp bereris, gurluşyny düzeris hem-de işiňize laýyk biznes çözgüdini taparys.{% else %}Создадим простой и лёгкий сайт под вашу задачу. Подберём и оформим домен на ваше имя, продумаем структуру и найдём подходящее бизнес-решение.{% endif %}</p>
+        <div class="grid delivery-grid">
+          <article class="service-card delivery-card glass-card"><strong>{% if is_turkmen %}3 gün{% else %}3 дня{% endif %}</strong><p>{% if is_turkmen %}Ýönekeý tanyşdyryş sahypasy ýa-da aragatnaşyk sahypasy.{% else %}Простая страница-презентация или сайт с контактами.{% endif %}</p></article>
+          <article class="service-card delivery-card glass-card"><strong>{% if is_turkmen %}7 gün{% else %}7 дней{% endif %}</strong><p>{% if is_turkmen %}Formalary we esasy bölümleri bolan doly web sahypa.{% else %}Полноценный сайт с основными разделами и формами.{% endif %}</p></article>
+          <article class="service-card delivery-card glass-card"><strong>{% if is_turkmen %}1 aý{% else %}1 месяц{% endif %}</strong><p>{% if is_turkmen %}Integrasiýalary we dolandyryş bölümi bolan biznes çözgüdi.{% else %}Бизнес-решение с интеграциями и панелью управления.{% endif %}</p></article>
+          <article class="service-card delivery-card glass-card"><strong>{% if is_turkmen %}12 aý{% else %}12 месяцев{% endif %}</strong><p>{% if is_turkmen %}Ulgamy tapgyrlaýyn ösdürmek, goldaw we gowulandyrmak.{% else %}Поэтапное развитие, поддержка и улучшение системы.{% endif %}</p></article>
         </div>
       </section>
 
       <section class="container section" id="tech">
         <div class="tech-panel glass-card">
           <div class="eyebrow"><span>Tech stack</span></div>
-          <h2>Пишу backend, frontend и мобильные интерфейсы на современных технологиях</h2>
-          <p class="section-copy">Могу собрать проект полностью: от API и базы данных до красивого интерфейса, админки, интеграций, деплоя и сопровождения.</p>
+          <h2>{% if is_turkmen %}Backend, frontend we mobil interfeýsleri häzirki zaman tehnologiýalarynda taýýarlaýaryn{% else %}Пишу backend, frontend и мобильные интерфейсы на современных технологиях{% endif %}</h2>
+          <p class="section-copy">{% if is_turkmen %}Taslamany doly ýygnap bilerin: API we maglumat bazasyndan başlap, interfeýs, dolandyryş bölümi, integrasiýalar, ýerleşdiriş we goldawa çenli.{% else %}Могу собрать проект полностью: от API и базы данных до красивого интерфейса, админки, интеграций, деплоя и сопровождения.{% endif %}</p>
           <div class="tech-stack" aria-label="Технологии">
             <span class="tech-chip featured">Python</span>
             <span class="tech-chip featured">Go</span>
@@ -497,13 +520,13 @@
       </section>
 
       <section class="container section" id="projects">
-        <div class="eyebrow"><span>Опыт</span></div>
-        <h2>Проекты и публичные ссылки</h2>
-        <p class="section-copy">Уже запускал приложения и сайты, а также делал внутренние программы и бизнес-системы.</p>
+        <div class="eyebrow"><span>{% if is_turkmen %}Tejribe{% else %}Опыт{% endif %}</span></div>
+        <h2>{% if is_turkmen %}Taslamalar we açyk salgylanmalar{% else %}Проекты и публичные ссылки{% endif %}</h2>
+        <p class="section-copy">{% if is_turkmen %}Mobil programmalary, web sahypalary, içerki programmalary we biznes ulgamlaryny işe girizdim.{% else %}Уже запускал приложения и сайты, а также делал внутренние программы и бизнес-системы.{% endif %}</p>
         <div class="grid">
           {% for title, url in projects %}
             <a class="project-card glass-card" href="{{ url }}" target="_blank" rel="noopener">
-              <span>Проект</span>
+              <span>{% if is_turkmen %}Taslama{% else %}Проект{% endif %}</span>
               <h3>{{ title }}</h3>
               <p>{{ url }}</p>
             </a>
@@ -511,54 +534,56 @@
           <a class="project-card glass-card" href="https://play.google.com/store/apps/developer?id=SL_projects" target="_blank" rel="noopener">
             <span>Google Play</span>
             <h3>SL_projects</h3>
-            <p>Опубликованные приложения в Google Play.</p>
+            <p>{% if is_turkmen %}Google Play-da çap edilen programmalar.{% else %}Опубликованные приложения в Google Play.{% endif %}</p>
           </a>
           <a class="project-card glass-card" href="https://github.com/beganime/" target="_blank" rel="noopener">
             <span>GitHub</span>
             <h3>beganime</h3>
-            <p>Личные проекты и репозитории.</p>
+            <p>{% if is_turkmen %}Şahsy taslamalar we repozitoriýalar.{% else %}Личные проекты и репозитории.{% endif %}</p>
           </a>
         </div>
       </section>
 
       <section class="container section" id="request">
         <div class="eyebrow"><span>Order request</span></div>
-        <h2>Расскажите, что нужно разработать</h2>
-        <p class="section-copy">Заявка сохранится в базе, а мне придёт push-уведомление на последний активный токен аккаунта.</p>
+        <h2>{% if is_turkmen %}Näme taýýarlamalydygyny ýazyň{% else %}Расскажите, что нужно разработать{% endif %}</h2>
+        <p class="section-copy">{% if is_turkmen %}Arzaňyz ulgama düşer, men bolsa dessine push habarnamasyny alaryn.{% else %}Заявка сохранится в системе, а мне сразу придёт push-уведомление.{% endif %}</p>
 
         <div class="form-layout">
           <aside class="contact-panel glass-card">
-            <h3>Контакты</h3>
-            <p>Оставьте короткое описание задачи, и я отвечу в удобном для вас мессенджере или по почте.</p>
+            <h3>{% if is_turkmen %}Habarlaşmak{% else %}Контакты{% endif %}</h3>
+            <p>{% if is_turkmen %}Işi gysgaça düşündiriň, men size amatly messenjerde ýa-da email arkaly jogap bererin.{% else %}Оставьте короткое описание задачи, и я отвечу в удобном для вас мессенджере или по почте.{% endif %}</p>
             <div class="contact-list">
-              <div class="contact-item"><small>Telegram</small>{{ contacts.telegram|default:"Telegram будет добавлен" }}</div>
-              <div class="contact-item"><small>Телефон</small>{{ contacts.phone|default:"Телефон будет добавлен" }}</div>
-              <div class="contact-item"><small>Email</small>{{ contacts.email|default:"Email будет добавлен" }}</div>
+              {% if contacts.telegram_url %}<a class="contact-item" href="{{ contacts.telegram_url }}" target="_blank" rel="noopener"><small>Telegram</small>{{ contacts.telegram }}</a>{% endif %}
+              {% if contacts.instagram_url %}<a class="contact-item" href="{{ contacts.instagram_url }}" target="_blank" rel="noopener"><small>Instagram</small>@{{ contacts.instagram }}</a>{% endif %}
+              {% if contacts.phones %}<div class="contact-item"><small>IMO / Link</small><div class="contact-values">{% for phone in contacts.phones %}<a class="contact-value" href="{{ phone.url }}">{{ phone.label }}</a>{% endfor %}</div></div>{% endif %}
+              {% if contacts.emails %}<div class="contact-item"><small>Gmail / Email</small><div class="contact-values">{% for email in contacts.emails %}<a class="contact-value" href="mailto:{{ email }}">{{ email }}</a>{% endfor %}</div></div>{% endif %}
             </div>
           </aside>
 
           <section class="form-panel glass-card">
             {% if messages %}
               {% for message in messages %}
-                <div class="message"><strong>Готово</strong>{{ message }}</div>
+                <div class="message"><strong>{% if is_turkmen %}Taýýar{% else %}Готово{% endif %}</strong>{{ message }}</div>
               {% endfor %}
             {% endif %}
-            <form method="post" action="/developer/">
+            <form method="post" action="/developer/?lang={{ language }}">
               {% csrf_token %}
+              <input type="hidden" name="language" value="{{ language }}">
               <div class="field-row">
-                <label>Имя {{ form.name }} {{ form.name.errors }}</label>
-                <label>Контакт {{ form.contact }} {{ form.contact.errors }}</label>
+                <label>{% if is_turkmen %}Ady{% else %}Имя{% endif %} {{ form.name }} {{ form.name.errors }}</label>
+                <label>{% if is_turkmen %}Aragatnaşyk{% else %}Контакт{% endif %} {{ form.contact }} {{ form.contact.errors }}</label>
               </div>
               <div class="field-row">
-                <label>Куда написать {{ form.contact_method }} {{ form.contact_method.errors }}</label>
-                <label>Тип проекта {{ form.project_type }} {{ form.project_type.errors }}</label>
+                <label>{% if is_turkmen %}Nireden ýazmaly{% else %}Куда написать{% endif %} {{ form.contact_method }} {{ form.contact_method.errors }}</label>
+                <label>{% if is_turkmen %}Taslamanyň görnüşi{% else %}Тип проекта{% endif %} {{ form.project_type }} {{ form.project_type.errors }}</label>
               </div>
               <div class="field-row">
-                <label>Бюджет {{ form.budget }} {{ form.budget.errors }}</label>
-                <label>Сроки {{ form.timeline }} {{ form.timeline.errors }}</label>
+                <label>{% if is_turkmen %}Býujet{% else %}Бюджет{% endif %} {{ form.budget }} {{ form.budget.errors }}</label>
+                <label>{% if is_turkmen %}Möhlet{% else %}Сроки{% endif %} {{ form.timeline }} {{ form.timeline.errors }}</label>
               </div>
-              <label>Описание задачи {{ form.message }} {{ form.message.errors }}</label>
-              <button class="btn btn-primary" type="submit">Отправить заявку</button>
+              <label>{% if is_turkmen %}Işiň beýany{% else %}Описание задачи{% endif %} {{ form.message }} {{ form.message.errors }}</label>
+              <button class="btn btn-primary" type="submit">{% if is_turkmen %}Arzany ibermek{% else %}Отправить заявку{% endif %}</button>
             </form>
           </section>
         </div>
@@ -566,7 +591,7 @@
     </main>
 
     <footer class="container footer">
-      © Ягмуров Бегенч. Разработка сайтов, приложений и бизнес-систем.
+      © {% if is_turkmen %}Ýagmyrow Begenç. Web sahypalar, programmalar we biznes ulgamlary.{% else %}Ягмуров Бегенч. Разработка сайтов, приложений и бизнес-систем.{% endif %}
     </footer>
   </div>
 </body>

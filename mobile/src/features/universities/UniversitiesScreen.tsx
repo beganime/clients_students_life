@@ -23,22 +23,11 @@ type R = RouteProp<MainTabParamList, 'Universities'>;
 const UNIVERSITIES_PAGE_SIZE = 12;
 const PROGRAMS_PAGE_SIZE = 12;
 const PROGRAM_SORT_OPTIONS = [
-  { label: 'Дешёвые сначала', value: 'price_asc' },
-  { label: 'Дорогие сначала', value: 'price_desc' },
   { label: 'По названию', value: 'title_asc' },
   { label: 'По городу', value: 'city_asc' },
   { label: 'По стране', value: 'country_asc' },
   { label: 'По дедлайну', value: 'deadline_asc' },
 ];
-const CURRENCIES = [
-  { label: 'Все валюты', value: '' },
-  { label: 'RUB', value: 'RUB' },
-  { label: 'USD', value: 'USD' },
-  { label: 'EUR', value: 'EUR' },
-  { label: 'TRY', value: 'TRY' },
-  { label: 'TMT', value: 'TMT' },
-];
-
 export function UniversitiesScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<R>();
@@ -47,12 +36,9 @@ export function UniversitiesScreen() {
   const [search, setSearch] = useState('');
   const [countryId, setCountryId] = useState<string | number | undefined>(route.params?.country);
   const [cityId, setCityId] = useState<string | number | undefined>(route.params?.city);
-  const [sortOrder, setSortOrder] = useState('price_asc');
-  const [currency, setCurrency] = useState('');
+  const [sortOrder, setSortOrder] = useState('title_asc');
   const [levelFilter, setLevelFilter] = useState('');
   const [languageFilter, setLanguageFilter] = useState('');
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
 
   useEffect(() => {
     setCountryId(route.params?.country);
@@ -73,10 +59,7 @@ export function UniversitiesScreen() {
   const hasProgramSearch = Boolean(
     search.trim()
       || levelFilter.trim()
-      || languageFilter.trim()
-      || priceMin.trim()
-      || priceMax.trim()
-      || Boolean(currency),
+      || languageFilter.trim(),
   );
 
   const universityFilters = useMemo(() => {
@@ -92,13 +75,10 @@ export function UniversitiesScreen() {
     if (countryId) payload.country = countryId;
     if (cityId) payload.city = cityId;
     if (sortOrder) payload.ordering = sortOrder;
-    if (currency) payload.currency = currency;
     if (levelFilter.trim()) payload.level = levelFilter.trim();
     if (languageFilter.trim()) payload.language = languageFilter.trim();
-    if (priceMin.trim()) payload.price_min = priceMin.trim();
-    if (priceMax.trim()) payload.price_max = priceMax.trim();
     return payload;
-  }, [search, countryId, cityId, sortOrder, currency, levelFilter, languageFilter, priceMin, priceMax]);
+  }, [search, countryId, cityId, sortOrder, levelFilter, languageFilter]);
 
   const universitiesQuery = useInfiniteQuery({
     queryKey: ['catalog', 'universities', universityFilters],
@@ -198,7 +178,7 @@ export function UniversitiesScreen() {
     <Screen>
       <FlatList
         contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
-        data={activeQuery.isLoading || activeQuery.isError ? [] : currentItems}
+        data={activeQuery.isLoading && !currentItems.length ? [] : currentItems}
         keyExtractor={item => `${hasProgramSearch ? 'program' : 'university'}-${item.id}`}
         refreshing={countriesQuery.isRefetching || citiesQuery.isRefetching || activeQuery.isRefetching}
         onRefresh={refreshAll}
@@ -222,9 +202,18 @@ export function UniversitiesScreen() {
               <Text style={styles.kicker}>Каталог вузов</Text>
               <Text style={styles.title}>Страны, города, вузы и программы</Text>
               <Text style={styles.subtitle}>
-                Данные загружаются через прокси students-life.ru. Используйте фильтры, чтобы быстро перейти к подходящим вариантам.
+                Данные загружаются через защищённый сервер Student's Life. Используйте фильтры, чтобы быстро перейти к подходящим вариантам.
               </Text>
             </RedGradientHero>
+
+            <AppCard style={styles.examShortcut}>
+              <View style={styles.examShortcutIcon}><SvgIcon name="calendar" size={25} color={colors.primary} /></View>
+              <View style={styles.examShortcutText}>
+                <Text style={styles.examShortcutTitle}>Мои экзамены</Text>
+                <Text style={styles.examShortcutSubtitle}>Вуз и дата назначенных вступительных испытаний</Text>
+              </View>
+              <AppButton title="Открыть" variant="outline" onPress={() => navigation.navigate('Exams')} />
+            </AppCard>
 
             <AppCard style={styles.searchCard}>
               <View style={styles.searchBox}>
@@ -290,13 +279,6 @@ export function UniversitiesScreen() {
                     ))}
                   </ScrollView>
 
-                  <Text style={styles.blockLabel}>Валюта</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-                    {CURRENCIES.map(item => (
-                      <FilterChip key={item.value || 'all'} label={item.label} active={currency === item.value} onPress={() => setCurrency(item.value)} />
-                    ))}
-                  </ScrollView>
-
                   <View style={styles.inlineFilters}>
                     <TextInput
                       value={levelFilter}
@@ -310,24 +292,6 @@ export function UniversitiesScreen() {
                       onChangeText={setLanguageFilter}
                       placeholder="Язык"
                       placeholderTextColor={colors.mutedLight}
-                      style={styles.inlineInput}
-                    />
-                  </View>
-                  <View style={styles.inlineFilters}>
-                    <TextInput
-                      value={priceMin}
-                      onChangeText={setPriceMin}
-                      placeholder="Цена от"
-                      placeholderTextColor={colors.mutedLight}
-                      keyboardType="numeric"
-                      style={styles.inlineInput}
-                    />
-                    <TextInput
-                      value={priceMax}
-                      onChangeText={setPriceMax}
-                      placeholder="Цена до"
-                      placeholderTextColor={colors.mutedLight}
-                      keyboardType="numeric"
                       style={styles.inlineInput}
                     />
                   </View>
@@ -347,14 +311,14 @@ export function UniversitiesScreen() {
             {countriesQuery.isError ? <ErrorState title="Страны не загрузились" onAction={() => countriesQuery.refetch()} /> : null}
             {citiesQuery.isError ? <ErrorState title="Города не загрузились" onAction={() => citiesQuery.refetch()} /> : null}
             {activeQuery.isLoading ? <LoadingSkeleton rows={4} height={160} /> : null}
-            {activeQuery.isError ? <ErrorState onAction={() => activeQuery.refetch()} /> : null}
+            {activeQuery.isError && !currentItems.length ? <ErrorState onAction={() => activeQuery.refetch()} /> : null}
           </View>
         }
         ListEmptyComponent={
           !activeQuery.isLoading && !activeQuery.isError ? (
             <EmptyState
               title={hasProgramSearch ? 'Нет подходящих программ' : 'Нет подходящих вузов'}
-              description={hasProgramSearch ? 'Попробуйте изменить запрос, сортировку, валюту или фильтры цены.' : 'Попробуйте изменить страну, город или поисковый запрос.'}
+              description={hasProgramSearch ? 'Попробуйте изменить запрос или фильтры.' : 'Попробуйте изменить страну, город или поисковый запрос.'}
             />
           ) : null
         }
@@ -363,13 +327,13 @@ export function UniversitiesScreen() {
             <ProgramResultCard
               program={item as Program}
               onOpen={() => navigation.navigate('ProgramDetail', { id: item.id })}
-              onApply={() => navigation.navigate('ApplicationCreate', { universityId: (item as Program).university_id || (item as Program).university, programId: item.id })}
+              onApply={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
             />
           ) : (
             <UniversityCard
               university={item}
               onPress={() => navigation.navigate('UniversityDetail', { id: item.id })}
-              onApplyPress={() => navigation.navigate('ApplicationCreate', { universityId: item.id })}
+              onApplyPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
             />
           )
         )}
@@ -379,7 +343,6 @@ export function UniversitiesScreen() {
 }
 
 function ProgramResultCard({ program, onOpen, onApply }: { program: Program; onOpen: () => void; onApply: () => void }) {
-  const price = formatProgramPrice(program);
   const location = [program.city_name, program.country_name].filter(Boolean).join(', ');
   const meta = [program.level, program.language, program.duration].filter(Boolean).join(' • ');
 
@@ -398,7 +361,6 @@ function ProgramResultCard({ program, onOpen, onApply }: { program: Program; onO
       {location ? <Text style={styles.programMeta}>{location}</Text> : null}
       {meta ? <Text style={styles.programMeta}>{meta}</Text> : null}
       {program.faculty ? <Text style={styles.programMeta}>Факультет: {program.faculty}</Text> : null}
-      {price ? <Text style={styles.programPrice}>{price}</Text> : null}
       {program.application_deadline ? <Text style={styles.programMeta}>Дедлайн: {formatDate(program.application_deadline)}</Text> : null}
 
       <View style={styles.programActions}>
@@ -407,22 +369,6 @@ function ProgramResultCard({ program, onOpen, onApply }: { program: Program; onO
       </View>
     </AppCard>
   );
-}
-
-function formatProgramPrice(program: Program) {
-  const original = money(program.tuition_fee, program.currency);
-  const converted = money(program.converted_tuition_fee, program.selected_currency);
-  if (converted && original && program.selected_currency && program.currency && program.selected_currency !== program.currency) {
-    return `${original} • ${converted}`;
-  }
-  return converted || original || '';
-}
-
-function money(value?: string | number | null, currency?: string) {
-  if (value === null || value === undefined || value === '') return '';
-  const numeric = typeof value === 'number' ? value : Number(String(value).replace(/\s/g, ''));
-  const text = Number.isFinite(numeric) ? new Intl.NumberFormat('ru-RU').format(numeric) : String(value);
-  return `${text}${currency ? ` ${currency}` : ''}`;
 }
 
 function formatDate(value: string) {
@@ -472,6 +418,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontWeight: typography.weights.medium,
   },
+  examShortcut: { marginBottom: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  examShortcutIcon: { width: 50, height: 50, borderRadius: radius.md, backgroundColor: 'rgba(185,28,28,0.09)', alignItems: 'center', justifyContent: 'center' },
+  examShortcutText: { flex: 1 },
+  examShortcutTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: typography.weights.heavy },
+  examShortcutSubtitle: { color: colors.muted, fontSize: typography.small, lineHeight: 18, marginTop: 3 },
   searchCard: { marginBottom: spacing.lg },
   searchBox: {
     minHeight: 50,
@@ -534,7 +485,6 @@ const styles = StyleSheet.create({
   programTitle: { color: colors.text, fontSize: typography.subtitle, lineHeight: 24, fontWeight: typography.weights.heavy },
   programUniversity: { color: colors.secondary, fontSize: typography.small, lineHeight: 19, marginTop: 3, fontWeight: typography.weights.heavy },
   programMeta: { color: colors.muted, fontSize: typography.small, lineHeight: 20, marginTop: spacing.xs, fontWeight: typography.weights.bold },
-  programPrice: { color: colors.primary, fontSize: typography.body, marginTop: spacing.sm, fontWeight: typography.weights.heavy },
   programActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   programButton: { flex: 1 },
   footerLoader: {

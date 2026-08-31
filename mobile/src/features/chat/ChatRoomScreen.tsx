@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RouteProp, useRoute } from '@react-navigation/native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
-import { ActivityIndicator, Alert, Animated, Easing, FlatList, Keyboard, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, Keyboard, KeyboardAvoidingView, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chatApi } from '../../api/endpoints';
 import { AppCard } from '../../components/AppCard';
-import { CachedImage } from '../../components/CachedImage';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { Loading } from '../../components/Loading';
@@ -24,13 +24,14 @@ type R = RouteProp<RootStackParamList, 'ChatRoom'>;
 export function ChatRoomScreen() {
   const route = useRoute<R>();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList<ChatMessage> | null>(null);
-  const keyboardShift = useRef(new Animated.Value(0)).current;
   const [text, setText] = useState('');
   const [sendingText, setSendingText] = useState(false);
   const [sendingFile, setSendingFile] = useState(false);
   const [sendError, setSendError] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const messagesQuery = useQuery({
     queryKey: ['chat-messages', route.params.id],
@@ -54,31 +55,16 @@ export function ChatRoomScreen() {
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const showSubscription = Keyboard.addListener(showEvent, event => {
-      const keyboardHeight = Math.max(0, (event.endCoordinates?.height || 0) - insets.bottom);
-      Animated.timing(keyboardShift, {
-        toValue: -keyboardHeight,
-        duration: event.duration || 240,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start(() => requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true })));
+    const showSubscription = Keyboard.addListener(showEvent, () => {
+      setKeyboardVisible(true);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
     });
-
-    const hideSubscription = Keyboard.addListener(hideEvent, event => {
-      Animated.timing(keyboardShift, {
-        toValue: 0,
-        duration: event.duration || 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    });
-
+    const hideSubscription = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
     return () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
-  }, [insets.bottom, keyboardShift]);
+  }, []);
 
   const appendMessage = (message: ChatMessage) => {
     queryClient.setQueryData<ChatMessage[]>(['chat-messages', route.params.id], old => {
@@ -149,8 +135,11 @@ export function ChatRoomScreen() {
   if (messagesQuery.isLoading) return <Loading />;
 
   return (
-    <View style={styles.container}>
-      <Animated.View style={[styles.keyboardContent, { transform: [{ translateY: keyboardShift }] }]}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight}
+    >
       <View style={[styles.header, shadows.soft]}>
         <View style={styles.headerIcon}><SvgIcon name="chat" size={22} color={colors.primary} /></View>
         <View style={styles.headerTextBox}>
@@ -184,32 +173,53 @@ export function ChatRoomScreen() {
         </View>
       ) : null}
 
-      <AppCard style={[styles.inputCard, { marginBottom: Math.max(insets.bottom, spacing.md) }]}>
-        <Pressable style={styles.iconButton} onPress={handlePickFile} disabled={sendingText || sendingFile}>
-          <SvgIcon name="file" size={22} color={colors.primary} />
-        </Pressable>
-        <TextInput value={text} onChangeText={setText} placeholder="Напишите сообщение..." placeholderTextColor={colors.mutedLight} style={styles.input} multiline />
-        <Pressable style={[styles.sendButton, (!text.trim() || sendingText || sendingFile) && styles.sendButtonDisabled]} onPress={handleSend} disabled={!text.trim() || sendingText || sendingFile}>
-          <SvgIcon name="chevronRight" size={23} color={colors.white} strokeWidth={2.8} />
-        </Pressable>
-      </AppCard>
-      </Animated.View>
-    </View>
+      <View style={[styles.inputDock, { paddingBottom: keyboardVisible ? spacing.sm : Math.max(insets.bottom, spacing.sm) }]}>
+        <AppCard style={styles.inputCard}>
+          <Pressable style={styles.iconButton} onPress={handlePickFile} disabled={sendingText || sendingFile}>
+            <SvgIcon name="file" size={22} color={colors.primary} />
+          </Pressable>
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="Напишите сообщение..."
+            placeholderTextColor={colors.mutedLight}
+            style={styles.input}
+            multiline
+            maxLength={1000}
+            scrollEnabled
+          />
+          <Pressable style={[styles.sendButton, (!text.trim() || sendingText || sendingFile) && styles.sendButtonDisabled]} onPress={handleSend} disabled={!text.trim() || sendingText || sendingFile}>
+            <SvgIcon name="chevronRight" size={23} color={colors.white} strokeWidth={2.8} />
+          </Pressable>
+        </AppCard>
+        {text.length > 800 ? <Text style={styles.inputCounter}>{text.length}/1000</Text> : null}
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isMine = Boolean(message.is_mine);
-  const fileUrl = getMediaUrl(message.attachments?.[0]?.url || message.file || null);
-  const isImage = message.message_type === 'image' && Boolean(fileUrl);
-  const isFile = message.message_type === 'file' && Boolean(fileUrl);
-  const sender = message.sender_display_name || message.sender_staff?.full_name || message.sender_user_name;
+  const attachment = message.attachments?.[0];
+  const fileUrl = getMediaUrl(attachment?.url || message.file || null);
+  const isImage = Boolean(fileUrl) && (
+    message.message_type === 'image' || String(attachment?.content_type || '').startsWith('image/')
+  );
+  const isFile = Boolean(fileUrl) && !isImage;
+  const rawSender = message.sender_display_name || message.sender_staff?.full_name || message.sender_user_name;
+  const sender = message.sender_role === 'manager' && rawSender && !/^менеджер\s/i.test(rawSender)
+    ? `Менеджер ${rawSender}`
+    : rawSender;
 
   return (
     <View style={[styles.messageWrap, isMine ? styles.myWrap : styles.otherWrap]}>
       <View style={[styles.message, isMine ? styles.myMessage : styles.otherMessage]}>
         {!isMine && sender ? <Text style={styles.sender}>{sender}</Text> : null}
-        {isImage && fileUrl ? <CachedImage uri={fileUrl} style={styles.messageImage} resizeMode="cover" /> : null}
+        {isImage && fileUrl ? (
+          <Pressable accessibilityRole="imagebutton" accessibilityLabel="Открыть фотографию" onPress={() => Linking.openURL(fileUrl)}>
+            <Image source={{ uri: fileUrl }} style={styles.messageImage} resizeMode="cover" />
+          </Pressable>
+        ) : null}
         {isFile && fileUrl ? (
           <Pressable style={styles.fileBubble} onPress={() => Linking.openURL(fileUrl)}>
             <SvgIcon name="file" size={20} color={isMine ? colors.white : colors.secondary} />
@@ -228,7 +238,6 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  keyboardContent: { flex: 1 },
   header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headerIcon: { width: 46, height: 46, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   headerTextBox: { flex: 1 },
@@ -255,9 +264,11 @@ const styles = StyleSheet.create({
   sendingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.card },
   sendingText: { color: colors.muted, fontSize: typography.small, fontWeight: typography.weights.bold },
   errorText: { color: colors.danger, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, fontSize: typography.small, fontWeight: typography.weights.bold },
-  inputCard: { margin: spacing.md, padding: spacing.sm, flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, borderRadius: radius.lg },
+  inputDock: { zIndex: 20, elevation: 20, paddingHorizontal: spacing.md, paddingTop: spacing.sm, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border },
+  inputCard: { padding: spacing.sm, flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, borderRadius: radius.lg, marginBottom: 0, ...shadows.soft },
   iconButton: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
   input: { flex: 1, minHeight: 46, maxHeight: 120, borderRadius: radius.md, backgroundColor: colors.background, paddingHorizontal: spacing.md, paddingTop: 12, paddingBottom: 10, color: colors.text, fontSize: typography.body },
   sendButton: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   sendButtonDisabled: { opacity: 0.45 },
+  inputCounter: { color: colors.muted, fontSize: 11, textAlign: 'right', paddingTop: 3, paddingRight: spacing.xs },
 });

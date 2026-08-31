@@ -21,7 +21,7 @@ import { getApiErrorMessage } from '../../utils/apiError';
 export function ChatListScreen() {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   if (!isAuthenticated) {
-    return <LoginRequired title="Чат доступен после входа" description="Напишите менеджеру после регистрации. Так вы сможете видеть историю сообщений и быстрее получать ответы." />;
+    return <LoginRequired title="Чат доступен после входа" description="После одобрения анкеты войдите по SL-ID, чтобы написать менеджеру и видеть историю сообщений." />;
   }
   return <ChatListContent />;
 }

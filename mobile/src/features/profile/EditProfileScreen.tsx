@@ -27,6 +27,7 @@ export function EditProfileScreen() {
   const [country, setCountry] = useState(user?.profile?.country || '');
   const [city, setCity] = useState(user?.profile?.city || '');
   const [citizenship, setCitizenship] = useState(user?.profile?.citizenship || '');
+  const [currentLocation, setCurrentLocation] = useState(user?.profile?.current_location || '');
   const [avatarFile, setAvatarFile] = useState<UploadableFile | null>(null);
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,6 +71,7 @@ export function EditProfileScreen() {
       formData.append('country', country);
       formData.append('city', city);
       formData.append('citizenship', citizenship);
+      formData.append('current_location', currentLocation);
       formData.append('language', user?.profile?.language || 'ru');
       if (avatarFile) appendUploadFile(formData, 'avatar', avatarFile);
       await authApi.updateMeFormData(formData);
@@ -111,6 +113,13 @@ export function EditProfileScreen() {
         <AppInput label="Страна" value={country} onChangeText={setCountry} />
         <AppInput label="Город" value={city} onChangeText={setCity} />
         <AppInput label="Гражданство" value={citizenship} onChangeText={setCitizenship} />
+        <AppInput
+          label="Где вы находитесь сейчас"
+          value={currentLocation}
+          onChangeText={setCurrentLocation}
+          placeholder="Например: Ашхабад или Казань"
+        />
+        <Text style={styles.locationHint}>Обновляйте это поле раз в месяц и каждый раз после переезда или поездки.</Text>
         <AppButton title="Сохранить изменения" onPress={handleSave} loading={loading} style={styles.button} />
       </AppCard>
     </Screen>
@@ -132,4 +141,5 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', gap: spacing.sm },
   nameInput: { flex: 1 },
   button: { marginTop: spacing.sm },
+  locationHint: { color: colors.muted, lineHeight: 20, marginBottom: spacing.md },
 });

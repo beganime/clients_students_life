@@ -40,7 +40,13 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             'citizenship',
             'avatar',
             'language',
+            'onboarding_public_id',
+            'onboarding_access_token',
+            'onboarding_kind',
+            'current_location',
+            'location_updated_at',
         )
+        read_only_fields = ('onboarding_public_id', 'onboarding_access_token', 'onboarding_kind', 'location_updated_at')
 
 
 class UserMeSerializer(serializers.ModelSerializer):
@@ -83,6 +89,7 @@ class UserMeSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         profile_data = validated_data.pop('client_profile', {})
+        uploaded_avatar = profile_data.get('avatar')
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -94,9 +101,28 @@ class UserMeSerializer(serializers.ModelSerializer):
         )
         for attr, value in profile_data.items():
             setattr(profile, attr, value)
+        if 'current_location' in profile_data:
+            from django.utils import timezone
+            profile.location_updated_at = timezone.now()
         if not profile.role_id:
             profile.role = AppRole.default_role()
         profile.save()
+
+        if uploaded_avatar:
+            try:
+                from apps.chat.disk_archive import archive_chat_attachment
+
+                archive_chat_attachment(
+                    uploaded_avatar,
+                    sl_id=instance.username,
+                    mobile_user_id=instance.pk,
+                    actor=instance.get_full_name() or instance.username,
+                    purpose='avatar',
+                )
+            except Exception:
+                # The profile update remains successful; DiskSL can be retried independently.
+                import logging
+                logging.getLogger(__name__).exception('Avatar could not be archived in DiskSL.')
 
         return instance
 

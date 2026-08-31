@@ -29,6 +29,8 @@ export function ProfileScreen() {
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
   const avatarUrl = localAvatarUri || getMediaUrl(user?.profile?.avatar || null);
   const isManager = Boolean(user?.is_manager);
+  const locationNeedsUpdate = !user?.profile?.location_updated_at
+    || Date.now() - new Date(user.profile.location_updated_at).getTime() > 30 * 24 * 60 * 60 * 1000;
 
   useEffect(() => {
     getLocalAvatarUri().then(setLocalAvatarUri).catch(() => undefined);
@@ -48,13 +50,13 @@ export function ProfileScreen() {
           <Text style={styles.guestTitle}>Гостевой режим</Text>
           <Text style={styles.guestText}>
             Можно смотреть услуги, страны, университеты и новости. Для заявок, чата, избранного и
-            персональных предложений лучше войти или зарегистрироваться.
+            персональных предложений войдите по SL-ID после одобрения анкеты.
           </Text>
         </RedGradientHero>
 
         <AppCard style={styles.benefitCard}>
-          <Badge label="Преимущества аккаунта" variant="mint" icon="check" />
-          <Text style={styles.benefitTitle}>Регистрация экономит время</Text>
+          <Badge label="Поступление" variant="mint" icon="check" />
+          <Text style={styles.benefitTitle}>Аккаунт создаётся после анкеты</Text>
           <Text style={styles.benefitText}>
             Вы сможете видеть историю заявок, получать ответы менеджера, сохранять университеты и
             быстрее оформлять новые услуги.
@@ -63,7 +65,7 @@ export function ProfileScreen() {
 
         <View style={styles.actions}>
           <AppButton title="Войти" onPress={() => navigation.navigate('Auth', { screen: 'Login' })} />
-          <AppButton title="Зарегистрироваться" variant="outline" onPress={() => navigation.navigate('Auth', { screen: 'Register' })} />
+          <AppButton title="Поступить через нас" variant="outline" onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })} />
           <AppButton title="Политика конфиденциальности" variant="ghost" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
         </View>
       </Screen>
@@ -92,12 +94,21 @@ export function ProfileScreen() {
       </RedGradientHero>
 
       <View style={styles.quickGrid}>
-        <QuickAction icon="document" title="Мои заявки" onPress={() => navigation.navigate('MyApplications')} />
+        <QuickAction icon="document" title="История действий" onPress={() => navigation.navigate('MyApplications')} />
         <QuickAction icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
         <QuickAction icon="application" title="Анкета" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
         <QuickAction icon="chat" title="Мои чаты" onPress={() => navigation.navigate('Chat')} />
         <QuickAction icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
+        <QuickAction icon="calendar" title="Экзамены" onPress={() => navigation.navigate('Exams')} />
       </View>
+
+      {!isManager && locationNeedsUpdate ? (
+        <AppCard style={styles.locationReminder}>
+          <Text style={styles.blockTitle}>Обновите местоположение</Text>
+          <Text style={styles.benefitText}>Раз в месяц сообщайте менеджеру, где вы сейчас находитесь. Также обновляйте поле после переезда или поездки.</Text>
+          <AppButton title="Указать, где я сейчас" onPress={() => navigation.navigate('EditProfile')} style={styles.locationButton} />
+        </AppCard>
+      ) : null}
 
       <AppCard style={styles.infoCard}>
         <Text style={styles.blockTitle}>Контактные данные</Text>
@@ -106,6 +117,7 @@ export function ProfileScreen() {
         <ProfileInfo icon="chat" label="Telegram" value={user.profile?.telegram || 'не указан'} />
         <ProfileInfo icon="globe" label="Страна" value={user.profile?.country || 'не указана'} />
         <ProfileInfo icon="mapPin" label="Город" value={user.profile?.city || 'не указан'} />
+        <ProfileInfo icon="mapPin" label="Сейчас находится" value={user.profile?.current_location || 'не указано'} />
       </AppCard>
 
       <AppCard style={styles.benefitCard}>
@@ -119,10 +131,11 @@ export function ProfileScreen() {
       <View style={styles.menu}>
         <ProfileMenuItem icon="edit" title="Редактировать профиль" onPress={() => navigation.navigate('EditProfile')} />
         <ProfileMenuItem icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
-        <ProfileMenuItem icon="document" title={isManager ? 'Заявки клиентов' : 'Мои заявки'} onPress={() => navigation.navigate('MyApplications')} />
+        <ProfileMenuItem icon="calendar" title="Экзамены" onPress={() => navigation.navigate('Exams')} />
+        <ProfileMenuItem icon="document" title={isManager ? 'Заявки клиентов' : 'История действий'} onPress={() => navigation.navigate('MyApplications')} />
         <ProfileMenuItem icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
         <ProfileMenuItem icon="application" title="Анкета абитуриента" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
-        {!isManager ? <ProfileMenuItem icon="application" title="Подать новую заявку" onPress={() => navigation.navigate('ApplicationCreate')} /> : null}
+        {!isManager ? <ProfileMenuItem icon="application" title="Заполнить анкету" onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} /> : null}
         <ProfileMenuItem icon="chat" title={isManager ? 'Входящие чаты клиентов' : 'Чат с менеджером'} onPress={() => navigation.navigate('Chat')} />
         <ProfileMenuItem icon="services" title="Настройки" onPress={() => navigation.navigate('Settings')} />
         <ProfileMenuItem icon="lock" title="Согласие на обработку данных" onPress={() => navigation.navigate('DataConsent')} />
@@ -136,7 +149,7 @@ export function ProfileScreen() {
         primaryText="Открыть чат"
         onPrimaryPress={() => navigation.navigate('Chat')}
         secondaryText="Новая заявка"
-        onSecondaryPress={() => navigation.navigate('ApplicationCreate')}
+        onSecondaryPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
       />
       <AppButton title="Выйти" variant="danger" onPress={confirmLogout} style={styles.logoutButton} />
     </Screen>
@@ -186,6 +199,8 @@ const styles = StyleSheet.create({
   guestTitle: { color: colors.white, fontSize: 32, fontWeight: typography.weights.heavy },
   guestText: { marginTop: spacing.sm, color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, fontWeight: typography.weights.medium },
   profileHero: { minHeight: 230, marginBottom: spacing.lg },
+  locationReminder: { marginBottom: spacing.lg, borderColor: '#B91C1C' },
+  locationButton: { marginTop: spacing.md },
   profileTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   profileTitleBox: { flex: 1 },
   avatar: { width: 86, height: 86, borderRadius: radius.lg, backgroundColor: colors.border },
