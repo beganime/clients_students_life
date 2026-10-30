@@ -24,6 +24,7 @@ class ServiceExamUpsertTests(TestCase):
             'timezone': 'Asia/Ashgabat',
             'comment': 'КФУ',
             'manager_sl_exam_id': 'EXAM-001',
+            'manager_application_public_id': '22222222-2222-2222-2222-222222222222',
         }
 
     def test_repeated_sync_updates_one_exam_without_duplicate_notification(self):
@@ -35,6 +36,10 @@ class ServiceExamUpsertTests(TestCase):
         self.assertEqual(ClientExam.objects.count(), 1)
         self.assertEqual(UserNotification.objects.count(), 1)
         self.assertEqual(second.json()['sync_status'], 'updated')
+        self.assertEqual(
+            ClientExam.objects.get().manager_application_public_id,
+            '22222222-2222-2222-2222-222222222222',
+        )
 
     def test_schedule_change_resets_acknowledgement_and_notifies_again(self):
         self.client.post(self.url, self.payload, format='json')

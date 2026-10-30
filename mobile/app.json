@@ -2,7 +2,7 @@
   "expo": {
     "name": "Students Life",
     "slug": "students-life",
-    "version": "1.0.10",
+    "version": "1.0.13",
     "orientation": "portrait",
     "icon": "./src/assets/icon-release.png",
     "userInterfaceStyle": "light",
@@ -45,8 +45,8 @@
       "expo-font"
     ],
     "extra": {
-      "apiBaseUrl": "https://www.stud-life.com/api/v1",
-      "managerSlApiBaseUrl": "https://www.stud-life.com/manager-api/api/client/v1",
+      "apiBaseUrl": "https://manager-sl.ru/client-app/api/v1",
+      "managerSlApiBaseUrl": "https://manager-sl.ru/api/client/v1",
       "eas": {
         "projectId": "7787dd53-8b3a-404a-ab14-10ee7bc45df2"
       }

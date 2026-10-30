@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
+
+import { applicationsApi } from '../../api/endpoints';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
@@ -29,6 +33,13 @@ export function ProfileScreen() {
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
   const avatarUrl = localAvatarUri || getMediaUrl(user?.profile?.avatar || null);
   const isManager = Boolean(user?.is_manager);
+  const { isOnline } = useNetworkStatus();
+  const admissionQuery = useQuery({
+    queryKey: ['admission-status', user?.id],
+    queryFn: applicationsApi.getAdmissionStatus,
+    enabled: Boolean(user?.id) && !isManager && isOnline,
+    staleTime: 2 * 60_000,
+  });
   const locationNeedsUpdate = !user?.profile?.location_updated_at
     || Date.now() - new Date(user.profile.location_updated_at).getTime() > 30 * 24 * 60 * 60 * 1000;
 
@@ -66,6 +77,8 @@ export function ProfileScreen() {
         <View style={styles.actions}>
           <AppButton title="Войти" onPress={() => navigation.navigate('Auth', { screen: 'Login' })} />
           <AppButton title="Поступить через нас" variant="outline" onPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })} />
+          <AppButton title="Новости" variant="outline" onPress={() => navigation.navigate('News')} />
+          <AppButton title="Услуги" variant="outline" onPress={() => navigation.navigate('Services')} />
           <AppButton title="Политика конфиденциальности" variant="ghost" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
         </View>
       </Screen>
@@ -93,14 +106,13 @@ export function ProfileScreen() {
         </View>
       </RedGradientHero>
 
-      <View style={styles.quickGrid}>
-        <QuickAction icon="document" title="История действий" onPress={() => navigation.navigate('MyApplications')} />
-        <QuickAction icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
-        <QuickAction icon="application" title="Анкета" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
-        <QuickAction icon="chat" title="Мои чаты" onPress={() => navigation.navigate('Chat')} />
-        <QuickAction icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
-        <QuickAction icon="calendar" title="Экзамены" onPress={() => navigation.navigate('Exams')} />
-      </View>
+      {!isManager ? (
+        <AppCard style={styles.admissionSummary}>
+          <Text style={styles.blockTitle}>Ваш статус</Text>
+          <Text style={styles.admissionStatus}>{admissionQuery.data?.client?.status_label || (admissionQuery.isLoading ? 'Загружаем…' : 'Уточняется у менеджера')}</Text>
+          <AppButton title="Этапы поступления" variant="outline" onPress={() => navigation.navigate('AdmissionStatus')} style={styles.locationButton} />
+        </AppCard>
+      ) : null}
 
       {!isManager && locationNeedsUpdate ? (
         <AppCard style={styles.locationReminder}>
@@ -120,37 +132,24 @@ export function ProfileScreen() {
         <ProfileInfo icon="mapPin" label="Сейчас находится" value={user.profile?.current_location || 'не указано'} />
       </AppCard>
 
-      <AppCard style={styles.benefitCard}>
-        <Badge label="Выгодно пользоваться аккаунтом" variant="mint" icon="check" />
-        <Text style={styles.benefitTitle}>Ваши заявки и чаты сохраняются</Text>
-        <Text style={styles.benefitText}>
-          История обращений, ответы менеджера, персональные предложения и скидки будут доступны в профиле.
-        </Text>
-      </AppCard>
-
       <View style={styles.menu}>
+        <ProfileMenuItem icon="services" title="Услуги" onPress={() => navigation.navigate('Services')} />
+        <ProfileMenuItem icon="news" title="Новости и формы" onPress={() => navigation.navigate('News')} />
+        <ProfileMenuItem icon="university" title="Список вузов" onPress={() => navigation.navigate('UniversityRankings')} />
+        <ProfileMenuItem icon="document" title="Как пользоваться приложением" onPress={() => navigation.navigate('ApplicationGuide')} />
+        <ProfileMenuItem icon="application" title="Статус поступления" onPress={() => navigation.navigate('AdmissionStatus')} />
         <ProfileMenuItem icon="edit" title="Редактировать профиль" onPress={() => navigation.navigate('EditProfile')} />
         <ProfileMenuItem icon="bell" title="Уведомления" onPress={() => navigation.navigate('Notifications')} />
         <ProfileMenuItem icon="calendar" title="Экзамены" onPress={() => navigation.navigate('Exams')} />
         <ProfileMenuItem icon="document" title={isManager ? 'Заявки клиентов' : 'История действий'} onPress={() => navigation.navigate('MyApplications')} />
         <ProfileMenuItem icon="file" title="Мои документы" onPress={() => navigation.navigate('MyDocuments')} />
         <ProfileMenuItem icon="application" title="Анкета абитуриента" onPress={() => navigation.navigate('ApplicantQuestionnaire')} />
-        {!isManager ? <ProfileMenuItem icon="application" title="Заполнить анкету" onPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })} /> : null}
         <ProfileMenuItem icon="chat" title={isManager ? 'Входящие чаты клиентов' : 'Чат с менеджером'} onPress={() => navigation.navigate('Chat')} />
         <ProfileMenuItem icon="services" title="Настройки" onPress={() => navigation.navigate('Settings')} />
         <ProfileMenuItem icon="lock" title="Согласие на обработку данных" onPress={() => navigation.navigate('DataConsent')} />
         <ProfileMenuItem icon="document" title="Политика конфиденциальности" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
       </View>
 
-      <CTASection
-        eyebrow="Поддержка"
-        title="Нужна помощь по заявке?"
-        description="Откройте чат, и менеджер подскажет статус, документы и дальнейшие шаги."
-        primaryText="Открыть чат"
-        onPrimaryPress={() => navigation.navigate('Chat')}
-        secondaryText="Новая заявка"
-        onSecondaryPress={() => navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' })}
-      />
       <AppButton title="Выйти" variant="danger" onPress={confirmLogout} style={styles.logoutButton} />
     </Screen>
   );
@@ -199,6 +198,8 @@ const styles = StyleSheet.create({
   guestTitle: { color: colors.white, fontSize: 32, fontWeight: typography.weights.heavy },
   guestText: { marginTop: spacing.sm, color: 'rgba(255,255,255,0.9)', fontSize: typography.body, lineHeight: 23, fontWeight: typography.weights.medium },
   profileHero: { minHeight: 230, marginBottom: spacing.lg },
+  admissionSummary: { marginBottom: spacing.lg },
+  admissionStatus: { color: colors.primary, fontSize: typography.subtitle, fontWeight: typography.weights.heavy, marginTop: spacing.xs },
   locationReminder: { marginBottom: spacing.lg, borderColor: '#B91C1C' },
   locationButton: { marginTop: spacing.md },
   profileTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

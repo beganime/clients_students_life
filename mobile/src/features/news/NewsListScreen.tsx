@@ -8,6 +8,7 @@ import { contentApi } from '../../api/endpoints';
 import { bannerImages } from '../../assets/banners';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { AppCard } from '../../components/AppCard';
+import { AppButton } from '../../components/AppButton';
 import { Badge } from '../../components/Badge';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -38,6 +39,7 @@ export function NewsListScreen() {
         onRefresh={newsQuery.refetch}
         ListHeaderComponent={
           <View>
+            <AppButton title="Анкеты и формы" variant="outline" onPress={() => navigation.navigate('Polls')} />
             <RedGradientHero backgroundImage={bannerImages.news} style={styles.hero}>
               <Badge label="Новости" variant="mint" icon="news" />
               <Text style={styles.title}>Актуальное для студентов</Text>
@@ -47,7 +49,7 @@ export function NewsListScreen() {
             {newsQuery.isError && !newsQuery.data?.length ? <ErrorState onAction={() => newsQuery.refetch()} /> : null}
           </View>
         }
-        ListEmptyComponent={!newsQuery.isLoading && !newsQuery.isError ? <EmptyState title="Новостей пока нет" description="Добавьте опубликованные новости через админ-панель." /> : null}
+        ListEmptyComponent={!newsQuery.isLoading && !newsQuery.isError ? <EmptyState title="Новостей пока нет" description="Здесь появятся новости и объявления Students Life." /> : null}
         renderItem={({ item }) => <NewsCard item={item} onPress={() => navigation.navigate('NewsDetail', { slug: item.slug })} />}
       />
     </Screen>

@@ -59,7 +59,7 @@ export function ServicesScreen() {
 
       <SectionHeader
         eyebrow="Бюджет"
-        title="Цены по направлениям"
+        title="Направления и программы"
         description="Отдельный каталог приоритетных направлений и условий сопровождения."
       />
       <AnimatedPressable

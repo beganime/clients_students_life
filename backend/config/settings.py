@@ -215,6 +215,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'register': config('THROTTLE_REGISTER_RATE', default='5/hour'),
         'login': config('THROTTLE_LOGIN_RATE', default='10/min'),
+        'onboarding_activation': config('THROTTLE_ONBOARDING_ACTIVATION_RATE', default='8/min'),
         'applications_create': config('THROTTLE_APPLICATION_CREATE_RATE', default='5/hour'),
         'push_token': config('THROTTLE_PUSH_TOKEN_RATE', default='10/min'),
         'activity': config('THROTTLE_ACTIVITY_RATE', default='60/min'),

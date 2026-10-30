@@ -131,6 +131,14 @@ class ManagerSLClient:
             extra_headers=headers,
         )
 
+    def get_admission_status(self, mobile_user_id: int):
+        return self.request_json(
+            'GET',
+            'internal/client/admissions/',
+            params={'mobile_user_id': int(mobile_user_id)},
+            require_api_key=True,
+        )
+
 
 def manager_sl_enabled():
     return ManagerSLClient.from_settings().is_configured

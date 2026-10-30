@@ -41,12 +41,11 @@ class ClientProfileSerializer(serializers.ModelSerializer):
             'avatar',
             'language',
             'onboarding_public_id',
-            'onboarding_access_token',
             'onboarding_kind',
             'current_location',
             'location_updated_at',
         )
-        read_only_fields = ('onboarding_public_id', 'onboarding_access_token', 'onboarding_kind', 'location_updated_at')
+        read_only_fields = ('onboarding_public_id', 'onboarding_kind', 'location_updated_at')
 
 
 class UserMeSerializer(serializers.ModelSerializer):

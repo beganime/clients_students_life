@@ -2,6 +2,8 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from django.utils import timezone
+from datetime import timedelta
 from rest_framework.test import APIClient
 from apps.notifications.models import DeviceToken, UserNotification
 
@@ -21,6 +23,18 @@ class ProvisionClientAccountTests(TestCase):
             'phone': '+99360000000',
             'fcm_token': 'current-device-token',
         }
+
+    @patch('apps.accounts.views.provision_akylchat_client')
+    @patch('apps.accounts.views.send_raw_push_to_tokens')
+    def test_create_only_does_not_reset_existing_password(self, push, chat):
+        user = User.objects.create_user(username='SL-001', password='Original-test-password')
+        response = self.client.post('/api/v1/accounts/internal/provision/',
+            {**self.payload, 'create_only': True}, format='json', **self.headers)
+        self.assertEqual(response.status_code, 200)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password('Original-test-password'))
+        push.assert_not_called()
+        chat.assert_not_called()
 
     @patch('apps.accounts.views.send_raw_push_to_tokens', return_value=1)
     @patch('apps.accounts.views.provision_akylchat_client')
@@ -42,13 +56,13 @@ class ProvisionClientAccountTests(TestCase):
         self.assertEqual(response.data['akylchat']['chat_uuid'], 'chat-uuid')
         self.assertTrue(User.objects.get(username='SL-001').check_password('Test_0710'))
         notification = UserNotification.objects.get(notification_type='account_credentials')
-        self.assertIn('SL-001', notification.body)
-        self.assertIn('Test_0710', notification.body)
+        self.assertEqual(notification.title, 'Аккаунт одобрен')
+        self.assertNotIn('Test_0710', notification.body)
         self.assertTrue(DeviceToken.objects.filter(token='current-device-token', user__username='SL-001', is_active=True).exists())
         self.assertEqual(response.data['push_sent'], 1)
         self.assertEqual(send_push.call_args.args[0], ['current-device-token'])
-        self.assertIn('SL-001', send_push.call_args.args[2])
-        self.assertIn('Test_0710', send_push.call_args.args[2])
+        self.assertIn('приложение', send_push.call_args.args[2].lower())
+        self.assertNotIn('Test_0710', send_push.call_args.args[2])
         provision_akylchat.assert_called_once()
 
     @patch('apps.accounts.views.send_push_to_user')
@@ -99,10 +113,76 @@ class ProvisionClientAccountTests(TestCase):
         self.assertEqual(User.objects.filter(username='SL-001').count(), 1)
         self.assertTrue(User.objects.get(username='SL-001').check_password('Changed_0710'))
         self.assertEqual(UserNotification.objects.filter(notification_type='account_credentials').count(), 1)
-        self.assertIn(
-            'Changed_0710',
-            UserNotification.objects.get(notification_type='account_credentials').body,
+        self.assertNotIn('Changed_0710', UserNotification.objects.get(notification_type='account_credentials').body)
+
+    @patch('apps.accounts.views.send_raw_push_to_tokens', return_value=0)
+    @patch('apps.accounts.views.provision_akylchat_client', return_value={'status': 'created'})
+    def test_secure_provision_uses_remote_one_time_activation(self, _chat, _push):
+        token = 'private-onboarding-token'
+        payload = {
+            **self.payload,
+            'password': '',
+            'activation_mode': 'onboarding_token',
+            'onboarding_public_id': '5a04182d-97ea-4221-9f43-d4e2cc62a125',
+            'onboarding_access_token': token,
+        }
+        response = self.client.post(
+            '/api/v1/accounts/internal/provision/', payload, format='json', **self.headers,
         )
+        self.assertEqual(response.status_code, 201)
+        user = User.objects.get(username='SL-001')
+        profile = user.client_profile
+        self.assertFalse(user.has_usable_password())
+        self.assertEqual(profile.onboarding_access_token, '')
+        with patch('apps.accounts.views.ManagerSLClient.from_settings') as manager:
+            manager.return_value.request_json.return_value = {
+                'status': 'approved', 'sl_id': 'SL-001',
+            }
+            activation = self.client.post(
+                '/api/v1/accounts/activate-onboarding/',
+                {'public_id': profile.onboarding_public_id, 'access_token': token},
+                format='json',
+            )
+        self.assertEqual(activation.status_code, 200)
+        self.assertTrue(activation.data['access'])
+        self.assertTrue(activation.data['refresh'])
+        profile.refresh_from_db()
+        self.assertIsNotNone(profile.onboarding_activated_at)
+
+    @patch('apps.accounts.views.send_raw_push_to_tokens', return_value=0)
+    @patch('apps.accounts.views.provision_akylchat_client', return_value={'status': 'created'})
+    def test_activation_rejects_wrong_and_consumed_token(self, _chat, _push):
+        token = 'private-onboarding-token'
+        public_id = '5a04182d-97ea-4221-9f43-d4e2cc62a125'
+        self.client.post(
+            '/api/v1/accounts/internal/provision/',
+            {
+                **self.payload,
+                'password': '',
+                'activation_mode': 'onboarding_token',
+                'onboarding_public_id': public_id,
+                'onboarding_access_token': token,
+            },
+            format='json', **self.headers,
+        )
+        with patch('apps.accounts.views.ManagerSLClient.from_settings') as manager:
+            manager.return_value.request_json.return_value = {
+                'status': 'approved', 'sl_id': 'SL-999',
+            }
+            wrong = self.client.post(
+                '/api/v1/accounts/activate-onboarding/',
+                {'public_id': public_id, 'access_token': 'wrong-token'}, format='json',
+            )
+        self.assertEqual(wrong.status_code, 403)
+
+        profile = User.objects.get(username='SL-001').client_profile
+        profile.onboarding_activated_at = timezone.now() - timedelta(minutes=6)
+        profile.save(update_fields=['onboarding_activated_at'])
+        consumed = self.client.post(
+            '/api/v1/accounts/activate-onboarding/',
+            {'public_id': public_id, 'access_token': token}, format='json',
+        )
+        self.assertEqual(consumed.status_code, 409)
 
     def test_me_creates_only_one_monthly_location_reminder(self):
         user = User.objects.create_user(username='SL-020', password='x')

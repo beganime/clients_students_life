@@ -154,6 +154,7 @@ class ProvisionClientAccountView(APIView):
 
         sl_id = str(request.data.get('sl_id') or '').strip().upper()
         password = str(request.data.get('password') or '')
+        activation_mode = str(request.data.get('activation_mode') or 'legacy_password').strip()
         full_name = str(request.data.get('full_name') or '').strip()
         email = str(request.data.get('email') or '').strip().casefold()
         phone = str(request.data.get('phone') or '').strip()
@@ -163,8 +164,12 @@ class ProvisionClientAccountView(APIView):
         onboarding_kind = str(request.data.get('onboarding_kind') or 'applicant').strip()
         if not sl_id or len(sl_id) > 32 or not sl_id.startswith('SL-'):
             return Response({'detail': 'A valid sl_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
-        if not password or len(password) > 128:
+        if activation_mode not in {'legacy_password', 'onboarding_token'}:
+            return Response({'detail': 'Unsupported activation_mode.'}, status=status.HTTP_400_BAD_REQUEST)
+        if activation_mode == 'legacy_password' and (not password or len(password) > 128):
             return Response({'detail': 'A valid password is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if activation_mode == 'onboarding_token' and not onboarding_public_id:
+            return Response({'detail': 'An onboarding public_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
         if not full_name or len(full_name) > 255:
             return Response({'detail': 'A valid full_name is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -177,7 +182,12 @@ class ProvisionClientAccountView(APIView):
         }
         with transaction.atomic():
             user, created = User.objects.select_for_update().get_or_create(username=sl_id, defaults=defaults)
-            user.set_password(password)
+            if not created and request.data.get('create_only') is True:
+                return Response({'status': 'exists', 'user_id': user.pk, 'sl_id': user.username})
+            if activation_mode == 'onboarding_token':
+                user.set_unusable_password()
+            else:
+                user.set_password(password)
             user.first_name = parsed_name.first_name
             user.last_name = parsed_name.last_name
             if email:
@@ -185,16 +195,20 @@ class ProvisionClientAccountView(APIView):
             user.is_active = True
             user.save(update_fields=['password', 'first_name', 'last_name', 'email', 'is_active'])
             profile = ensure_client_profile(user)
+            previous_public_id = profile.onboarding_public_id
             if phone and profile.phone != phone:
                 profile.phone = phone
             if onboarding_public_id:
                 profile.onboarding_public_id = onboarding_public_id
-            if onboarding_access_token:
-                profile.onboarding_access_token = onboarding_access_token
+            # The raw onboarding token belongs to the device. ManagerSL verifies
+            # its existing hash during activation; this backend stores no copy.
+            profile.onboarding_access_token = ''
+            if onboarding_public_id and previous_public_id != onboarding_public_id:
+                profile.onboarding_activated_at = None
             profile.onboarding_kind = onboarding_kind
             profile.save(update_fields=[
                 'phone', 'onboarding_public_id', 'onboarding_access_token',
-                'onboarding_kind', 'updated_at',
+                'onboarding_activated_at', 'onboarding_kind', 'updated_at',
             ])
             UserNotification.objects.update_or_create(
                 user=user,
@@ -202,8 +216,8 @@ class ProvisionClientAccountView(APIView):
                 related_object_type='account',
                 related_object_id=user.pk,
                 defaults={
-                    'title': 'Данные для входа',
-                    'body': f'Ваш логин: {sl_id}\nВаш пароль: {password}',
+                    'title': 'Аккаунт одобрен',
+                    'body': 'Откройте приложение и подтвердите вход. Ваш пароль в уведомлении не передаётся.',
                     'is_read': False,
                 },
             )
@@ -213,7 +227,7 @@ class ProvisionClientAccountView(APIView):
                     defaults={'user': user, 'is_active': True},
                 )
 
-        credential_body = f'Ваш логин: {sl_id}\nВаш пароль: {password}'
+        credential_body = 'Аккаунт одобрен. Откройте приложение и подтвердите вход.'
         active_tokens = list(
             DeviceToken.objects.filter(user=user, is_active=True).values_list('token', flat=True)
         )
@@ -228,10 +242,11 @@ class ProvisionClientAccountView(APIView):
             },
         )
 
+        chat_password = password if activation_mode == 'legacy_password' else secrets.token_urlsafe(32)
         try:
             akylchat = provision_akylchat_client(
                 sl_id=sl_id,
-                password=password,
+                password=chat_password,
                 full_name=full_name,
                 email=email,
                 phone=phone,
@@ -253,9 +268,68 @@ class ProvisionClientAccountView(APIView):
                 'sl_id': user.username,
                 'akylchat': akylchat,
                 'push_sent': push_sent,
+                'activation_mode': activation_mode,
             },
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+
+class ActivateOnboardingAccountView(APIView):
+    """Exchange the approved application's one-time secret for app JWTs."""
+
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+    throttle_scope = 'onboarding_activation'
+
+    def post(self, request):
+        public_id = clean_device_value(request.data.get('public_id'), 64)
+        access_token = clean_device_value(request.data.get('access_token'), 255)
+        if not public_id or not access_token:
+            return Response(
+                {'detail': 'public_id and access_token are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        profile = ClientProfile.objects.select_related('user').filter(
+            onboarding_public_id=public_id, user__is_active=True,
+        ).first()
+        if not profile:
+            return Response({'detail': 'Activation data is invalid.'}, status=status.HTTP_401_UNAUTHORIZED)
+        if profile.created_at + timedelta(days=14) <= timezone.now():
+            return Response({'detail': 'Activation has expired.'}, status=status.HTTP_410_GONE)
+        if profile.onboarding_activated_at and timezone.now() > profile.onboarding_activated_at + timedelta(minutes=5):
+            return Response({'detail': 'Activation was already used.'}, status=status.HTTP_409_CONFLICT)
+
+        try:
+            submission = ManagerSLClient.from_settings().request_json(
+                'GET',
+                f'client/v1/onboarding/submissions/{public_id}/',
+                extra_headers={'X-Onboarding-Token': access_token},
+            )
+        except ManagerSLClientError as exc:
+            return Response(
+                {'detail': 'Activation data is invalid.'},
+                status=status.HTTP_401_UNAUTHORIZED if exc.status_code in {401, 403, 404} else status.HTTP_502_BAD_GATEWAY,
+            )
+        except ManagerSLConfigError:
+            return Response({'detail': 'ManagerSL is not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        if submission.get('status') != 'approved' or str(submission.get('sl_id') or '').upper() != profile.user.username.upper():
+            return Response({'detail': 'The approved application does not match this account.'}, status=status.HTTP_403_FORBIDDEN)
+
+        with transaction.atomic():
+            profile = ClientProfile.objects.select_for_update().select_related('user').get(pk=profile.pk)
+            if profile.onboarding_activated_at and timezone.now() > profile.onboarding_activated_at + timedelta(minutes=5):
+                return Response({'detail': 'Activation was already used.'}, status=status.HTTP_409_CONFLICT)
+            if not profile.onboarding_activated_at:
+                profile.onboarding_activated_at = timezone.now()
+                profile.onboarding_access_token = ''
+                profile.save(update_fields=['onboarding_activated_at', 'onboarding_access_token', 'updated_at'])
+            user = profile.user
+            refresh = RefreshToken.for_user(user)
+            user_data = UserMeSerializer(user, context={'request': request}).data
+
+        return Response({'access': str(refresh.access_token), 'refresh': str(refresh), 'user': user_data})
 
 
 class InternalClientNotificationView(APIView):
@@ -405,7 +479,7 @@ class QuestionnaireAccessView(APIView):
 
         profile = ensure_client_profile(request.user)
         profile.onboarding_public_id = public_id
-        profile.onboarding_access_token = access_token
+        profile.onboarding_access_token = ''
         profile.onboarding_kind = kind if kind in {'applicant', 'school_student'} else 'applicant'
         profile.save(update_fields=[
             'onboarding_public_id', 'onboarding_access_token', 'onboarding_kind', 'updated_at',

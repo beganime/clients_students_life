@@ -13,41 +13,36 @@ import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { UniversityCard } from '../../components/UniversityCard';
 import { colors, spacing, typography } from '../../constants/colors';
+import { useCatalogFavorites } from '../../store/catalogFavorites';
+import { useAuthStore } from '../../store/authStore';
 
 export function FavoriteUniversitiesScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
-  const favoritesQuery = useQuery({
-    queryKey: ['favorite-universities'],
-    queryFn: contentApi.getFavoriteUniversities,
-  });
+  const owner = useAuthStore(state => String(state.user?.id || 'guest'));
+  const favorites = useCatalogFavorites(state => state.byOwner[owner]);
 
   return (
     <Screen>
       <FlatList
         contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 28, 44) }]}
-        data={favoritesQuery.isLoading || favoritesQuery.isError ? [] : favoritesQuery.data || []}
-        refreshing={favoritesQuery.isRefetching}
-        onRefresh={favoritesQuery.refetch}
+        data={favorites || []}
         keyExtractor={item => String(item.id)}
         ListHeaderComponent={
           <View>
             <RedGradientHero style={styles.hero}>
               <Badge label="Избранное" variant="mint" icon="heart" />
               <Text style={styles.title}>Сохранённые университеты</Text>
-              <Text style={styles.subtitle}>Здесь остаются вузы, которые заинтересовали пользователя. Позже можно быстро вернуться и подать заявку.</Text>
+              <Text style={styles.subtitle}>Ваши вузы сохранены на этом устройстве и доступны без интернета.</Text>
             </RedGradientHero>
-            {favoritesQuery.isLoading ? <LoadingSkeleton rows={3} height={150} /> : null}
-            {favoritesQuery.isError ? <ErrorState onAction={() => favoritesQuery.refetch()} /> : null}
           </View>
         }
-        ListEmptyComponent={!favoritesQuery.isLoading && !favoritesQuery.isError ? <EmptyState title="Избранных вузов пока нет" description="Откройте карточку университета и нажмите «В избранное»." /> : null}
+        ListEmptyComponent={<EmptyState title="Избранных вузов пока нет" description="Откройте карточку университета и нажмите «В избранное»." />}
         renderItem={({ item }) => (
           <UniversityCard
-            university={item.university_detail}
-            onPress={() => navigation.navigate('UniversityDetail', { slug: item.university_detail.slug })}
-            onApplyPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
+            university={item}
+            onPress={() => navigation.navigate('UniversityDetail', { id: item.id })}
           />
         )}
       />

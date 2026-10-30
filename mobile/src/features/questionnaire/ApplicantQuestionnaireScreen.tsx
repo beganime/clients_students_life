@@ -24,6 +24,7 @@ import { colors, radius, spacing, typography } from '../../constants/colors';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getDevicePushToken } from '../../hooks/usePushNotifications';
 import { useAuthStore } from '../../store/authStore';
+import { apiClient } from '../../api/client';
 import { ApplicantQuestionnaire, OnboardingSubmissionStatus } from '../../types/api';
 import { getApiErrorMessage } from '../../utils/apiError';
 import {
@@ -118,6 +119,8 @@ export function ApplicantQuestionnaireScreen() {
   const route = useRoute<any>();
   const { isOnline } = useNetworkStatus();
   const user = useAuthStore(state => state.user);
+  const activateOnboarding = useAuthStore(state => state.activateOnboarding);
+  const login = useAuthStore(state => state.login);
   const draftOwner = user?.username || user?.id || 'guest';
   const initialFormType = route.params?.formType === 'school_student' ? 'school_student' : 'applicant';
   const [form, setForm] = useState<Partial<ApplicantQuestionnaire>>({
@@ -133,15 +136,22 @@ export function ApplicantQuestionnaireScreen() {
   const [storedSubmission, setStoredSubmission] = useState<StoredOnboardingSubmission | null>(null);
   const [submissionStatus, setSubmissionStatus] = useState<OnboardingSubmissionStatus | null>(null);
   const [statusRefreshing, setStatusRefreshing] = useState(false);
+  const [accountEntering, setAccountEntering] = useState(false);
 
   useEffect(() => {
     let active = true;
     loadOfflineQuestionnaireDraft(draftOwner)
-      .then(draft => {
-        if (!active || !draft) return;
-        setForm(prev => ({ ...prev, ...draft.form }));
-        setOfflineDraftSavedAt(draft.saved_at);
+      .then(async draft => {
+        if (!active) return;
+        if (draft) {
+          setForm(prev => ({ ...prev, ...draft.form }));
+          setOfflineDraftSavedAt(draft.saved_at);
+        } else if (user) {
+          const { data } = await apiClient.get('/questionnaire/my/');
+          if (active) setForm(prev => ({ ...prev, ...data }));
+        }
       })
+      .catch(() => { /* Keep the editable form available offline. */ })
       .finally(() => {
         if (active) setOfflineDraftChecked(true);
       });
@@ -175,10 +185,11 @@ export function ApplicantQuestionnaireScreen() {
   }, [initialProgramQuery.data, initialUniversityQuery.data]);
 
   useEffect(() => {
+    if (user) return;
     onboardingSubmissionStorage.get().then(stored => {
       setStoredSubmission(stored);
     });
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!storedSubmission) return undefined;
@@ -231,6 +242,12 @@ export function ApplicantQuestionnaireScreen() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (user) {
+        const metadata = new Set(['id', 'status', 'face_photo', 'generated_document', 'generated_document_url', 'document_file', 'attachments', 'updated_at', 'reviewed_at', 'submitted_at']);
+        const payload = Object.fromEntries(Object.entries(form).filter(([key]) => !metadata.has(key)));
+        await apiClient.post('/questionnaire/my/submit/', payload);
+        return null;
+      }
       const fcmToken = await getDevicePushToken(true).catch(() => '');
       const payload = { ...buildOnboardingPayload(form), fcm_token: fcmToken };
       if (storedSubmission && storedSubmission.kind === payload.kind) {
@@ -239,6 +256,12 @@ export function ApplicantQuestionnaireScreen() {
       return onboardingApi.submit(payload);
     },
     onSuccess: async data => {
+      if (user) {
+        const draft = await saveOfflineQuestionnaireDraft(form, draftOwner);
+        setOfflineDraftSavedAt(draft.saved_at);
+        Alert.alert('Анкета отправлена', 'Ваши данные отправлены менеджеру. Личный кабинет и SL-ID остаются прежними.');
+        return;
+      }
       const stored = await onboardingSubmissionStorage.get();
       setStoredSubmission(stored);
       setSubmissionStatus(data);
@@ -362,6 +385,25 @@ export function ApplicantQuestionnaireScreen() {
     }
   };
 
+  const handleApprovedLogin = async () => {
+    if (!storedSubmission) return;
+    setAccountEntering(true);
+    try {
+      try {
+        await activateOnboarding(storedSubmission);
+      } catch (activationError) {
+        const credentials = activeSubmissionStatus?.service_credentials;
+        if (!credentials?.shared_password) throw activationError;
+        await login(credentials.mobile_login, credentials.shared_password);
+      }
+      Alert.alert('Готово', 'Вы вошли в подтверждённый аккаунт.');
+    } catch (error) {
+      Alert.alert('Не удалось войти', getApiErrorMessage(error));
+    } finally {
+      setAccountEntering(false);
+    }
+  };
+
   if (!offlineDraftChecked) {
     return (
       <Screen scroll style={styles.screen}>
@@ -428,25 +470,17 @@ export function ApplicantQuestionnaireScreen() {
           {activeSubmissionStatus.status === 'approved' ? (
             <>
               <Text style={styles.statusComment}>
-                Анкета одобрена. Логин и пароль доступны ниже; можно войти без ручного ввода.
+                Анкета одобрена. Подтвердите вход на этом устройстве — пароль показывать и вводить не нужно.
               </Text>
-              {activeSubmissionStatus.service_credentials ? (
+              {(activeSubmissionStatus.service_credentials || activeSubmissionStatus.sl_id) ? (
                 <View style={styles.credentialsBox}>
-                  <Text style={styles.credentialText}>Логин: {activeSubmissionStatus.service_credentials.mobile_login}</Text>
-                  <Text style={styles.credentialText}>Пароль: {activeSubmissionStatus.service_credentials.shared_password}</Text>
+                  <Text style={styles.credentialText}>Аккаунт готов</Text>
+                  <Text style={styles.statusComment}>Данные входа защищены и не отправляются в уведомлениях.</Text>
                 </View>
               ) : null}
-              <AppButton
-                title="Подтвердить и войти"
-                onPress={() => navigation.navigate('Auth', {
-                  screen: 'Login',
-                  params: {
-                    slId: activeSubmissionStatus.service_credentials?.mobile_login || activeSubmissionStatus.sl_id || undefined,
-                    password: activeSubmissionStatus.service_credentials?.shared_password,
-                    fromApprovedOnboarding: true,
-                  },
-                })}
-              />
+              {!user && storedSubmission ? (
+                <AppButton title="Подтвердить и войти" onPress={handleApprovedLogin} loading={accountEntering} />
+              ) : null}
             </>
           ) : null}
         </AppCard>

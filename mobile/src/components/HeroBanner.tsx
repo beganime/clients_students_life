@@ -87,7 +87,7 @@ export function HeroBanner({
       <ImageBackground
         source={effectiveBackgroundImage}
         imageStyle={styles.image}
-        style={[styles.root, styles.imageRoot, { minHeight: responsiveHeight }, shadows.premium, style]}
+        style={[styles.root, styles.imageRoot, { minHeight: responsiveHeight }, shadows.soft, style]}
         resizeMode={backgroundResizeMode}
       >
         {content}
@@ -95,7 +95,7 @@ export function HeroBanner({
     );
   }
 
-  return <View style={[styles.root, { minHeight: responsiveHeight }, shadows.premium, style]}>{content}</View>;
+  return <View style={[styles.root, { minHeight: responsiveHeight }, shadows.soft, style]}>{content}</View>;
 }
 
 const styles = StyleSheet.create({

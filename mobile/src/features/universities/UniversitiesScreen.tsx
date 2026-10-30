@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { CATALOG_STALE_TIME, UNIVERSITIES_CACHE_KEY } from '../../hooks/useCatalogWarmup';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
 import { AppCard } from '../../components/AppCard';
@@ -18,9 +20,9 @@ import { UniversityCard } from '../../components/UniversityCard';
 import { colors, radius, spacing, typography } from '../../constants/colors';
 import { MainTabParamList } from '../../navigation/types';
 import { Program } from '../../types/api';
+import { useAuthStore } from '../../store/authStore';
 
 type R = RouteProp<MainTabParamList, 'Universities'>;
-const UNIVERSITIES_PAGE_SIZE = 12;
 const PROGRAMS_PAGE_SIZE = 12;
 const PROGRAM_SORT_OPTIONS = [
   { label: 'По названию', value: 'title_asc' },
@@ -30,8 +32,10 @@ const PROGRAM_SORT_OPTIONS = [
 ];
 export function UniversitiesScreen() {
   const navigation = useNavigation<any>();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const apply = () => isAuthenticated ? navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' }) : navigation.navigate('ExpressApplication', { kind: 'applicant' });
   const route = useRoute<R>();
-  const queryClient = useQueryClient();
+  const { isOnline } = useNetworkStatus();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [countryId, setCountryId] = useState<string | number | undefined>(route.params?.country);
@@ -47,13 +51,15 @@ export function UniversitiesScreen() {
 
   const countriesQuery = useQuery({
     queryKey: ['catalog', 'countries'],
-    queryFn: () => educationCatalogApi.getCountries(),
-    staleTime: 1000 * 60 * 30,
+    queryFn: () => educationCatalogApi.getCountries({ limit: 100 }),
+    enabled: isOnline,
+    staleTime: CATALOG_STALE_TIME,
   });
   const citiesQuery = useQuery({
-    queryKey: ['catalog', 'cities', { country: countryId || 'all' }],
-    queryFn: () => educationCatalogApi.getCities(countryId ? { country: countryId } : undefined),
-    staleTime: 1000 * 60 * 30,
+    queryKey: ['catalog', 'cities'],
+    queryFn: () => educationCatalogApi.getCities({ limit: 100 }),
+    enabled: isOnline,
+    staleTime: CATALOG_STALE_TIME,
   });
 
   const hasProgramSearch = Boolean(
@@ -61,13 +67,6 @@ export function UniversitiesScreen() {
       || levelFilter.trim()
       || languageFilter.trim(),
   );
-
-  const universityFilters = useMemo(() => {
-    const payload: Record<string, string | number | undefined> = {};
-    if (countryId) payload.country = countryId;
-    if (cityId) payload.city = cityId;
-    return payload;
-  }, [countryId, cityId]);
 
   const programFilters = useMemo(() => {
     const payload: Record<string, string | number | undefined> = {};
@@ -80,29 +79,11 @@ export function UniversitiesScreen() {
     return payload;
   }, [search, countryId, cityId, sortOrder, levelFilter, languageFilter]);
 
-  const universitiesQuery = useInfiniteQuery({
-    queryKey: ['catalog', 'universities', universityFilters],
-    queryFn: ({ pageParam }) =>
-      educationCatalogApi.getUniversitiesPage({
-        ...universityFilters,
-        limit: UNIVERSITIES_PAGE_SIZE,
-        offset: pageParam,
-      }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage.next) return undefined;
-      try {
-        const nextUrl = new URL(lastPage.next);
-        const nextOffset = Number(nextUrl.searchParams.get('offset'));
-        if (Number.isFinite(nextOffset)) return nextOffset;
-      } catch {
-        // Some APIs return a relative next URL. Fall back to the number of cached rows.
-      }
-      const loaded = allPages.reduce((sum, page) => sum + page.results.length, 0);
-      return loaded < lastPage.count ? loaded : undefined;
-    },
-    staleTime: 1000 * 60 * 30,
-    gcTime: 1000 * 60 * 60 * 24,
+  const universitiesQuery = useQuery({
+    queryKey: UNIVERSITIES_CACHE_KEY,
+    queryFn: () => educationCatalogApi.getAllUniversities(),
+    enabled: isOnline,
+    staleTime: CATALOG_STALE_TIME,
   });
 
   const programsQuery = useInfiniteQuery({
@@ -113,7 +94,7 @@ export function UniversitiesScreen() {
         limit: PROGRAMS_PAGE_SIZE,
         offset: pageParam,
       }),
-    enabled: hasProgramSearch,
+    enabled: hasProgramSearch && isOnline,
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage.next) return undefined;
@@ -131,19 +112,20 @@ export function UniversitiesScreen() {
     gcTime: 1000 * 60 * 60 * 24,
   });
 
-  const cachedUniversities = (queryClient.getQueryData(['catalog', 'universities', 'all']) || []) as any[];
-  const cachedPrograms = (queryClient.getQueryData(['catalog', 'programs', 'all']) || []) as Program[];
+  const cachedProgramsQuery = useQuery<Program[]>({
+    queryKey: ['catalog', 'programs', 'all'],
+    queryFn: async () => (await educationCatalogApi.getProgramsPage({ limit: 100, ordering: 'title_asc' })).results,
+    enabled: false,
+  });
+  const cachedPrograms = cachedProgramsQuery.data || [];
   const universities = useMemo(() => {
-    const pageRows = universitiesQuery.data?.pages.flatMap(page => page.results) || [];
-    if (pageRows.length) return pageRows;
-    if (!countryId && !cityId) return cachedUniversities;
-    return cachedUniversities.filter(item => {
+    return (universitiesQuery.data || []).filter(item => {
       const sameCountry = !countryId || String(item.country) === String(countryId) || String(item.country_id) === String(countryId);
       const sameCity = !cityId || String(item.city) === String(cityId) || String(item.city_id) === String(cityId);
       return sameCountry && sameCity;
     });
-  }, [universitiesQuery.data, cachedUniversities, countryId, cityId]);
-  const universitiesCount = universitiesQuery.data?.pages[0]?.count ?? universities.length;
+  }, [universitiesQuery.data, countryId, cityId]);
+  const universitiesCount = universitiesQuery.data?.length ?? universities.length;
   const programs = useMemo(() => {
     const pageRows = programsQuery.data?.pages.flatMap(page => page.results) || [];
     if (pageRows.length) return pageRows;
@@ -168,6 +150,7 @@ export function UniversitiesScreen() {
   const activeQuery = hasProgramSearch ? programsQuery : universitiesQuery;
 
   const refreshAll = () => {
+    if (!isOnline) return;
     countriesQuery.refetch();
     citiesQuery.refetch();
     universitiesQuery.refetch();
@@ -183,13 +166,13 @@ export function UniversitiesScreen() {
         refreshing={countriesQuery.isRefetching || citiesQuery.isRefetching || activeQuery.isRefetching}
         onRefresh={refreshAll}
         onEndReached={() => {
-          if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
-            activeQuery.fetchNextPage();
+          if (hasProgramSearch && programsQuery.hasNextPage && !programsQuery.isFetchingNextPage && isOnline) {
+            programsQuery.fetchNextPage();
           }
         }}
         onEndReachedThreshold={0.45}
         ListFooterComponent={
-          activeQuery.isFetchingNextPage ? (
+          hasProgramSearch && programsQuery.isFetchingNextPage ? (
             <View style={styles.footerLoader}>
               <ActivityIndicator color={colors.primary} />
               <Text style={styles.footerText}>{hasProgramSearch ? 'Загружаем ещё программы...' : 'Загружаем ещё вузы...'}</Text>
@@ -254,7 +237,7 @@ export function UniversitiesScreen() {
               <Text style={styles.blockLabel}>Города</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
                 <FilterChip label="Все города" active={!cityId} onPress={() => setCityId(undefined)} />
-                {(citiesQuery.data || []).map(city => (
+                {(citiesQuery.data || []).filter(city => !countryId || String(city.country) === String(countryId)).map(city => (
                   <FilterChip
                     key={city.id}
                     label={city.name}
@@ -310,7 +293,7 @@ export function UniversitiesScreen() {
 
             {countriesQuery.isError ? <ErrorState title="Страны не загрузились" onAction={() => countriesQuery.refetch()} /> : null}
             {citiesQuery.isError ? <ErrorState title="Города не загрузились" onAction={() => citiesQuery.refetch()} /> : null}
-            {activeQuery.isLoading ? <LoadingSkeleton rows={4} height={160} /> : null}
+            {activeQuery.isLoading && !currentItems.length ? <LoadingSkeleton rows={4} height={160} /> : null}
             {activeQuery.isError && !currentItems.length ? <ErrorState onAction={() => activeQuery.refetch()} /> : null}
           </View>
         }
@@ -327,13 +310,13 @@ export function UniversitiesScreen() {
             <ProgramResultCard
               program={item as Program}
               onOpen={() => navigation.navigate('ProgramDetail', { id: item.id })}
-              onApply={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
+                onApply={apply}
             />
           ) : (
             <UniversityCard
               university={item}
               onPress={() => navigation.navigate('UniversityDetail', { id: item.id })}
-              onApplyPress={() => navigation.navigate('ExpressApplication', { kind: 'applicant' })}
+                onApplyPress={apply}
             />
           )
         )}

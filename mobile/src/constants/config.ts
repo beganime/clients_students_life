@@ -1,13 +1,15 @@
 import Constants from 'expo-constants';
 
-export const CLIENT_PROXY_ORIGIN = 'https://www.stud-life.com';
+// The public stud-life.com hostname is filtered on some student networks.
+// This first-party route serves the same client backend through ManagerSL TLS.
+export const CLIENT_PROXY_ORIGIN = 'https://manager-sl.ru/client-app';
 export const STUDENT_LIFE_API_URL = `${CLIENT_PROXY_ORIGIN}/api/v1`;
-export const MANAGER_SL_PROXY_API_URL = `${CLIENT_PROXY_ORIGIN}/manager-api/api/client/v1`;
+export const MANAGER_SL_PROXY_API_URL = 'https://manager-sl.ru/api/client/v1';
 
 const DEFAULT_PROD_API_URL = STUDENT_LIFE_API_URL;
 const DEFAULT_MANAGER_SL_API_URL = MANAGER_SL_PROXY_API_URL;
 
-export const OFFICIAL_SITE_URL = CLIENT_PROXY_ORIGIN;
+export const OFFICIAL_SITE_URL = 'https://www.stud-life.com';
 export const COMPANY_APPS_URL = '';
 
 type ExpoExtra = {

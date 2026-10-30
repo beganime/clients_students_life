@@ -12,6 +12,8 @@ export type MainTabParamList = {
   Home: undefined;
   Services: undefined;
   Universities: { country?: string | number; city?: string | number } | undefined;
+  Apply: undefined;
+  Applications: undefined;
   News: undefined;
   Profile: undefined;
 };
@@ -28,6 +30,7 @@ export type RootStackParamList = {
   UniversityRankings: undefined;
   ProgramDetail: { id: number | string };
   NewsDetail: { slug: string };
+  Polls: undefined;
   KnowledgeList: undefined;
   KnowledgeDetail: { slug: string };
   Staff: undefined;
@@ -38,7 +41,10 @@ export type RootStackParamList = {
   GovernmentLinePrices: undefined;
 
   MyApplications: undefined;
+  AdmissionStatus: undefined;
   MyDocuments: undefined;
+  RequiredDocuments: undefined;
+  ApplicationGuide: undefined;
   ApplicantQuestionnaire: {
     formType?: 'school_student' | 'applicant';
     universityId?: number;

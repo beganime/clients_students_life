@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from django.http import FileResponse, Http404
 
 from apps.accounts.models import is_manager_user
+from apps.common.manager_sl import ManagerSLClient, ManagerSLClientError, ManagerSLConfigError
 
 from .file_utils import clean_original_name
 from .manager_sl_sync import sync_application_file_to_manager_sl, sync_application_to_manager_sl
@@ -165,6 +166,23 @@ class ApplicationViewSet(mixins.CreateModelMixin,
             return self.get_paginated_response(serializer.data)
         serializer = ApplicationListSerializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated], url_path='admission-status')
+    def admission_status(self, request):
+        """Return canonical ManagerSL progress only for the signed-in user."""
+        try:
+            payload = ManagerSLClient.from_settings().get_admission_status(request.user.pk)
+        except ManagerSLConfigError:
+            return Response(
+                {'detail': 'Статус поступления временно недоступен.', 'results': []},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except ManagerSLClientError as exc:
+            return Response(
+                {'detail': 'Не удалось получить статус поступления.', 'results': []},
+                status=exc.status_code if exc.status_code in {400, 403, 404, 502, 503, 504} else 502,
+            )
+        return Response(payload)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def upload_file(self, request, pk=None):

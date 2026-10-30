@@ -1,0 +1,19 @@
+node_modules/
+.expo/
+dist/
+dist-*/
+*.p8
+*.p12
+*.mobileprovision
+dist-aab-check/
+web-build/
+.git/
+.env*
+*.pem
+*.key
+*.jks
+*service-account*.json
+*firebase-adminsdk*.json
+/ios
+/android
+# google-services.json is the Android client configuration, required by Expo.

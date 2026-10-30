@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     ActivityView,
+    ActivateOnboardingAccountView,
     DeleteAccountView,
     LogoutView,
     ManagerClientProfileDetailView,
@@ -20,6 +21,7 @@ from .views import (
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('internal/provision/', ProvisionClientAccountView.as_view(), name='internal-provision'),
+    path('activate-onboarding/', ActivateOnboardingAccountView.as_view(), name='activate-onboarding'),
     path('internal/notify/', InternalClientNotificationView.as_view(), name='internal-notify'),
     path('internal/notify-bulk/', InternalBulkClientNotificationView.as_view(), name='internal-notify-bulk'),
     path('staff-login/', StaffLoginView.as_view(), name='staff-login'),

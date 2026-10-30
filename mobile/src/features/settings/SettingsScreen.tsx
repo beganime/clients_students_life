@@ -10,7 +10,7 @@ import { Badge } from '../../components/Badge';
 import { RedGradientHero } from '../../components/RedGradientHero';
 import { Screen } from '../../components/Screen';
 import { SvgIcon, SvgIconName } from '../../components/SvgIcon';
-import { APP_NAME, APP_VERSION, CLIENT_PROXY_ORIGIN, PRIVACY_POLICY_URL } from '../../constants/config';
+import { APP_NAME, APP_VERSION, PRIVACY_POLICY_URL } from '../../constants/config';
 import { colors, radius, spacing, typography } from '../../constants/colors';
 import { useAuthStore } from '../../store/authStore';
 
@@ -81,7 +81,7 @@ export function SettingsScreen() {
         title="Подключение"
         text="Приложение использует единую защищённую точку доступа Student's Life. Переключать сервер вручную не требуется."
       >
-        <Badge label={CLIENT_PROXY_ORIGIN.replace('https://', '')} variant="mint" icon="check" />
+        <Badge label="Защищённое соединение" variant="mint" icon="check" />
       </SettingsBlock>
 
       <SettingsBlock

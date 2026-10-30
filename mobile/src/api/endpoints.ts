@@ -2,6 +2,7 @@ import { apiClient, tokenStorage, uploadFormData } from './client';
 import {
   Application,
   ApplicationFile,
+  AdmissionStatusResponse,
   ChatMessage,
   ChatRoom,
   City,
@@ -126,6 +127,12 @@ export const authApi = {
 
   async updateMeFormData(formData: FormData) {
     return uploadFormData<UserMe>('/accounts/me/', formData, 'patch');
+  },
+
+  async activateOnboarding(payload: { public_id: string; access_token: string }) {
+    const { data } = await apiClient.post<LoginResponse>('/accounts/activate-onboarding/', payload);
+    await tokenStorage.setTokens(data.access, data.refresh);
+    return data;
   },
 
   async linkQuestionnaireAccess(payload: { public_id: string; access_token: string; kind?: string }) {
@@ -253,6 +260,11 @@ export const applicationsApi = {
 
   async getApplication(id: number) {
     const { data } = await apiClient.get<Application>(`/applications/${id}/`);
+    return data;
+  },
+
+  async getAdmissionStatus() {
+    const { data } = await apiClient.get<AdmissionStatusResponse>('/applications/admission-status/');
     return data;
   },
 

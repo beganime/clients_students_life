@@ -7,6 +7,9 @@ export function getMediaUrl(url?: string | null, rootUrl = API_ROOT) {
   if (!url) return null;
   const cleanUrl = url.trim();
   if (!cleanUrl) return null;
+  if (/^https?:\/\/(?:www\.)?stud-life\.com(?=\/|$)/i.test(cleanUrl)) {
+    return cleanUrl.replace(/^https?:\/\/(?:www\.)?stud-life\.com/i, API_ROOT);
+  }
   if (/^https?:\/\//i.test(cleanUrl)) return cleanUrl;
   if (cleanUrl.startsWith('//')) return `https:${cleanUrl}`;
   const endpointConfig = getApiEndpointConfigSync();

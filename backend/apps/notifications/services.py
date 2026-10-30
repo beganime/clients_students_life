@@ -3,8 +3,10 @@ import requests
 from django.conf import settings
 from django.utils import timezone
 from firebase_admin import credentials, messaging
+from .expo_push import is_expo_token, send_expo
 
 from .models import AdminReminder, ClientExam, DeviceToken, PushNotification, UserNotification
+from apps.common.manager_sl import ManagerSLClient, ManagerSLClientError, ManagerSLConfigError
 
 
 _firebase_initialized = False
@@ -44,27 +46,11 @@ def send_push_to_user(user, title, body, notification_type='', related_object_ty
     if not tokens:
         return
 
-    init_firebase()
-    if not firebase_admin._apps:
-        return
-
-    for token in tokens:
-        try:
-            message = messaging.Message(
-                notification=messaging.Notification(
-                    title=title,
-                    body=body,
-                ),
-                token=token,
-                data={
-                    'notification_type': notification_type or '',
-                    'related_object_type': related_object_type or '',
-                    'related_object_id': str(related_object_id or ''),
-                },
-            )
-            messaging.send(message)
-        except Exception:
-            DeviceToken.objects.filter(token=token).update(is_active=False)
+    return send_raw_push_to_tokens(tokens, title, body, {
+        'notification_type': notification_type or '',
+        'related_object_type': related_object_type or '',
+        'related_object_id': str(related_object_id or ''),
+    })
 
 
 def send_raw_push_to_tokens(tokens, title, body, data=None):
@@ -72,22 +58,30 @@ def send_raw_push_to_tokens(tokens, title, body, data=None):
     if not tokens:
         return 0
 
-    init_firebase()
-    if not firebase_admin._apps:
-        return 0
-
     sent = 0
     payload = {key: str(value) for key, value in (data or {}).items() if value is not None}
     for token in tokens:
         try:
+            if is_expo_token(token):
+                accepted, invalid = send_expo(token, title, body, payload)
+                sent += int(accepted)
+                if invalid:
+                    DeviceToken.objects.filter(token=token).update(is_active=False)
+                continue
+            init_firebase()
+            if not firebase_admin._apps:
+                continue
             messaging.send(messaging.Message(
                 notification=messaging.Notification(title=title, body=body),
                 token=token,
                 data=payload,
             ))
             sent += 1
-        except Exception:
+        except messaging.UnregisteredError:
             DeviceToken.objects.filter(token=token).update(is_active=False)
+        except Exception:
+            # Timeouts/provider failures must not permanently disable a device.
+            continue
     return sent
 
 
@@ -221,19 +215,34 @@ def send_exam_reminder(exam: ClientExam, *, force=False, kind=None):
 def notify_exam_seen(exam: ClientExam):
     callback_url = str(getattr(settings, 'EXAM_SL_CALLBACK_URL', '') or '').rstrip('/')
     api_key = str(getattr(settings, 'EXAM_SL_API_KEY', '') or '')
-    if not callback_url or not api_key or not exam.manager_sl_exam_id:
+    if not exam.manager_sl_exam_id:
         return False
-    try:
-        response = requests.post(
-            f'{callback_url}/api/internal/exams/{exam.manager_sl_exam_id}/seen/',
-            json={'acknowledged_at': exam.acknowledged_at.isoformat() if exam.acknowledged_at else ''},
-            headers={'X-API-KEY': api_key},
-            timeout=10,
-        )
-        response.raise_for_status()
-        return True
-    except requests.RequestException:
-        return False
+    acknowledged_at = exam.acknowledged_at.isoformat() if exam.acknowledged_at else ''
+    targets = []
+    if callback_url and api_key:
+        targets.append((f'{callback_url}/api/internal/exams/{exam.manager_sl_exam_id}/seen/', api_key))
+    delivered = False
+    for url, key in targets:
+        try:
+            response = requests.post(
+                url, json={'acknowledged_at': acknowledged_at},
+                headers={'X-API-KEY': key}, timeout=10,
+            )
+            response.raise_for_status()
+            delivered = True
+        except requests.RequestException:
+            continue
+    manager_client = ManagerSLClient.from_settings()
+    if manager_client.is_configured and manager_client.api_key:
+        try:
+            manager_client.request_json(
+                'POST', f'internal/exams/{exam.manager_sl_exam_id}/seen/',
+                payload={'acknowledged_at': acknowledged_at}, require_api_key=True,
+            )
+            delivered = True
+        except (ManagerSLClientError, ManagerSLConfigError):
+            pass
+    return delivered
 
 
 def send_admin_reminder(reminder: AdminReminder, *, test_user=None):

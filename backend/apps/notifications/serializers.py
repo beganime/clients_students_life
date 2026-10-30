@@ -90,6 +90,7 @@ class ClientExamSerializer(serializers.ModelSerializer):
             'acknowledged_by_user',
             'is_active',
             'manager_sl_exam_id',
+            'manager_application_public_id',
             'last_reminded_at',
             'next_reminder_at',
             'created_at',
@@ -126,6 +127,7 @@ class ClientExamPublicSerializer(serializers.ModelSerializer):
         model = ClientExam
         fields = (
             'id',
+            'manager_application_public_id',
             'university',
             'exam_date',
             'acknowledged_at',

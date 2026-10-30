@@ -11,13 +11,13 @@ export const palette = {
   coralRed: '#E11D48',
   warmOrange: '#F97316',
   mintGreen: '#10B981',
-  softWarm: '#FEF7F5',
+  softWarm: '#F8F7F5',
   cardWhite: '#FFFFFF',
-  softRedSurface: '#FFF5F5',
+  softRedSurface: '#F4F4F2',
   mainText: '#0F172A',
   secondaryText: '#475569',
   mutedText: '#94A3B8',
-  softBorder: '#E2E8F0',
+  softBorder: '#E6E3E0',
 };
 
 export const colors = {
@@ -35,7 +35,7 @@ export const colors = {
   text: palette.mainText,
   muted: palette.secondaryText,
   mutedLight: palette.mutedText,
-  border: '#F0D7D4',
+  border: '#E6E3E0',
   success: palette.mintGreen,
   warning: palette.warmOrange,
   danger: palette.coralRed,
@@ -85,10 +85,10 @@ export const shadows = {
   },
   card: {
     shadowColor: palette.deepNavy,
-    shadowOpacity: 0.09,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 6,
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   premium: {
     shadowColor: palette.deepNavy,

@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Markdown from 'react-native-markdown-display';
 
 import { educationCatalogApi } from '../../api/educationCatalog';
+import { CATALOG_STALE_TIME, UNIVERSITIES_CACHE_KEY } from '../../hooks/useCatalogWarmup';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { notificationsApi } from '../../api/endpoints';
 import { bannerImages } from '../../assets/banners';
 import { AppButton } from '../../components/AppButton';
@@ -23,6 +25,7 @@ import { colors, radius, spacing, typography } from '../../constants/colors';
 import { RootStackParamList } from '../../navigation/types';
 import { Program } from '../../types/api';
 import { useAuthStore } from '../../store/authStore';
+import { useCatalogFavorites } from '../../store/catalogFavorites';
 
 type R = RouteProp<RootStackParamList, 'UniversityDetail'>;
 
@@ -30,23 +33,31 @@ export function UniversityDetailScreen() {
   const route = useRoute<R>();
   const navigation = useNavigation<any>();
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const owner = useAuthStore(state => String(state.user?.id || 'guest'));
+  const favorites = useCatalogFavorites(state => state.byOwner[owner]);
+  const toggleFavorite = useCatalogFavorites(state => state.toggle);
+  const { isOnline } = useNetworkStatus();
+  const queryClient = useQueryClient();
   const [programSearch, setProgramSearch] = useState('');
   const [programSort, setProgramSort] = useState<'title' | 'duration'>('title');
   const universityQuery = useQuery({
     queryKey: ['catalog', 'university', route.params.id],
     queryFn: () => educationCatalogApi.getUniversity(route.params.id),
-    staleTime: 1000 * 60 * 30,
+    enabled: isOnline,
+    placeholderData: () => (queryClient.getQueryData(UNIVERSITIES_CACHE_KEY) as any[] | undefined)
+      ?.find(item => String(item.id) === String(route.params.id)),
+    staleTime: CATALOG_STALE_TIME,
   });
   const programsQuery = useQuery({
     queryKey: ['catalog', 'programs', { university: universityQuery.data?.id || route.params.id }],
     queryFn: () => educationCatalogApi.getPrograms({ university: universityQuery.data?.id || route.params.id }),
-    enabled: Boolean(universityQuery.data?.id || route.params.id),
-    staleTime: 1000 * 60 * 30,
+    enabled: isOnline && Boolean(universityQuery.data?.id || route.params.id),
+    staleTime: CATALOG_STALE_TIME,
   });
   const examsQuery = useQuery({
     queryKey: ['my-exams'],
     queryFn: notificationsApi.getMyExams,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && isOnline,
   });
   const universityPrograms = useMemo(() => {
     const fetchedPrograms = programsQuery.data || [];
@@ -72,19 +83,22 @@ export function UniversityDetailScreen() {
     });
   }, [programSearch, programSort, universityPrograms]);
 
-  const handleApplyPress = () => navigation.navigate('ExpressApplication', { kind: 'applicant' });
+  const handleApplyPress = () => isAuthenticated ? navigation.navigate('ApplicantQuestionnaire', { formType: 'applicant' }) : navigation.navigate('ExpressApplication', { kind: 'applicant' });
 
   if (universityQuery.isLoading) return <Loading />;
-  if (universityQuery.isError) {
+  if (universityQuery.isError && !universityQuery.data) {
     return (
       <Screen scroll style={styles.screen}>
         <ErrorState onAction={() => universityQuery.refetch()} />
       </Screen>
     );
   }
-  if (!universityQuery.data) return null;
+  if (!universityQuery.data) {
+    return <Screen scroll style={styles.screen}><EmptyState title="Вуз пока не сохранён" description="Откройте каталог при подключённом интернете, чтобы сохранить данные для офлайна." /></Screen>;
+  }
 
   const data = universityQuery.data;
+  const isFavorite = favorites?.some(item => String(item.id) === String(data.id));
   const imageUrl = data.cover_image || data.logo || null;
   const location = [data.country_name, data.city_name].filter(Boolean).join(', ') || 'Локация уточняется';
   const contacts = [data.phone, data.email, data.official_website].filter(Boolean).join('\n');
@@ -107,10 +121,11 @@ export function UniversityDetailScreen() {
       <RedGradientHero backgroundImage={imageUrl ? { uri: imageUrl } : bannerImages.university} style={styles.hero}>
         {data.logo ? <Image source={{ uri: data.logo }} style={styles.logoImage} resizeMode="cover" /> : null}
         <View style={styles.badgeRow}>
-          <Badge label="Каталог через прокси" variant="mint" icon="check" />
+          <Badge label="Каталог вузов" variant="mint" icon="check" />
           {data.programs_count ? <Badge label={`${data.programs_count} программ`} variant="neutral" icon="document" /> : null}
         </View>
         <Text style={styles.title}>{data.name}</Text>
+        <AppButton title={isFavorite ? 'Убрать из избранного' : 'В избранное'} variant="outline" onPress={() => toggleFavorite(owner, data)} />
         <View style={styles.locationRow}>
           <SvgIcon name="mapPin" size={17} color={colors.white} />
           <Text style={styles.location}>{location}</Text>

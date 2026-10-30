@@ -70,9 +70,10 @@ export function resolveCatalogMediaUrl(value?: string | null) {
 
   const cleanValue = String(value).trim();
   if (!cleanValue) return null;
-  if (/^https?:\/\/(?:www\.)?manager-sl\.ru\/media\//i.test(cleanValue)) {
-    return cleanValue.replace(/^https?:\/\/(?:www\.)?manager-sl\.ru\/media\//i, `${CLIENT_PROXY_ORIGIN}/manager-media/`);
+  if (/^https?:\/\/(?:www\.)?stud-life\.com(?=\/|$)/i.test(cleanValue)) {
+    return cleanValue.replace(/^https?:\/\/(?:www\.)?stud-life\.com/i, CLIENT_PROXY_ORIGIN);
   }
+  if (/^https?:\/\/(?:www\.)?manager-sl\.ru\/media\//i.test(cleanValue)) return cleanValue;
   if (/^https?:\/\//i.test(cleanValue)) return cleanValue;
   if (cleanValue.startsWith('//')) return `https:${cleanValue}`;
   const endpointConfig = getApiEndpointConfigSync();

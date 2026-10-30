@@ -140,6 +140,14 @@ export function buildExpressOnboardingPayload(input: {
   email: string;
   requestedServices: string[];
   requestText: string;
+  university?: string;
+  program?: string;
+  educationLevel?: string;
+  desiredLanguage?: string;
+  fundingType?: string;
+  city?: string;
+  preferredContact?: string;
+  passportStatus?: string;
   fcmToken?: string;
 }): OnboardingSubmissionPayload {
   return {
@@ -152,6 +160,14 @@ export function buildExpressOnboardingPayload(input: {
     payload: {
       requested_services: input.requestedServices,
       request_text: input.requestText.trim(),
+      desired_universities: input.university?.trim() || '',
+      desired_program: input.program?.trim() || '',
+      desired_education_level: input.educationLevel || '',
+      desired_language: input.desiredLanguage || '',
+      funding_type: input.fundingType || '',
+      residence_city: input.city?.trim() || '',
+      preferred_contact_method: input.preferredContact || '',
+      passport_status: input.passportStatus || '',
     } as Partial<ApplicantQuestionnaire>,
     fcm_token: input.fcmToken,
     university_choices: [],

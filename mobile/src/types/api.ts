@@ -282,6 +282,29 @@ export type UserProfile = {
   location_updated_at?: string | null;
 };
 
+export type AdmissionStageHistory = {
+  stage: string;
+  stage_label: string;
+  created_at: string;
+};
+
+export type AdmissionProgress = {
+  id: string;
+  university: string;
+  program: string;
+  country?: string;
+  academic_year?: number | null;
+  stage: string;
+  stage_label: string;
+  updated_at: string;
+  history: AdmissionStageHistory[];
+};
+
+export type AdmissionStatusResponse = {
+  client: { sl_id?: string | null; full_name: string; status?: string; status_label?: string; updated_at?: string } | null;
+  results: AdmissionProgress[];
+};
+
 export type UserActivity = {
   is_online: boolean;
   last_seen?: string | null;
@@ -323,6 +346,7 @@ export type UserNotification = {
 
 export type ClientExam = {
   id: number;
+  manager_application_public_id?: string;
   university: string;
   exam_date: string;
   acknowledged_at?: string | null;
@@ -426,7 +450,7 @@ export type OnboardingSubmissionStatus = {
   public_id: string;
   kind: 'applicant' | 'school_student';
   stage: 'express' | 'full';
-  status: 'submitted' | 'in_review' | 'changes_requested' | 'approved' | 'rejected';
+  status: 'submitted' | 'in_review' | 'processed' | 'changes_requested' | 'approved' | 'rejected';
   review_comment?: string;
   sl_id?: string | null;
   can_fill_full_questionnaire?: boolean;
@@ -437,9 +461,10 @@ export type OnboardingSubmissionStatus = {
   date_of_birth?: string | null;
   citizenship?: string;
   academic_year?: number;
-  service_credentials?: {
-    mobile_login: string;
-    shared_password: string;
+    service_credentials?: {
+      mobile_login: string;
+      shared_password?: string;
+      activation_mode?: 'legacy_password' | 'onboarding_token';
   } | null;
   university_choices?: Array<{
     rank: number;

@@ -6,6 +6,8 @@ node_modules/
 # Expo
 .expo/
 dist/
+dist-*/
+dist-aab-check/
 web-build/
 expo-env.d.ts
 

@@ -6,13 +6,17 @@ import { Loading } from '../components/Loading';
 import { useAuthStore } from '../store/authStore';
 
 import { MyApplicationsScreen } from '../features/applications/MyApplicationsScreen';
+import { AdmissionStatusScreen } from '../features/applications/AdmissionStatusScreen';
 import { ChatListScreen } from '../features/chat/ChatListScreen';
 import { ChatRoomScreen } from '../features/chat/ChatRoomScreen';
 import { AdmissionInfoScreen, ToursInfoScreen, VisaInfoScreen } from '../features/info/InfoScreens';
 import { MyDocumentsScreen } from '../features/documents/MyDocumentsScreen';
+import { RequiredDocumentsScreen } from '../features/documents/RequiredDocumentsScreen';
+import { ApplicationGuideScreen } from '../features/info/ApplicationGuideScreen';
 import { KnowledgeDetailScreen } from '../features/knowledge/KnowledgeDetailScreen';
 import { KnowledgeListScreen } from '../features/knowledge/KnowledgeListScreen';
 import { NewsDetailScreen } from '../features/news/NewsDetailScreen';
+import { PollsScreen } from '../features/news/PollsScreen';
 import { NotificationsScreen } from '../features/notifications/NotificationsScreen';
 import { ExamsScreen } from '../features/exams/ExamsScreen';
 import { OnboardingScreen } from '../features/onboarding/OnboardingScreen';
@@ -58,6 +62,7 @@ export function RootNavigator() {
         <Stack.Screen name={UNIVERSITY_RANKINGS_ROUTE} component={UniversityRankingsScreen} options={{ title: 'Вузы 2026–2027' }} />
         <Stack.Screen name="ProgramDetail" component={ProgramDetailScreen} options={{ title: 'Программа' }} />
         <Stack.Screen name="NewsDetail" component={NewsDetailScreen} options={{ title: 'Новость' }} />
+        <Stack.Screen name="Polls" component={PollsScreen} options={{ title: 'Анкеты и формы' }} />
         <Stack.Screen name="KnowledgeList" component={KnowledgeListScreen} options={{ title: 'База знаний' }} />
         <Stack.Screen name="KnowledgeDetail" component={KnowledgeDetailScreen} options={{ title: 'Материал' }} />
         <Stack.Screen name="Staff" component={StaffScreen} options={{ title: 'Команда' }} />
@@ -68,7 +73,10 @@ export function RootNavigator() {
         <Stack.Screen name="GovernmentLinePrices" component={GovernmentLinePricesScreen} options={{ title: 'Бюджет' }} />
         <Stack.Screen name="Chat" component={ChatListScreen} options={{ title: 'Чат с менеджером' }} />
         <Stack.Screen name="MyApplications" component={MyApplicationsScreen} options={{ title: 'История действий' }} />
+        <Stack.Screen name="AdmissionStatus" component={AdmissionStatusScreen} options={{ title: 'Статус поступления' }} />
         <Stack.Screen name="MyDocuments" component={MyDocumentsScreen} options={{ title: 'Мои документы' }} />
+        <Stack.Screen name="RequiredDocuments" component={RequiredDocumentsScreen} options={{ title: 'Пакет документов' }} />
+        <Stack.Screen name="ApplicationGuide" component={ApplicationGuideScreen} options={{ title: 'Как всё работает' }} />
         <Stack.Screen name="ApplicantQuestionnaire" component={ApplicantQuestionnaireScreen} options={{ title: 'Анкета абитуриента' }} />
         <Stack.Screen name="ExpressApplication" component={ExpressApplicationScreen} options={{ title: 'Экспресс-заявка' }} />
         <Stack.Screen name="DataConsent" component={DataConsentScreen} options={{ title: 'Согласие на данные' }} />

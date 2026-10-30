@@ -37,9 +37,9 @@ export function GovernmentLinePricesScreen() {
     <Screen scroll refreshing={pricesQuery.isRefetching} onRefresh={pricesQuery.refetch}>
       <RedGradientHero style={styles.hero}>
         <Text style={styles.kicker}>Бюджет</Text>
-        <Text style={styles.heroTitle}>Программы и условия сопровождения</Text>
+        <Text style={styles.heroTitle}>Программы и направления</Text>
         <Text style={styles.heroText}>
-          Отдельный каталог приоритетных направлений. Стоимость показывается только в этом разделе и указана в долларах США.
+          Найдите направление по названию или коду и выберите подходящий уровень обучения.
         </Text>
       </RedGradientHero>
 
@@ -83,16 +83,12 @@ export function GovernmentLinePricesScreen() {
               <Badge label={item.degree} variant="neutral" />
             </View>
             <Text style={styles.programName}>{item.name}</Text>
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Стоимость услуги</Text>
-              <Text style={styles.priceValue}>${item.service_fee_usd.toLocaleString('en-US')}</Text>
-            </View>
           </AppCard>
         ))}
       </View>
 
       <Text style={styles.note}>
-        Итоговый состав услуг и условия фиксируются менеджером при оформлении договора.
+        Оставьте заявку — менеджер поможет с выбором программы и подготовкой документов.
       </Text>
     </Screen>
   );
@@ -117,8 +113,5 @@ const styles = StyleSheet.create({
   priceCard: { gap: spacing.md },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
   programName: { color: colors.text, fontSize: typography.subtitle, lineHeight: 26, fontWeight: typography.weights.heavy },
-  priceRow: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
-  priceLabel: { flex: 1, color: colors.muted, fontSize: typography.small, fontWeight: typography.weights.bold },
-  priceValue: { color: colors.primary, fontSize: 24, fontWeight: typography.weights.heavy },
   note: { color: colors.muted, fontSize: typography.small, lineHeight: 20, textAlign: 'center', marginTop: spacing.xl, fontWeight: typography.weights.medium },
 });

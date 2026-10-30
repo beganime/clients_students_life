@@ -3,11 +3,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
 import { notificationsApi } from '../api/endpoints';
 import { useAuthStore } from '../store/authStore';
 
-const USE_NATIVE_DEVICE_TOKEN = true;
 
 function deviceLabel() {
   return Device.modelName || Device.modelId || '';
@@ -26,6 +26,12 @@ Notifications.setNotificationHandler({
 export async function getDevicePushToken(requestPermission = true): Promise<string> {
   if (Platform.OS === 'web' || !Device.isDevice) return '';
 
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Students Life', importance: Notifications.AndroidImportance.HIGH,
+    });
+  }
+
   const existing = await Notifications.getPermissionsAsync();
   let finalStatus = existing.status;
   if (requestPermission && existing.status !== 'granted') {
@@ -34,9 +40,11 @@ export async function getDevicePushToken(requestPermission = true): Promise<stri
   }
   if (finalStatus !== 'granted') return '';
 
-  const tokenData = USE_NATIVE_DEVICE_TOKEN
-    ? await Notifications.getDevicePushTokenAsync()
-    : await Notifications.getExpoPushTokenAsync();
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+  if (Platform.OS === 'ios' && !projectId) return '';
+  const tokenData = Platform.OS === 'ios'
+    ? await Notifications.getExpoPushTokenAsync({ projectId })
+    : await Notifications.getDevicePushTokenAsync();
   return String(tokenData.data || '');
 }
 

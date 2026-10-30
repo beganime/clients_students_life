@@ -126,6 +126,7 @@ class ClientExam(TimeStampedModel):
         verbose_name='Создал менеджер',
     )
     manager_sl_exam_id = models.CharField('Manager SL exam ID', max_length=100, blank=True)
+    manager_application_public_id = models.CharField('Manager SL application ID', max_length=36, blank=True, db_index=True)
     last_reminded_at = models.DateTimeField('Последнее напоминание', null=True, blank=True)
     next_reminder_at = models.DateTimeField('Следующее напоминание', null=True, blank=True)
     creation_notified_at = models.DateTimeField('Уведомление о добавлении', null=True, blank=True)
