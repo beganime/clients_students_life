@@ -67,9 +67,15 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    width: '100%',
+    maxWidth: 920,
+    alignSelf: 'center',
     backgroundColor: colors.background,
   },
   scrollContent: {
+    width: '100%',
+    maxWidth: 920,
+    alignSelf: 'center',
     padding: 18,
     backgroundColor: colors.background,
   },

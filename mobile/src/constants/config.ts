@@ -1,10 +1,14 @@
 import Constants from 'expo-constants';
 
-// The public stud-life.com hostname is filtered on some student networks.
-// This first-party route serves the same client backend through ManagerSL TLS.
+// Two independent public ingress points serve the same client backend and DB.
+// The direct domain is fastest; ManagerSL remains a transparent fallback for
+// networks that filter stud-life.com.
+export const CLIENT_PRIMARY_ORIGIN = 'https://stud-life.com';
 export const CLIENT_PROXY_ORIGIN = 'https://manager-sl.ru/client-app';
-export const STUDENT_LIFE_API_URL = `${CLIENT_PROXY_ORIGIN}/api/v1`;
+export const STUDENT_LIFE_API_URL = `${CLIENT_PRIMARY_ORIGIN}/api/v1`;
+export const STUDENT_LIFE_API_FALLBACK_URL = `${CLIENT_PROXY_ORIGIN}/api/v1`;
 export const MANAGER_SL_PROXY_API_URL = 'https://manager-sl.ru/api/client/v1';
+export const MANAGER_SL_FALLBACK_API_URL = 'https://stud-life.com/manager-api/api/client/v1';
 
 const DEFAULT_PROD_API_URL = STUDENT_LIFE_API_URL;
 const DEFAULT_MANAGER_SL_API_URL = MANAGER_SL_PROXY_API_URL;
@@ -31,9 +35,15 @@ const envManagerSlApiBaseUrl = cleanBaseUrl(process.env.EXPO_PUBLIC_MANAGER_SL_A
 const extraManagerSlApiBaseUrl = cleanBaseUrl(expoExtra?.managerSlApiBaseUrl);
 
 export const API_BASE_URL = envApiBaseUrl || extraApiBaseUrl || DEFAULT_PROD_API_URL;
+export const API_FALLBACK_URL = API_BASE_URL === STUDENT_LIFE_API_FALLBACK_URL
+  ? STUDENT_LIFE_API_URL
+  : STUDENT_LIFE_API_FALLBACK_URL;
 export const API_ROOT_URL = API_BASE_URL.replace('/api/v1', '');
 export const MANAGER_SL_API_BASE_URL =
   envManagerSlApiBaseUrl || extraManagerSlApiBaseUrl || DEFAULT_MANAGER_SL_API_URL;
+export const MANAGER_SL_API_FALLBACK_URL = MANAGER_SL_API_BASE_URL === MANAGER_SL_FALLBACK_API_URL
+  ? MANAGER_SL_PROXY_API_URL
+  : MANAGER_SL_FALLBACK_API_URL;
 export const MANAGER_SL_ROOT_URL = MANAGER_SL_API_BASE_URL.replace(/\/api\/client\/v1\/?$/, '');
 export const PRIVACY_POLICY_URL = `${API_ROOT_URL}/privacy-policy/`;
 

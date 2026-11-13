@@ -89,6 +89,21 @@ export const apiClient = axios.create({
         },
 });
 
+type FailoverRequestConfig = InternalAxiosRequestConfig & {
+  _failoverAttempted?: boolean;
+  _failoverBaseUrl?: string;
+};
+
+let preferredStudentLifeApiUrl: string | null = null;
+
+function isSafeToRetry(config?: InternalAxiosRequestConfig) {
+  return ['get', 'head', 'options'].includes(String(config?.method || 'get').toLowerCase());
+}
+
+function isTransportFailure(error: AxiosError) {
+  return !error.response || error.response.status >= 500 || [408, 425, 429].includes(error.response.status);
+}
+
 let isRefreshing = false;
 
 let failedQueue: Array<{
@@ -111,9 +126,12 @@ function processQueue(error: unknown, token: string | null = null) {
   failedQueue = [];
 }
 
-apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+apiClient.interceptors.request.use(async (config: FailoverRequestConfig) => {
   const endpointConfig = await getApiEndpointConfig();
-  config.baseURL = endpointConfig.studentLifeApiUrl;
+  config.baseURL = config._failoverBaseUrl
+    || (preferredStudentLifeApiUrl && endpointConfig.studentLifeApiUrls.includes(preferredStudentLifeApiUrl)
+      ? preferredStudentLifeApiUrl
+      : endpointConfig.studentLifeApiUrl);
 
   const token = await tokenStorage.getAccessToken();
 
@@ -153,7 +171,7 @@ export async function uploadFormData<T>(url: string, formData: FormData, method:
   }
 
   const { data } = await axios.request<T>({
-    baseURL: endpointConfig.studentLifeApiUrl,
+    baseURL: preferredStudentLifeApiUrl || endpointConfig.studentLifeApiUrl,
     url,
     method,
     data: formData,
@@ -166,11 +184,26 @@ export async function uploadFormData<T>(url: string, formData: FormData, method:
 }
 
 apiClient.interceptors.response.use(
-  response => response,
+  response => {
+    if (response.config.baseURL) preferredStudentLifeApiUrl = response.config.baseURL;
+    return response;
+  },
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {
+    const originalRequest = error.config as FailoverRequestConfig & {
       _retry?: boolean;
     };
+
+    if (originalRequest && !originalRequest._failoverAttempted && isSafeToRetry(originalRequest) && isTransportFailure(error)) {
+      const endpointConfig = await getApiEndpointConfig();
+      const failedBase = String(originalRequest.baseURL || endpointConfig.studentLifeApiUrl);
+      const fallbackBase = endpointConfig.studentLifeApiUrls.find(base => base !== failedBase);
+      if (fallbackBase) {
+        originalRequest._failoverAttempted = true;
+        originalRequest._failoverBaseUrl = fallbackBase;
+        preferredStudentLifeApiUrl = fallbackBase;
+        return apiClient(originalRequest);
+      }
+    }
 
     if (!originalRequest || error.response?.status !== 401 || originalRequest._retry) {
       return Promise.reject(error);

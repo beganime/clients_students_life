@@ -28,21 +28,56 @@ export type OnboardingSubmissionPayload = {
 
 async function request<T>(path: string, init: RequestInit = {}) {
   const endpoint = await getApiEndpointConfig();
-  const response = await fetch(`${endpoint.managerSlApiUrl}${path}`, {
-    ...init,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(typeof data.detail === 'string' ? data.detail : 'Не удалось отправить анкету.');
-    (error as any).response = { status: response.status, data };
-    throw error;
+  const method = String(init.method || 'GET').toUpperCase();
+  const bases = method === 'POST'
+    ? [await chooseHealthyManagerBase(endpoint.managerSlApiUrls)]
+    : endpoint.managerSlApiUrls;
+  let lastError: unknown;
+
+  for (const baseUrl of bases) {
+    try {
+      const response = await fetch(`${baseUrl}${path}`, {
+        ...init,
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(init.headers || {}),
+        },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(typeof data.detail === 'string' ? data.detail : 'Не удалось отправить анкету.');
+        (error as any).response = { status: response.status, data };
+        if (response.status < 500) throw error;
+        lastError = error;
+        continue;
+      }
+      return data as T;
+    } catch (error) {
+      lastError = error;
+      if (method === 'POST') break;
+    }
   }
-  return data as T;
+  throw lastError instanceof Error ? lastError : new Error('Сервис заявок временно недоступен.');
+}
+
+async function chooseHealthyManagerBase(baseUrls: string[]) {
+  const probes = await Promise.allSettled(baseUrls.map(async baseUrl => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4500);
+    try {
+      const response = await fetch(`${baseUrl}/universities/?limit=1`, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`Health probe failed: ${response.status}`);
+      return baseUrl;
+    } finally {
+      clearTimeout(timer);
+    }
+  }));
+  const healthy = probes.find(result => result.status === 'fulfilled');
+  return healthy?.status === 'fulfilled' ? healthy.value : baseUrls[0];
 }
 
 export const onboardingApi = {

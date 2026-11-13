@@ -11,6 +11,7 @@ import { OfflineBanner } from './src/components/OfflineBanner';
 import { useAppActivity } from './src/hooks/useAppActivity';
 import { useCatalogWarmup } from './src/hooks/useCatalogWarmup';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
+import { useOtaUpdates } from './src/hooks/useOtaUpdates';
 import { asyncStoragePersister, QUERY_CACHE_MAX_AGE, queryClient } from './src/api/queryClient';
 import { colors } from './src/constants/colors';
 
@@ -18,6 +19,7 @@ function AppContent() {
   useAppActivity();
   usePushNotifications();
   useCatalogWarmup();
+  useOtaUpdates();
   return (
     <>
       <OfflineBanner />

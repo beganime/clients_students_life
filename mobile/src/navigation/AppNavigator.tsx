@@ -50,7 +50,7 @@ export function AppNavigator() {
           shadows.soft,
         ]}
       >
-        <BrandLogo width={135} style={styles.logoBox} />
+        <BrandLogo width={118} style={styles.logoBox} />
         <View style={styles.headerActions}>
           <Pressable style={styles.headerAction} onPress={() => navigation.navigate('Exams')} accessibilityRole="button" accessibilityLabel="Открыть экзамены"><SvgIcon name="calendar" size={21} color={colors.secondary} /></Pressable>
           <Pressable style={styles.headerAction} onPress={() => navigation.navigate('Notifications')} accessibilityRole="button" accessibilityLabel="Открыть уведомления"><SvgIcon name="bell" size={21} color={colors.secondary} /></Pressable>
@@ -109,15 +109,15 @@ export function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  tabContent: { minWidth: 64, alignItems: 'center', justifyContent: 'center', paddingTop: 4 },
-  tabText: { fontSize: 10, lineHeight: 12, marginTop: 3, textAlign: 'center', fontWeight: '600' },
+  tabContent: { width: '100%', minWidth: 0, alignItems: 'center', justifyContent: 'center', paddingTop: 4, paddingHorizontal: 2 },
+  tabText: { fontSize: 9, lineHeight: 11, marginTop: 3, textAlign: 'center', fontWeight: '600' },
   tabTextActive: { fontWeight: '800' },
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
   header: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
@@ -130,8 +130,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: spacing.sm,
   },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2, marginRight: 4 },
-  headerAction: { width: 37, height: 40, alignItems: 'center', justifyContent: 'center' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', marginRight: 2 },
+  headerAction: { width: 34, height: 40, alignItems: 'center', justifyContent: 'center' },
   menuButton: {
     width: 44,
     height: 44,

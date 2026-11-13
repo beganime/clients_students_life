@@ -42,7 +42,15 @@ async function request<T>(
   params?: Record<string, string | number | boolean | undefined>,
 ): Promise<T> {
   const endpointConfig = await getApiEndpointConfig();
-  return requestFromBase<T>(endpointConfig.managerSlApiUrl, path, params);
+  let lastError: unknown;
+  for (const baseUrl of endpointConfig.managerSlApiUrls) {
+    try {
+      return await requestFromBase<T>(baseUrl, path, params);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Catalog API is unavailable');
 }
 
 async function requestFromBase<T>(
